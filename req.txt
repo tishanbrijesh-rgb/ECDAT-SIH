@@ -1,0 +1,4 @@
+# Install ECDAT backend/scanner runtime and test dependencies:
+# python -m pip install -r req.txt
+# Frontend dependencies are managed separately in dashboard/package-lock.json.
+-r backend/requirements-dev.txt

@@ -1,0 +1,23 @@
+{
+  "description": "Known detectable cryptographic assets used to evaluate ECDAT precision and recall.",
+  "assets": [
+    {"component": "app-py", "algorithm": "AES"},
+    {"component": "app-py", "algorithm": "RSA"},
+    {"component": "app-py", "algorithm": "ECDSA"},
+    {"component": "app-py", "algorithm": "SHA-256"},
+    {"component": "app-py", "algorithm": "SHA-512"},
+    {"component": "app-py", "algorithm": "RNG"},
+    {"component": "app-java", "algorithm": "AES"},
+    {"component": "app-java", "algorithm": "RSA"},
+    {"component": "app-java", "algorithm": "ECDSA"},
+    {"component": "app-java", "algorithm": "SHA-256"},
+    {"component": "certs", "algorithm": "RSA"},
+    {"component": "certs", "algorithm": "ECDSA"},
+    {"component": "dependency-only", "algorithm": "TLS"},
+    {"component": "conflict", "algorithm": "RSA"},
+    {"component": "conflict", "algorithm": "AES"}
+  ],
+  "blind_spots": [
+    {"component": "blind-spot", "algorithm": "AES", "reason": "runtime-computed module and function"}
+  ]
+}

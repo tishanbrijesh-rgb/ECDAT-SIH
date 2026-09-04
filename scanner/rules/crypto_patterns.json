@@ -1,0 +1,91 @@
+{
+  "algorithms": {
+    "AES": {
+      "category": "encryption",
+      "patterns": [
+        "AES", "AES\\.Cipher", "AES/GCM", "AES/CBC", "aes_gcm", "aes_cbc",
+        "Cipher\\.getInstance.*AES"
+      ]
+    },
+    "RSA": {
+      "category": "encryption",
+      "patterns": [
+        "RSA", "RSA/ECB/PKCS1Padding", "RSA.*OAEP", "get_instance.*RSA",
+        "generate_private_key.*RSA"
+      ]
+    },
+    "ECDSA": {
+      "category": "signature",
+      "patterns": [
+        "ECDSA", "ec\\.ECDSA", "EllipticCurve", "SECP", "prime256v1",
+        "secp256"
+      ]
+    },
+    "ECDH": {
+      "category": "key_exchange",
+      "patterns": [
+        "ECDH", "ec\\.ECDH", "key_exchange.*ECDH"
+      ]
+    },
+    "DH": {
+      "category": "key_exchange",
+      "patterns": [
+        "DH", "DiffieHellman", "Diffie-Hellman"
+      ]
+    },
+    "DSA": {
+      "category": "signature",
+      "patterns": [
+        "\\bDSA\\b", "generate_private_key.*\\bDSA\\b"
+      ]
+    },
+    "SHA-256": {
+      "category": "hash",
+      "patterns": [
+        "SHA-?256", "sha256", "SHA256"
+      ]
+    },
+    "SHA-512": {
+      "category": "hash",
+      "patterns": [
+        "SHA-?512", "sha512", "SHA512"
+      ]
+    },
+    "MD5": {
+      "category": "hash",
+      "patterns": [
+        "MD5", "md5"
+      ]
+    },
+    "BLAKE2": {
+      "category": "hash",
+      "patterns": [
+        "blake2", "BLAKE2"
+      ]
+    },
+    "Ed25519": {
+      "category": "signature",
+      "patterns": [
+        "Ed25519", "ed25519"
+      ]
+    },
+    "ML-KEM": {
+      "category": "key_exchange",
+      "patterns": [
+        "ML-KEM", "mlkem", "kyber"
+      ]
+    },
+    "ML-DSA": {
+      "category": "signature",
+      "patterns": [
+        "ML-DSA", "mldsa", "dilithium"
+      ]
+    },
+    "TLS": {
+      "category": "protocol",
+      "patterns": [
+        "TLSv?1[._]?[23]", "SSLContext", "PROTOCOL_TLS", "https://", "OpenSSL"
+      ]
+    }
+  }
+}

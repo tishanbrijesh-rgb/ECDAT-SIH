@@ -1,0 +1,1 @@
+"""Crypto pattern rules package."""

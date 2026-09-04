@@ -1,0 +1,2 @@
+# Dependency-only evidence case: no direct source call is available.
+pyopenssl==24.2.1

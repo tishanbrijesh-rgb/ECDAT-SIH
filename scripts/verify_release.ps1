@@ -1,0 +1,32 @@
+$ErrorActionPreference = "Stop"
+
+$projectRoot = Split-Path -Parent $PSScriptRoot
+Push-Location $projectRoot
+try {
+    Write-Host "[1/5] Python compilation"
+    python -m compileall -q backend scanner scripts tests
+
+    Write-Host "[2/5] Unit and API integration tests"
+    python -W error::ResourceWarning -m unittest discover -s tests -v
+
+    Write-Host "[3/5] Python dependency consistency"
+    python -m pip check
+
+    Push-Location dashboard
+    try {
+        Write-Host "[4/5] Frontend formatting and production build"
+        npm run format:check
+        npm run build
+
+        Write-Host "[5/5] Dependency advisory audit"
+        npm audit
+    }
+    finally {
+        Pop-Location
+    }
+
+    Write-Host "ECDAT release verification passed." -ForegroundColor Green
+}
+finally {
+    Pop-Location
+}

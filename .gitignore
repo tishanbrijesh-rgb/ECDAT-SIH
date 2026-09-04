@@ -1,0 +1,61 @@
+# Python environments, caches and build output
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+build/
+dist/
+
+# Frontend dependencies and generated output
+node_modules/
+*.tsbuildinfo
+coverage/
+
+# Local configuration and secrets (keep the documented demo template)
+.env
+.env.*
+!.env.example
+*.key
+*.p12
+*.pfx
+*.jks
+id_rsa
+id_ed25519
+
+# Local databases, runtime logs and temporary files
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.log
+.runtime/
+tmp/
+temp/
+*.tmp
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local assistant tooling and unrelated workflow artifacts
+.codex/
+.claude/
+.agents/
+AGENTS.md
+LOOP.md
+STATE.md
+loop-*
+gate.yaml
+patterns/
+graphify-out/
