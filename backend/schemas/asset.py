@@ -1,7 +1,8 @@
 """Pydantic schemas for API serialization."""
 from __future__ import annotations
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+from scanner.redaction import redact_evidence
 from typing import Any
 
 
@@ -65,6 +66,11 @@ class AssetResponse(BaseModel):
     hybrid_recommended: bool
     logical_asset_id: str
     created_at: datetime
+
+    @field_validator("evidence_json")
+    @classmethod
+    def sanitize_evidence(cls, value):
+        return redact_evidence(value)
 
     class Config:
         from_attributes = True

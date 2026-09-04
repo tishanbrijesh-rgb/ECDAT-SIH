@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 import re
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from typing import Any
 
@@ -34,7 +35,7 @@ _REQ_ALGO_MAP: dict[str, list[tuple[str, str]]] = {
     "argon2-cffi": [("Argon2", "hash")],
     "pysha3": [("SHA-3", "hash"), ("SHAKE", "hash")],
     "pyblake2": [("BLAKE2", "hash")],
-    "python-jose[cryptography]": [("RSA", "encryption"), ("ECDSA", "signature")],
+    "python-jose": [("RSA", "encryption"), ("ECDSA", "signature")],
 }
 
 # Java / Maven artifacts -> algorithms
@@ -50,25 +51,29 @@ _POM_ALGO_MAP: dict[str, list[tuple[str, str]]] = {
 
 
 def _normalise_pkg_name(raw: str) -> str:
-    """Lowercase and strip version/compare markers."""
+    """Extract a declared package name, without evaluating target environments."""
     pkg = raw.strip().lower()
-    pkg = re.split(r'[<>=!~\[]', pkg)[0]
+    pkg = re.split(r'[<>=!~\[;@#\s]', pkg)[0]
     pkg = pkg.strip()
-    return pkg
+    return re.sub(r"[-_.]+", "-", pkg)
 
 
 class DepCollector:
     """Scans dependency manifests for cryptographic libraries."""
 
-    def scan_requirements(self, path: str) -> list[CryptoAsset]:
+    def scan_requirements(self, path: str, on_error=None) -> list[CryptoAsset]:
         """Parse a requirements.txt and return crypto assets found."""
         assets: list[CryptoAsset] = []
         if not os.path.isfile(path):
+            if on_error is not None:
+                on_error(path)
             return assets
         try:
             with open(path, "r", encoding="utf-8") as fh:
                 lines = fh.readlines()
-        except OSError:
+        except (OSError, UnicodeError):
+            if on_error is not None:
+                on_error(path)
             return assets
 
         seen: set[str] = set()
@@ -97,39 +102,46 @@ class DepCollector:
                     )
         return assets
 
-    def scan_pom_xml(self, path: str) -> list[CryptoAsset]:
+    def scan_pom_xml(self, path: str, on_error=None) -> list[CryptoAsset]:
         """Parse a pom.xml and return crypto assets found."""
         assets: list[CryptoAsset] = []
         if not os.path.isfile(path):
+            if on_error is not None:
+                on_error(path)
             return assets
         try:
             with open(path, "r", encoding="utf-8") as fh:
                 content = fh.read()
-        except OSError:
+        except (OSError, UnicodeError):
+            if on_error is not None:
+                on_error(path)
             return assets
 
-        # Extract groupId / artifactId pairs
-        group_ids = re.findall(r"<groupId>([^<]+)</groupId>", content)
-        artifact_ids = re.findall(r"<artifactId>([^<]+)</artifactId>", content)
-
-        # Build a lookup: groupId -> artifactIds
-        group_to_artifacts: dict[str, list[str]] = {}
-        current_group: str | None = None
-        g_iter = iter(group_ids)
-        a_iter = iter(artifact_ids)
+        # Pair coordinates structurally; comments, parents and plugins are not
+        # application dependencies. Do not resolve POMs or fetch anything.
+        if "<!DOCTYPE" in content.upper() or "<!ENTITY" in content.upper():
+            if on_error is not None:
+                on_error(path)
+            return assets
         try:
-            current_group = next(g_iter)
-            for aid in a_iter:
-                group_to_artifacts.setdefault(current_group, []).append(aid)
-                current_group = next(g_iter)
-        except StopIteration:
-            pass
+            root = ET.fromstring(content)
+        except ET.ParseError:
+            if on_error is not None:
+                on_error(path)
+            return assets
+        namespace = root.tag.split("}")[0] + "}" if root.tag.startswith("{") else ""
+        group_to_artifacts: dict[str, list[str]] = {}
+        for dependency in root.findall(f"{namespace}dependencies/{namespace}dependency"):
+            group = (dependency.findtext(f"{namespace}groupId") or "").strip()
+            artifact = (dependency.findtext(f"{namespace}artifactId") or "").strip()
+            if group and artifact:
+                group_to_artifacts.setdefault(group, []).append(artifact)
 
         seen: set[str] = set()
         for group_id, artifacts in group_to_artifacts.items():
             norm_group = group_id.strip().lower()
             for map_group, algo_list in _POM_ALGO_MAP.items():
-                if map_group in norm_group:
+                if map_group == norm_group:
                     for artifact in artifacts:
                         key = f"{norm_group}:{artifact}"
                         if key not in seen:

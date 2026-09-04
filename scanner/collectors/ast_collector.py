@@ -137,8 +137,9 @@ class _CryptoVisitor(ast.NodeVisitor):
 
         line_no = node.lineno
 
-        # Check positional string args first
-        for arg in node.args:
+        # Algorithm-looking text in print/log/user calls is not crypto use.
+        selector_calls = {"hashlib.new", "Cipher.getInstance", "MessageDigest.getInstance"}
+        for arg in node.args[:1] if func_name in selector_calls else []:
             if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
                 for pattern, (algo, cat) in _CALL_PATTERNS.items():
                     if pattern in arg.value:
@@ -216,7 +217,7 @@ class _CryptoVisitor(ast.NodeVisitor):
 class ASTCollector:
     """AST-based static analysis collector for Python source files."""
 
-    def scan_file(self, path: str) -> list[CryptoAsset]:
+    def scan_file(self, path: str, on_error=None) -> list[CryptoAsset]:
         """Parse a Python file and return detected crypto assets."""
         assets: list[CryptoAsset] = []
         try:
@@ -226,10 +227,9 @@ class ASTCollector:
             visitor = _CryptoVisitor(path)
             visitor.visit(tree)
             assets = visitor.assets
-        except SyntaxError as exc:
-            print(f"  [AST] SyntaxError in {path}: {exc}")
-        except OSError as exc:
-            print(f"  [AST] Cannot read {path}: {exc}")
+        except (SyntaxError, OSError, ValueError, RecursionError):
+            if on_error is not None:
+                on_error(path)
         return assets
 
     def scan_directory(self, root: str) -> dict[tuple[str, str], list[dict]]:

@@ -4,6 +4,11 @@ ECDAT is the SIH26164 privacy-first cryptographic inventory and discovery-assura
 
 ## One-command demo
 
+First provision `ECDAT_DB_PASSWORD` (random 64-character hexadecimal value),
+`ECDAT_USERS_JSON` and `ECDAT_TOKEN_SECRET` as described in
+[authentication setup](docs/authentication.md). There are no default credentials.
+Compose reads these values from an untracked `.env` file or the environment.
+
 ```bash
 docker compose up --build
 ```
@@ -22,13 +27,13 @@ python -m pip install -r req.txt
 $env:DATABASE_URL="sqlite:///./ecdat_local.db"
 python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 cd dashboard
-npm install
+npm ci
 npm run dev -- --host 127.0.0.1 --port 3000
 ```
 
 ## Tests and continuous integration
 
-Run the dependency-free Python unit/API integration suite and the production dashboard build:
+After installing `req.txt`, run the Python unit/API integration suite and the production dashboard build:
 
 ```powershell
 python -m unittest discover -s tests -v
@@ -52,14 +57,18 @@ On Windows, run the complete release gate with:
 - [Five-minute demonstration](docs/DEMO_SCRIPT.md)
 - [Readiness checklist](docs/SIH_READINESS.md)
 
-The local demo accepts signed sessions from `POST /api/auth/login`. Documented usernames are `admin`, `analyst`, `auditor`, and `viewer`; the default offline-demo password is `ecdat-demo`. Change `ECDAT_DEMO_PASSWORD` and `ECDAT_TOKEN_SECRET` outside the controlled demonstration. The compatibility role header can be disabled with `ECDAT_ALLOW_ROLE_HEADER=false`.
+The local demo accepts signed sessions from `POST /api/auth/login` using accounts
+you provision in `ECDAT_USERS_JSON`. All data endpoints require authentication.
+Role-header impersonation is disabled by default. Follow the
+[authentication setup](docs/authentication.md) before starting the backend;
+plain Python startup does not automatically load `.env`.
 
 ## Eight-layer architecture
 
 1. **Collection** — repositories, source files, manifests, and certificates.
 2. **Detection** — Python AST, independent JSON rules, dependency mapping, and X.509 parsing.
 3. **Normalization** — a common cryptographic-asset and evidence model.
-4. **Correlation** — component-level logical assets and evidence relationships.
+4. **Correlation** — file/operation/algorithm/usage identities and evidence relationships.
 5. **Discovery Assurance** — confidence, measured coverage, operation conflicts, and blind spots.
 6. **Risk** — quantum exposure, Mosca planning window, sensitivity, criticality, exposure, and migration effort.
 7. **Recommendation** — usage-aware ML-KEM, ML-DSA, SLH-DSA, symmetric, or hybrid guidance.

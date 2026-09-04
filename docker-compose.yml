@@ -3,12 +3,12 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: ecdat
-      POSTGRES_PASSWORD: ecdat
+      POSTGRES_PASSWORD: ${ECDAT_DB_PASSWORD:?Configure ECDAT_DB_PASSWORD}
       POSTGRES_DB: ecdat
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ecdat"]
       interval: 5s
@@ -19,17 +19,18 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     environment:
-      DATABASE_URL: postgresql://ecdat:ecdat@db:5432/ecdat
+      DATABASE_URL: postgresql://ecdat:${ECDAT_DB_PASSWORD:?Configure ECDAT_DB_PASSWORD}@db:5432/ecdat
       SCANNER_PATH: /app
       ECDAT_ALLOWED_SCAN_ROOTS: /test-repo
       ECDAT_CORS_ORIGINS: http://localhost:3000
-      ECDAT_DEMO_PASSWORD: ${ECDAT_DEMO_PASSWORD:-ecdat-demo}
-      ECDAT_TOKEN_SECRET: ${ECDAT_TOKEN_SECRET:-local-sih-demo-secret-change-me}
+      ECDAT_ALLOW_ROLE_HEADER: "false"
+      ECDAT_USERS_JSON: ${ECDAT_USERS_JSON:?Configure ECDAT_USERS_JSON}
+      ECDAT_TOKEN_SECRET: ${ECDAT_TOKEN_SECRET:?Configure ECDAT_TOKEN_SECRET}
     volumes:
       - ./scanner:/app/scanner:ro
       - ./test-repo:/test-repo:ro
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -47,7 +48,7 @@ services:
       args:
         VITE_API_URL: http://localhost:8000
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       VITE_API_URL: http://localhost:8000
     depends_on:

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import os
 import re
+import io
+import tokenize
 from pathlib import Path
 
 from scanner.models.asset import CryptoAsset
@@ -26,15 +28,25 @@ def _usage(line: str, algorithm: str) -> str:
 
 
 def _strip_comments(text: str, extension: str) -> str:
-    """Remove obvious comments while preserving line numbers."""
+    """Preserve line numbers and avoid treating quoted URLs as comments."""
     if extension == ".py":
-        text = re.sub(
-            r"(?is)(?:r|u|b|f|br|rb)?(?:\"\"\".*?\"\"\"|'''.*?''')",
-            lambda match: "\n" * match.group(0).count("\n"), text,
-        )
-        return "\n".join(line.split("#", 1)[0] for line in text.splitlines())
-    text = re.sub(r"/\*.*?\*/", lambda m: "\n" * m.group(0).count("\n"), text, flags=re.S)
-    return "\n".join(line.split("//", 1)[0] for line in text.splitlines())
+        # Text literals are not observed crypto use. Recognized string-selected
+        # hash calls are handled structurally by ASTCollector.
+        tokens = []
+        try:
+            for token in tokenize.generate_tokens(io.StringIO(text).readline):
+                if token.type in {tokenize.STRING, tokenize.COMMENT}:
+                    token = token._replace(string=re.sub(r"[^\n\r]", " ", token.string))
+                tokens.append(token)
+        except (tokenize.TokenError, IndentationError):
+            # Retain only the safely tokenized prefix; AST reports the error.
+            pass
+        return tokenize.untokenize(tokens)
+    pattern = r'''"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|//[^\n]*|/\*[\s\S]*?\*/'''
+    return re.sub(pattern, lambda match: re.sub(r"[^\n\r]", " ", match.group(0))
+                  if match.group(0).startswith(("//", "/*")) or
+                  re.match(r'''["']https?://''', match.group(0), re.I)
+                  else match.group(0), text)
 
 
 class RuleCollector:
@@ -42,13 +54,15 @@ class RuleCollector:
 
     confidence = 0.82
 
-    def scan_file(self, path: str) -> list[CryptoAsset]:
+    def scan_file(self, path: str, on_error=None) -> list[CryptoAsset]:
         extension = Path(path).suffix.lower()
         if extension not in CODE_EXTENSIONS:
             return []
         try:
             text = Path(path).read_text(encoding="utf-8", errors="replace")
         except OSError:
+            if on_error is not None:
+                on_error(path)
             return []
         text = _strip_comments(text, extension)
         rules = load_rules().get("algorithms", {})

@@ -12,7 +12,7 @@ def resolve_repository(raw_path: str) -> str:
         raw_path = str(Path(__file__).resolve().parents[2] / "test-repo")
     try:
         candidate = Path(raw_path).expanduser().resolve(strict=True)
-    except (OSError, RuntimeError) as exc:
+    except (OSError, RuntimeError, ValueError, TypeError) as exc:
         raise HTTPException(400, f"Repository path does not exist: {raw_path}") from exc
     if not candidate.is_dir():
         raise HTTPException(400, f"Repository path is not a directory: {raw_path}")

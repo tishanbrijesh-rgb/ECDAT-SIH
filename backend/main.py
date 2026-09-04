@@ -6,9 +6,13 @@ Mounts CORS, initialises DB tables on startup, and exposes three routers:
 """
 
 import os
+import json
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
+from backend.security import current_role
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import Response
 
 from backend.db import Base, engine
 from backend.routers.scan import router as scan_router
@@ -25,6 +29,15 @@ app = FastAPI(
     version="1.0.0",
 )
 
+
+@app.exception_handler(RequestValidationError)
+async def invalid_request(_request, exc: RequestValidationError):
+    # Never reflect passwords/raw bodies or invalid Unicode into error responses.
+    details = [{"loc": error["loc"], "type": error["type"],
+                "msg": "Invalid request value"} for error in exc.errors()]
+    return Response(json.dumps({"detail": details}, ensure_ascii=True),
+                    status_code=422, media_type="application/json")
+
 # ── CORS ────────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
@@ -37,10 +50,10 @@ app.add_middleware(
 )
 
 # ── Routers ─────────────────────────────────────────────────────────────────
-app.include_router(scan_router)
-app.include_router(assets_router)
-app.include_router(dashboard_router)
-app.include_router(outputs_router)
+app.include_router(scan_router, dependencies=[Depends(current_role)])
+app.include_router(assets_router, dependencies=[Depends(current_role)])
+app.include_router(dashboard_router, dependencies=[Depends(current_role)])
+app.include_router(outputs_router, dependencies=[Depends(current_role)])
 app.include_router(audit_router)
 app.include_router(auth_router)
 

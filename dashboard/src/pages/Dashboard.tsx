@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { API_BASE_URL, getDashboardSummary, getEvaluation } from "../api/client";
+import { downloadReport, getDashboardSummary, getEvaluation, canWrite } from "../api/client";
 import type { DashboardSummary, Evaluation } from "../types";
 
 export default function Dashboard() {
@@ -46,12 +46,24 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="hero-actions">
-          <a className="button secondary" href={`${API_BASE_URL}/api/reports/risk.txt`}>
+          <button
+            className="button secondary"
+            onClick={() =>
+              downloadReport("/api/reports/risk.txt", "ecdat-risk-report.txt").catch((e) =>
+                setError(String(e)),
+              )
+            }
+          >
             Download risk report
-          </a>
-          <a className="button" href={`${API_BASE_URL}/api/cbom`} target="_blank">
+          </button>
+          <button
+            className="button"
+            onClick={() =>
+              downloadReport("/api/cbom", "ecdat-cbom.json").catch((e) => setError(String(e)))
+            }
+          >
             View CBOM
-          </a>
+          </button>
         </div>
       </section>
       <section className="stats six">
@@ -110,7 +122,10 @@ export default function Dashboard() {
           </div>
         </article>
         <article className="panel">
-          <PanelTitle title="Research evaluation" sub="Controlled ground-truth performance" />
+          <PanelTitle
+            title="Research evaluation"
+            sub="Controlled component/algorithm pairs—not operation-level or real-world accuracy"
+          />
           {evaluation?.available ? (
             <div className="metric-grid">
               <Metric label="Precision" value={evaluation.precision} />
@@ -196,9 +211,13 @@ function Empty() {
         Scan the bundled enterprise repository to build a measured cryptographic inventory and PQC
         migration view.
       </p>
-      <Link className="button" to="/scan">
-        Run discovery scan
-      </Link>
+      {canWrite() ? (
+        <Link className="button" to="/scan">
+          Run discovery scan
+        </Link>
+      ) : (
+        <p>Ask an administrator or security analyst to run a scan.</p>
+      )}
     </div>
   );
 }

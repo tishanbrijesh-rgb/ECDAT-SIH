@@ -1,7 +1,7 @@
 // Repository scan launcher with job progress, coverage, and history.
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getScan, getScans, scanRepo } from "../api/client";
+import { getScan, getScans, scanRepo, canWrite } from "../api/client";
 import type { ScanJob } from "../types";
 
 export default function ScanPage() {
@@ -10,6 +10,7 @@ export default function ScanPage() {
   const [job, setJob] = useState<ScanJob>();
   const [history, setHistory] = useState<ScanJob[]>([]);
   const [error, setError] = useState("");
+  const [starting, setStarting] = useState(false);
   const navigate = useNavigate();
   useEffect(() => {
     getScans()
@@ -18,29 +19,46 @@ export default function ScanPage() {
   }, []);
   useEffect(() => {
     if (!scanId) return;
+    let cancelled = false;
     const poll = () =>
       getScan(scanId)
         .then((current) => {
+          if (cancelled) return;
+          setError("");
           setJob(current);
           if (current.status === "completed")
-            setTimeout(() => navigate(`/assets?scan_id=${scanId}`), 900);
+            timer = setTimeout(() => navigate(`/assets?scan_id=${scanId}`), 900);
           else if (current.status !== "failed") timer = setTimeout(poll, 700);
         })
-        .catch((e) => setError(String(e)));
+        .catch(() => {
+          if (cancelled) return;
+          setError(
+            "Status connection interrupted. Retrying automatically; do not start another scan.",
+          );
+          timer = setTimeout(poll, 2000);
+        });
     let timer = setTimeout(poll, 300);
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [scanId, navigate]);
   const start = async () => {
+    if (!canWrite() || starting) return;
+    setStarting(true);
     setError("");
+    setScanId(undefined);
     setJob(undefined);
     try {
       const result = await scanRepo(path);
       setScanId(result.scan_id);
     } catch (e) {
       setError(String(e));
+    } finally {
+      setStarting(false);
     }
   };
-  const running = !!scanId && job?.status !== "completed" && job?.status !== "failed";
+  const running = starting || (!!scanId && job?.status !== "completed" && job?.status !== "failed");
   return (
     <>
       <section className="scan-layout">
@@ -67,8 +85,11 @@ export default function ScanPage() {
             </li>
           </ol>
         </div>
-        <div className="scan-card panel">
+        <fieldset className="scan-card panel" disabled={!canWrite()}>
           <h2>Start discovery scan</h2>
+          {!canWrite() && (
+            <p>Read-only access. An administrator or security analyst can start scans.</p>
+          )}
           <label>
             Repository path
             <input value={path} onChange={(e) => setPath(e.target.value)} disabled={running} />
@@ -86,7 +107,19 @@ export default function ScanPage() {
                 <strong>{job?.status || "queued"}</strong>
                 <span>Scan #{scanId}</span>
               </div>
-              {job?.coverage_pct ? (
+              {job?.status === "failed" ? (
+                <small>
+                  {job.blind_spots.join("; ") || "Scan failed. Results are incomplete."}
+                </small>
+              ) : running && job?.collector_stats._files_total !== undefined ? (
+                <small>
+                  {job.collector_stats._files_processed}/{job.collector_stats._files_total}{" "}
+                  supported files processed
+                  {job.collector_stats._files_processed === job.collector_stats._files_total
+                    ? " · Correlating and saving results…"
+                    : " · Collecting evidence…"}
+                </small>
+              ) : job?.status === "completed" ? (
                 <small>
                   {job.scanned_files}/{job.in_scope_files} supported files · {job.coverage_pct}%
                   coverage
@@ -97,7 +130,7 @@ export default function ScanPage() {
             </div>
           )}
           {error && <div className="callout error">{error}</div>}
-        </div>
+        </fieldset>
       </section>
       <section className="history">
         <div className="panel-title">

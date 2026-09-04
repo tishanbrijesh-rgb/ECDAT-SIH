@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import os
 import sys
-import traceback
 from datetime import datetime, timezone
 from typing import Any
 
@@ -25,9 +24,33 @@ from backend.db import SessionLocal
 from backend.services.correlator import correlate
 from backend.services.confidence import score_finding
 from backend.services.risk_engine import assess_risk
+from scanner.redaction import redact_evidence
 
 
 def run_scan(repo_path: str, scan_id: int | None = None) -> dict[str, Any]:
+    """Ensure failures in correlation or persistence also terminate the job."""
+    if scan_id is None:
+        with SessionLocal() as db:
+            job = ScanJobDB(repo_path=repo_path, status="queued")
+            db.add(job)
+            db.commit()
+            db.refresh(job)
+            scan_id = job.id
+    try:
+        return _run_scan(repo_path, scan_id)
+    except Exception as exc:
+        with SessionLocal() as db:
+            job = db.query(ScanJobDB).filter(ScanJobDB.id == scan_id).first()
+            if job is None:
+                raise
+            job.status = "failed"
+            job.finished_at = datetime.now(timezone.utc)
+            job.blind_spots = [f"Scan failed during processing ({type(exc).__name__}); results are incomplete"]
+            db.commit()
+        return {"scan_id": scan_id, "status": "failed", "assets_found": 0, "avg_confidence": 0.0}
+
+
+def _run_scan(repo_path: str, scan_id: int | None = None) -> dict[str, Any]:
     """
     Execute the full scan pipeline and persist results.
 
@@ -58,22 +81,14 @@ def run_scan(repo_path: str, scan_id: int | None = None) -> dict[str, Any]:
 
     _scanner_print(f"Job {scan_id}: starting scan of {repo_path}")
 
-    # 2. Run scanner
-    try:
-        evidence, metrics = scan_with_metrics(repo_path)
-    except Exception:
-        _scanner_print(f"Job {scan_id}: SCANNER CRASHED")
-        traceback.print_exc()
-        db = SessionLocal()
-        try:
-            job = db.query(ScanJobDB).filter(ScanJobDB.id == scan_id).first()
-            job.status = "failed"
-            job.finished_at = datetime.now(timezone.utc)
-            db.commit()
-        finally:
-            db.close()
-        return {"scan_id": scan_id, "status": "failed", "assets_found": 0,
-                "avg_confidence": 0.0}
+    def progress(stats: dict[str, int]) -> None:
+        with SessionLocal() as progress_db:
+            current = progress_db.get(ScanJobDB, scan_id)
+            current.collector_stats = stats
+            progress_db.commit()
+
+    # The outer wrapper finalizes failures from every pipeline stage.
+    evidence, metrics = scan_with_metrics(repo_path, progress_callback=progress)
 
     # 3. Correlate
     findings = correlate(evidence)
@@ -107,9 +122,13 @@ def run_scan(repo_path: str, scan_id: int | None = None) -> dict[str, Any]:
                 evidence_json={
                     "component": f.get("component", "repository-root"),
                     "confidence_by_source": f.get("confidence_by_source", {}),
-                    "evidence_list": f.get("evidence_list", []),
+                    "evidence_list": [{**item, "evidence": redact_evidence(item.get("evidence", {}))}
+                                      for item in f.get("evidence_list", [])],
                     "reasons": sc.get("reasons", []),
                     "conflicting_operations": f.get("conflicting_operations", []),
+                    "context_conflicts": f.get("context_conflicts", {}),
+                    "operation_anchor": f.get("operation_anchor", ""),
+                    "correlation_version": f.get("correlation_version", ""),
                 },
                 confidence=sc["confidence"],
                 conflict=f.get("conflict", False),

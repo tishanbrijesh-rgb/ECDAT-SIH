@@ -15,12 +15,13 @@ import json
 import os
 import sys
 import time
-from typing import Any
+from typing import Any, Callable
 
 from scanner.collectors.ast_collector import ASTCollector
 from scanner.collectors.dep_collector import DepCollector
 from scanner.collectors.cert_collector import CertCollector
 from scanner.collectors.rule_collector import CODE_EXTENSIONS, RuleCollector
+from scanner.redaction import redact_evidence
 
 # Ensure `scanner` package is importable
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -47,7 +48,7 @@ def _inventory(repo_path: str) -> tuple[list[str], list[str], list[str]]:
             path = os.path.join(dirpath, filename)
             all_files.append(path)
             ext = os.path.splitext(filename)[1].lower()
-            if ext in CODE_EXTENSIONS or filename in {"requirements.txt", "pom.xml"} or ext in {".crt", ".pem"}:
+            if ext in CODE_EXTENSIONS or filename in {"requirements.txt", "pom.xml"} or ext in {".crt", ".pem", ".cer"}:
                 supported.append(path)
                 try:
                     with open(path, "rb") as stream:
@@ -57,43 +58,69 @@ def _inventory(repo_path: str) -> tuple[list[str], list[str], list[str]]:
     return all_files, supported, failed
 
 
-def scan_with_metrics(repo_path: str) -> tuple[dict[tuple[str, str], list[dict[str, Any]]], dict[str, Any]]:
+def scan_with_metrics(
+    repo_path: str, progress_callback: Callable[[dict[str, int]], None] | None = None,
+) -> tuple[dict[tuple[str, str], list[dict[str, Any]]], dict[str, Any]]:
     """Run every collector and return evidence plus measured scope/coverage metrics."""
     started = time.perf_counter()
     if not os.path.isdir(repo_path):
         raise ValueError(f"Repository path does not exist: {repo_path}")
     all_files, supported, failed = _inventory(repo_path)
     combined: dict[tuple[str, str], list[dict[str, Any]]] = {}
-    collectors = [
-        ("ast", "AST collector (Python structure)", ASTCollector()),
-        ("rule", "Rule collector (multi-language source)", RuleCollector()),
-        ("dep", "Dependency collector (Python/Maven)", DepCollector()),
-        ("cert", "Certificate collector (X.509)", CertCollector()),
-    ]
-    collector_stats: dict[str, int] = {}
+    ast_collector, rule_collector = ASTCollector(), RuleCollector()
+    dep_collector, cert_collector = DepCollector(), CertCollector()
+    collector_stats = dict.fromkeys(("ast", "rule", "dep", "cert"), 0)
+    failed_paths = set(failed)
+    last_progress = started
+
+    def report(processed: int) -> None:
+        if progress_callback is not None:
+            progress_callback({**collector_stats, "_files_processed": processed,
+                               "_files_total": len(supported)})
+
     _print("=== ECDAT discovery-assurance scan starting ===")
     _print(f"Target: {_safe_filename(repo_path)} ({repo_path})")
-    for index, (name, label, collector) in enumerate(collectors, 1):
-        _print(f"[{index}/{len(collectors)}] {label}")
-        results = collector.scan_directory(repo_path)
-        count = 0
-        for key, evidences in results.items():
-            combined.setdefault(key, []).extend(evidences)
-            count += len(evidences)
-        collector_stats[name] = count
-        _print(f"       -> {count} evidence records")
-    scanned = max(0, len(supported) - len(failed))
+    report(0)
+    # All collectors use the same declared scope; do not walk the tree four times.
+    for index, path in enumerate(sorted(supported), 1):
+        if path not in failed_paths:
+            ext = os.path.splitext(path)[1].lower()
+            filename = os.path.basename(path)
+            handlers = []
+            if ext == ".py":
+                handlers.append(("ast", ast_collector.scan_file))
+            if ext in CODE_EXTENSIONS:
+                handlers.append(("rule", rule_collector.scan_file))
+            if filename == "requirements.txt":
+                handlers.append(("dep", dep_collector.scan_requirements))
+            if filename == "pom.xml":
+                handlers.append(("dep", dep_collector.scan_pom_xml))
+            if ext in {".crt", ".pem", ".cer"}:
+                handlers.append(("cert", cert_collector.scan_cert))
+            for name, handler in handlers:
+                for asset in handler(path, on_error=failed_paths.add):
+                    item = asset.to_dict()
+                    item["evidence"] = redact_evidence(item.get("evidence", {}))
+                    combined.setdefault((asset.algorithm, asset.location), []).append(item)
+                    collector_stats[name] += 1
+        now = time.perf_counter()
+        if now - last_progress >= 1.0 or index == len(supported):
+            report(index)
+            last_progress = now
+    scanned = max(0, len(supported) - len(failed_paths))
     coverage = round(scanned / len(supported) * 100, 2) if supported else 100.0
     blind_spots = [
         "Runtime-generated cryptography is outside static scan scope",
         "Compiled binaries and obfuscated bytecode require binary analysis",
         "Container images, cloud services, network traffic and HSMs are not inspected",
+        "Scope excludes .git, node_modules, dist, build and __pycache__ directories",
+        "Coverage measures files processed without reported collector errors, not detection completeness",
     ]
-    if failed:
-        blind_spots.append(f"{len(failed)} supported file(s) could not be read")
+    if failed_paths:
+        blind_spots.append(f"{len(failed_paths)} supported file(s) had read or parser errors; evidence may be partial")
     metrics = {
         "total_files": len(all_files), "in_scope_files": len(supported),
-        "scanned_files": scanned, "failed_files": len(failed),
+        "scanned_files": scanned, "failed_files": len(failed_paths),
         "coverage_pct": coverage, "collector_stats": collector_stats,
         "blind_spots": blind_spots,
         "duration_ms": round((time.perf_counter() - started) * 1000),

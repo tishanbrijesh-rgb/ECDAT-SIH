@@ -35,6 +35,8 @@ def score_finding(finding: dict) -> dict:
     # Normalise to list whether input is list or string
     if isinstance(sources, str):
         sources = [sources]
+    # Repeated evidence from one collector is not independent agreement.
+    sources = list(dict.fromkeys(sources))
     conf_by_source: dict[str, float] = finding.get("confidence_by_source", {})
 
     if not sources:
@@ -49,7 +51,7 @@ def score_finding(finding: dict) -> dict:
     strengths = [conf_by_source.get(s, SOURCE_STRENGTH.get(s, 0.5)) for s in sources]
     avg = sum(strengths) / len(strengths)
 
-    # +0.10 per agreeing source beyond the first
+    # +0.08 per distinct agreeing source beyond the first
     bonus = min(0.20, 0.08 * max(0, len(sources) - 1))
     score = avg + bonus
 

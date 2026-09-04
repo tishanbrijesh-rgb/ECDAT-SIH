@@ -8,16 +8,16 @@ EXPOSURE = {"isolated": 0, "internal": 1, "partner": 2, "internet": 3}
 def _recommendation(algorithm: str, usage: str, migration_effort: str) -> tuple[str, bool]:
     usage = usage.lower()
     hybrid = migration_effort.lower() in {"high", "critical"}
-    if algorithm in {"RSA", "ECDH", "DH", "ECC"} and usage in {"encryption", "key_establishment", "tls", "unknown"}:
+    if algorithm in {"RSA", "ECDH", "DH", "ECC"} and usage in {"encryption", "key_establishment", "tls"}:
         text = "Evaluate ML-KEM for key establishment"
     elif algorithm in {"RSA", "ECDSA", "DSA", "ECC"} and usage == "signature":
         text = "Evaluate ML-DSA; consider SLH-DSA where conservative hash-based signatures fit"
     elif algorithm == "AES":
         return "Retain symmetric design; prefer AES-256 for long-lived data", False
-    elif algorithm.startswith("SHA") or algorithm in {"BLAKE2", "hash"}:
-        return "Use SHA-256/SHA-3 with adequate output length; no public-key migration required", False
     elif algorithm in {"MD5", "SHA-1"}:
         return "Replace deprecated hash with SHA-256 or SHA-3 independent of quantum migration", False
+    elif algorithm.startswith("SHA") or algorithm in {"BLAKE2", "hash"}:
+        return "Use SHA-256/SHA-3 with adequate output length; no public-key migration required", False
     elif algorithm in {"ML-KEM", "ML-DSA", "SLH-DSA"}:
         return "Already aligned with a NIST post-quantum standard; validate implementation and protocol", False
     else:

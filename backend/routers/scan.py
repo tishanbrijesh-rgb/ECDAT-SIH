@@ -1,5 +1,10 @@
 """Scan router — start scans and query scan job history."""
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from pydantic import BaseModel, Field, StrictStr
+
+
+class ScanRequest(BaseModel):
+    repo_path: StrictStr = Field(min_length=1, max_length=4096)
 
 from backend.db import SessionLocal
 from backend.models.scan_job import ScanJobDB
@@ -12,9 +17,9 @@ router = APIRouter(prefix="/api", tags=["scan"])
 
 
 @router.post("/scan", response_model=dict)
-def post_scan(payload: dict, background_tasks: BackgroundTasks, role: str = Depends(current_role)) -> dict:
+def post_scan(payload: ScanRequest, background_tasks: BackgroundTasks, role: str = Depends(current_role)) -> dict:
     """Start a new scan. Body: {"repo_path": "..."}."""
-    repo_path = payload.get("repo_path", "")
+    repo_path = payload.repo_path
     if not repo_path:
         raise HTTPException(400, detail="repo_path is required")
     ensure_write_role(role)

@@ -41,22 +41,28 @@ def _parse_pem_block(pem_bytes: bytes) -> x509.Certificate | None:
 class CertCollector:
     """Scans .crt / .pem files and extracts crypto metadata."""
 
-    def scan_cert(self, path: str) -> list[CryptoAsset]:
+    def scan_cert(self, path: str, on_error=None) -> list[CryptoAsset]:
         """Parse a single PEM certificate file and return crypto assets."""
         assets: list[CryptoAsset] = []
         try:
             with open(path, "rb") as fh:
                 data = fh.read()
         except OSError:
+            if on_error is not None:
+                on_error(path)
             return assets
 
         blocks = _split_pem_blocks(data.decode("utf-8", errors="replace"))
         if not blocks:
+            if on_error is not None:
+                on_error(path)
             return assets
 
         for block in blocks:
             cert = _parse_pem_block(block.encode("utf-8"))
             if cert is None:
+                if on_error is not None:
+                    on_error(path)
                 continue
 
             # --- Algorithm & key size ---

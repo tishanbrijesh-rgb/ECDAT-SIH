@@ -8,6 +8,9 @@ env/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.hypothesis/
+.tox/
+.nox/
 .coverage
 .coverage.*
 htmlcov/
@@ -41,12 +44,15 @@ id_ed25519
 tmp/
 temp/
 *.tmp
+*.bak
+*.swp
 
 # Editor and OS files
 .idea/
 .vscode/
 .DS_Store
 Thumbs.db
+Desktop.ini
 
 # Local assistant tooling and unrelated workflow artifacts
 .codex/

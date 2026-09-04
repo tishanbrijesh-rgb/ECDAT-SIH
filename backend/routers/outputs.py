@@ -27,6 +27,8 @@ def cbom(scan_id: int | None = None) -> dict:
             "components": [{
                 "id": asset.logical_asset_id, "type": "cryptographic-asset",
                 "name": asset.algorithm, "category": asset.category, "usage": asset.usage,
+                "operation_anchor": (asset.evidence_json or {}).get("operation_anchor", ""),
+                "context_conflicts": (asset.evidence_json or {}).get("context_conflicts", {}),
                 "location": asset.location, "library": asset.library, "protocol": asset.protocol,
                 "key_size": asset.key_size, "evidence_sources": asset.source,
                 "confidence": asset.confidence, "quantum_vulnerable": asset.quantum_vulnerable,
@@ -46,7 +48,12 @@ def risk_report(scan_id: int | None = None) -> dict:
             "repository": scan.repo_path, "coverage_pct": scan.coverage_pct,
             "summary": {"assets": len(assets), "quantum_vulnerable": sum(a.quantum_vulnerable for a in assets), "conflicts": sum(a.conflict for a in assets), "risk_distribution": dict(distribution)},
             "blind_spots": scan.blind_spots or [],
-            "migration_priorities": [{"asset_id": a.id, "algorithm": a.algorithm, "location": a.location, "score": a.priority_score, "label": a.priority_label, "reasons": a.risk_reasons, "recommendation": a.pqc_candidate, "hybrid": a.hybrid_recommended} for a in ranked],
+            "migration_priorities": [{"asset_id": a.id, "logical_asset_id": a.logical_asset_id,
+                "algorithm": a.algorithm, "usage": a.usage,
+                "operation_anchor": (a.evidence_json or {}).get("operation_anchor", ""),
+                "location": a.location, "score": a.priority_score, "label": a.priority_label,
+                "reasons": a.risk_reasons, "recommendation": a.pqc_candidate,
+                "hybrid": a.hybrid_recommended} for a in ranked],
         }
     finally: db.close()
 
@@ -58,7 +65,10 @@ def evidence_graph(scan_id: int | None = None) -> dict:
         nodes, edges = [], []
         for asset in assets:
             asset_node = f"asset:{asset.id}"
-            nodes.append({"id": asset_node, "type": "asset", "label": asset.algorithm, "confidence": asset.confidence})
+            nodes.append({"id": asset_node, "type": "asset", "label": f"{asset.algorithm} ({asset.usage})",
+                          "logical_asset_id": asset.logical_asset_id,
+                          "operation_anchor": (asset.evidence_json or {}).get("operation_anchor", ""),
+                          "confidence": asset.confidence})
             for source in asset.source:
                 source_node = f"source:{asset.id}:{source}"
                 nodes.append({"id": source_node, "type": "evidence", "label": source.upper()})
@@ -80,5 +90,5 @@ def evaluation(scan_id: int | None = None) -> dict:
 def risk_report_text(scan_id: int | None = None) -> Response:
     report = risk_report(scan_id)
     lines = [report["title"], f"Repository: {report['repository']}", f"Coverage: {report['coverage_pct']}%", "", "Migration priorities:"]
-    lines.extend(f"P{index + 1} | {item['label']} {item['score']}/100 | {item['algorithm']} | {item['location']} | {item['recommendation']}" for index, item in enumerate(report["migration_priorities"]))
+    lines.extend(f"P{index + 1} | {item['label']} {item['score']}/100 | {item['algorithm']} ({item['usage']}) | {item['location']} | {item['operation_anchor']} | {item['recommendation']}" for index, item in enumerate(report["migration_priorities"]))
     return Response("\n".join(lines), media_type="text/plain", headers={"Content-Disposition": "attachment; filename=ecdat-risk-report.txt"})

@@ -1,7 +1,7 @@
 // Searchable and filterable cryptographic inventory.
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { getAssets } from "../api/client";
+import { getAssets, canWrite } from "../api/client";
 import { RiskBadge } from "../components/RiskBadge";
 import type { CryptoAsset } from "../types";
 
@@ -40,9 +40,11 @@ export default function AssetsPage() {
             {filtered.length} of {assets.length} correlated findings
           </p>
         </div>
-        <Link className="button" to="/scan">
-          New scan
-        </Link>
+        {canWrite() && (
+          <Link className="button" to="/scan">
+            New scan
+          </Link>
+        )}
       </section>
       <section className="toolbar">
         <input

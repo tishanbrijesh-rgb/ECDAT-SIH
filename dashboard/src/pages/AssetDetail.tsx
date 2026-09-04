@@ -1,7 +1,7 @@
 // Detailed evidence, Mosca inputs, and use-case-aware migration guidance.
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { getAsset, updateAsset } from "../api/client";
+import { getAsset, updateAsset, canWrite } from "../api/client";
 import { ConfidenceBar } from "../components/ConfidenceBar";
 import { EvidenceChain } from "../components/EvidenceChain";
 import { RiskBadge } from "../components/RiskBadge";
@@ -19,7 +19,8 @@ export default function AssetDetail() {
         .catch((e) => setError(String(e)));
   }, [id]);
   const change = async (field: string, value: string | number) => {
-    if (!asset) return;
+    if (!asset || !canWrite()) return;
+    setError("");
     setSaving(true);
     try {
       setAsset(await updateAsset(asset.id, { [field]: value }));
@@ -94,7 +95,19 @@ export default function AssetDetail() {
             </div>
             {saving && <span className="saving">Saving…</span>}
           </div>
-          <div className="form-grid">
+          {error && (
+            <p className="callout error" role="alert">
+              {error}
+            </p>
+          )}
+          {!canWrite() && (
+            <p>Read-only access. An administrator or security analyst can edit risk context.</p>
+          )}
+          <fieldset
+            className="form-grid"
+            disabled={!canWrite() || saving}
+            style={{ border: 0, padding: 0, margin: 0 }}
+          >
             <Select
               label="Business criticality"
               value={asset.business_criticality}
@@ -134,7 +147,7 @@ export default function AssetDetail() {
               value={asset.threat_horizon_years}
               onChange={(v) => change("threat_horizon_years", v)}
             />
-          </div>
+          </fieldset>
           <div className="mosca">
             <strong>Mosca planning window</strong>
             <span>
