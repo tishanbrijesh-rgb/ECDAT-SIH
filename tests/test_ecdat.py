@@ -123,7 +123,8 @@ class ScannerTests(unittest.TestCase):
     def test_progress_preserves_controlled_evidence(self):
         updates = []
         evidence, metrics = scan_with_metrics(str(TEST_REPOSITORY), updates.append)
-        self.assertEqual(sum(map(len, evidence.values())), 78)
+        # Binding-aware hash calls replace lexical duplicates and declarations.
+        self.assertEqual(sum(map(len, evidence.values())), 72)
         self.assertEqual(updates[0]["_files_processed"], 0)
         self.assertEqual(updates[-1]["_files_processed"], metrics["in_scope_files"])
         self.assertEqual(updates[-1]["_files_total"], metrics["in_scope_files"])
@@ -148,6 +149,7 @@ class ScannerTests(unittest.TestCase):
             self.assertEqual(evidence, {})
             self.assertEqual(updates[-1]["_files_total"], 0)
             self.assertEqual(metrics["in_scope_files"], 0)
+            self.assertEqual(metrics["coverage_pct"], 0.0)
 
     def test_controlled_repository_has_measured_full_supported_file_coverage(self) -> None:
         evidence, metrics = scan_with_metrics(str(TEST_REPOSITORY))
@@ -341,10 +343,10 @@ class ApiIntegrationTests(unittest.TestCase):
         assets = self.client.get("/api/assets").json()
         summary = self.client.get("/api/dashboard/summary").json()
         # Operation-v2 retains separate locations/usages rather than 15 broad pairs.
-        self.assertEqual(len(assets), 70)
-        self.assertEqual(len({a["logical_asset_id"] for a in assets}), 70)
+        self.assertEqual(len(assets), 64)
+        self.assertEqual(len({a["logical_asset_id"] for a in assets}), 64)
         self.assertTrue(all(a["evidence_json"]["correlation_version"] == "operation-v2" for a in assets))
-        self.assertEqual(summary["total_assets"], 70)
+        self.assertEqual(summary["total_assets"], 64)
         self.assertEqual(summary["coverage_pct"], 100.0)
         self.assertEqual(summary["quantum_vulnerable_count"], 29)
         self.assertEqual(summary["conflict_count"], 2)
@@ -355,11 +357,11 @@ class ApiIntegrationTests(unittest.TestCase):
         self.assertEqual(evaluation["f1"], 1.0)
         self.assertEqual(evaluation["granularity"], "component_algorithm")
         self.assertEqual(evaluation["found"], 15)
-        self.assertEqual(evaluation["operation_findings"], 70)
+        self.assertEqual(evaluation["operation_findings"], 64)
         components = self.client.get("/api/cbom").json()["components"]
         priorities = self.client.get("/api/reports/risk").json()["migration_priorities"]
-        self.assertEqual(len(components), 70)
-        self.assertEqual(len(priorities), 70)
+        self.assertEqual(len(components), 64)
+        self.assertEqual(len(priorities), 64)
         by_id = {a["logical_asset_id"]: a for a in assets}
         for item in priorities:
             original = by_id[item["logical_asset_id"]]
@@ -402,11 +404,11 @@ class ApiIntegrationTests(unittest.TestCase):
         second_id = second.json()["scan_id"]
         latest_summary = self.client.get("/api/dashboard/summary").json()
         self.assertEqual(latest_summary["latest_scan_id"], second_id)
-        self.assertEqual(latest_summary["total_assets"], 70)
+        self.assertEqual(latest_summary["total_assets"], 64)
         latest_assets = self.client.get("/api/assets").json()
-        self.assertEqual(len(latest_assets), 70)
+        self.assertEqual(len(latest_assets), 64)
         self.assertEqual({a["logical_asset_id"] for a in latest_assets}, set(by_id))
-        self.assertEqual(len(self.client.get(f"/api/assets?scan_job_id={first_id}").json()), 70)
+        self.assertEqual(len(self.client.get(f"/api/assets?scan_job_id={first_id}").json()), 64)
         self.assertEqual(self.client.get("/api/assets/999999").status_code, 404)
 
 

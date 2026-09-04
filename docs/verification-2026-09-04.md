@@ -1,5 +1,8 @@
 # Verification — 2026-09-04
 
+Follow-up: [detection/correlation regression fixes](detection-regressions.md)
+update the demo counts and targeted precision results below.
+
 Scope: ECDAT-SIH only, including the updated frontend. Loop Engineering was not
 modified. This is a targeted local verification, not production certification.
 

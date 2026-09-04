@@ -108,7 +108,7 @@ def scan_with_metrics(
             report(index)
             last_progress = now
     scanned = max(0, len(supported) - len(failed_paths))
-    coverage = round(scanned / len(supported) * 100, 2) if supported else 100.0
+    coverage = round(scanned / len(supported) * 100, 2) if supported else 0.0
     blind_spots = [
         "Runtime-generated cryptography is outside static scan scope",
         "Compiled binaries and obfuscated bytecode require binary analysis",
@@ -116,6 +116,8 @@ def scan_with_metrics(
         "Scope excludes .git, node_modules, dist, build and __pycache__ directories",
         "Coverage measures files processed without reported collector errors, not detection completeness",
     ]
+    if not supported:
+        blind_spots.append("No supported files were found; coverage is not established")
     if failed_paths:
         blind_spots.append(f"{len(failed_paths)} supported file(s) had read or parser errors; evidence may be partial")
     metrics = {

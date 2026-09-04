@@ -43,6 +43,8 @@ def _operation(record: dict[str, Any]) -> tuple[str, str]:
         anchor = "id:" + str(details["operation_id"])
     elif details.get("line") is not None:
         anchor = "line:" + str(details["line"])
+        if details.get("column") is not None:
+            anchor += ":column:" + str(details["column"])
     else:
         # Preserve distinct unlocated observations; UUIDs are not identity.
         anchor = "evidence:" + hashlib.sha256(json.dumps(details, sort_keys=True, default=str).encode()).hexdigest()[:16]

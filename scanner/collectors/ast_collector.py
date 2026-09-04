@@ -7,8 +7,6 @@ from __future__ import annotations
 
 import ast
 import os
-from dataclasses import dataclass
-from typing import Any
 
 from scanner.models.asset import CryptoAsset
 from scanner.rules.crypto_patterns import get_category
@@ -46,38 +44,117 @@ _CRYPTO_IMPORTS: dict[str, str] = {
     "cryptography.x509": "X509",
 }
 
-# Call-patterns -> (algorithm, category)
-_CALL_PATTERNS: dict[str, tuple[str, str]] = {
-    # Cipher.getInstance style
-    "AES/GCM": ("AES", "encryption"),
-    "AES/CBC": ("AES", "encryption"),
-    "RSA/ECB/PKCS1Padding": ("RSA", "encryption"),
-    "RSA/ECB/OAEPWithSHA-1AndMGF1Padding": ("RSA", "encryption"),
-    # hashlib calls
-    "sha256": ("SHA-256", "hash"),
-    "sha512": ("SHA-512", "hash"),
-    "md5": ("MD5", "hash"),
-    "blake2b": ("BLAKE2", "hash"),
-    "blake2s": ("BLAKE2", "hash"),
-    "sha1": ("SHA-1", "hash"),
-    # cryptography.hazmat call patterns
-    "from cryptography.hazmat.primitives.asymmetric.rsa": ("RSA", "encryption"),
-    "from cryptography.hazmat.primitives.asymmetric.ec": ("ECDSA", "signature"),
-    "from cryptography.hazmat.primitives.asymmetric.ed25519": ("Ed25519", "signature"),
-    "OAEP": ("RSA", "encryption"),
-    "PKCS1v15": ("RSA", "encryption"),
-    "padding": ("RSA", "encryption"),
-    # PKCS1_OAEP.new
-    "PKCS1_OAEP": ("RSA", "encryption"),
-}
-
-
 class _CryptoVisitor(ast.NodeVisitor):
     """Walks AST nodes and records crypto-related findings."""
 
     def __init__(self, filepath: str):
         self.filepath = filepath
         self.assets: list[CryptoAsset] = []
+        self.bindings: dict[str, str | None] = {}
+
+    def _resolve(self, node: ast.expr) -> str:
+        if isinstance(node, ast.Name):
+            return self.bindings.get(node.id) or ""
+        if isinstance(node, ast.Attribute):
+            parent = self._resolve(node.value)
+            return f"{parent}.{node.attr}" if parent else ""
+        return ""
+
+    def visit_Name(self, node: ast.Name) -> None:
+        if isinstance(node.ctx, (ast.Store, ast.Del)):
+            self.bindings[node.id] = None
+
+    def visit_Attribute(self, node: ast.Attribute) -> None:
+        if isinstance(node.ctx, (ast.Store, ast.Del)):
+            root = node.value
+            while isinstance(root, ast.Attribute):
+                root = root.value
+            if isinstance(root, ast.Name):
+                self.bindings[root.id] = None
+        self.generic_visit(node)
+
+    def visit_Assign(self, node: ast.Assign) -> None:
+        self.visit(node.value)
+        for target in node.targets:
+            self.visit(target)
+
+    def _visit_function(self, node) -> None:
+        # Defaults/decorators execute in the enclosing scope; arguments and
+        # locally assigned names shadow imports throughout the function body.
+        for value in [*node.decorator_list, *node.args.defaults,
+                      *[v for v in node.args.kw_defaults if v is not None]]:
+            self.visit(value)
+        self.bindings[node.name] = None
+        outer = self.bindings
+        self.bindings = outer.copy()
+        args = [*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs]
+        for arg in [*args, node.args.vararg, node.args.kwarg]:
+            if arg is not None:
+                self.bindings[arg.arg] = None
+        # Do not descend into nested scopes when collecting local declarations.
+        def locals_in(nodes):
+            for child in nodes:
+                if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                    yield child.name
+                elif isinstance(child, (ast.Lambda, ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)):
+                    continue
+                elif isinstance(child, ast.Import):
+                    for alias in child.names:
+                        yield alias.asname or alias.name.split('.')[0]
+                elif isinstance(child, ast.ImportFrom):
+                    for alias in child.names:
+                        yield alias.asname or alias.name
+                elif isinstance(child, ast.Name) and isinstance(child.ctx, (ast.Store, ast.Del)):
+                    yield child.id
+                else:
+                    yield from locals_in(ast.iter_child_nodes(child))
+        for name in locals_in(node.body):
+            self.bindings[name] = None
+        for statement in node.body:
+            self.visit(statement)
+        self.bindings = outer
+
+    visit_FunctionDef = _visit_function
+    visit_AsyncFunctionDef = _visit_function
+
+    def visit_Lambda(self, node: ast.Lambda) -> None:
+        for value in [*node.args.defaults, *[v for v in node.args.kw_defaults if v is not None]]:
+            self.visit(value)
+        outer = self.bindings
+        self.bindings = outer.copy()
+        for arg in [*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs,
+                    node.args.vararg, node.args.kwarg]:
+            if arg is not None:
+                self.bindings[arg.arg] = None
+        self.visit(node.body)
+        self.bindings = outer
+
+    def _visit_comprehension(self, node) -> None:
+        outer = self.bindings
+        self.bindings = outer.copy()
+        for generator in node.generators:
+            self.visit(generator.iter)
+            self.visit(generator.target)
+            for condition in generator.ifs:
+                self.visit(condition)
+        if isinstance(node, ast.DictComp):
+            self.visit(node.key)
+            self.visit(node.value)
+        else:
+            self.visit(node.elt)
+        self.bindings = outer
+
+    visit_ListComp = _visit_comprehension
+    visit_SetComp = _visit_comprehension
+    visit_DictComp = _visit_comprehension
+    visit_GeneratorExp = _visit_comprehension
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        self.bindings[node.name] = None
+        outer = self.bindings
+        self.bindings = outer.copy()
+        self.generic_visit(node)
+        self.bindings = outer
 
     # ---- import handling ---------------------------------------------------
 
@@ -103,114 +180,67 @@ class _CryptoVisitor(ast.NodeVisitor):
         )
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:  # noqa: N802
-        if node.module is not None:
+        if node.module is not None and node.level == 0:
             full_name = node.module
             self._record_import(full_name, node, node.lineno)
             # Also check submodule imports  e.g. from cryptography.hazmat... import X
             for alias in node.names:
                 sub = f"{full_name}.{alias.name}"
+                self.bindings[alias.asname or alias.name] = sub
                 self._record_import(sub, node, node.lineno)
+        else:
+            for alias in node.names:
+                self.bindings[alias.asname or alias.name] = None
         self.generic_visit(node)
 
     def visit_Import(self, node: ast.Import) -> None:  # noqa: N802
         for alias in node.names:
+            self.bindings[alias.asname or alias.name.split('.')[0]] = (
+                alias.name if alias.asname else alias.name.split('.')[0])
             self._record_import(alias.name, node, node.lineno)
         self.generic_visit(node)
 
     # ---- call handling -----------------------------------------------------
 
     def visit_Call(self, node: ast.Call) -> None:  # noqa: N802
-        # Reconstruct call string: func.func.attr or func.id
-        func_name = ""
-        if isinstance(node.func, ast.Attribute):
-            # Walk to root
-            parts: list[str] = []
-            cur: ast.expr = node.func
-            while isinstance(cur, ast.Attribute):
-                parts.append(cur.attr)
-                cur = cur.value
-            if isinstance(cur, ast.Name):
-                parts.append(cur.id)
-            func_name = ".".join(reversed(parts))
-        elif isinstance(node.func, ast.Name):
-            func_name = node.func.id
-
-        line_no = node.lineno
-
-        # Algorithm-looking text in print/log/user calls is not crypto use.
-        selector_calls = {"hashlib.new", "Cipher.getInstance", "MessageDigest.getInstance"}
-        for arg in node.args[:1] if func_name in selector_calls else []:
-            if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
-                for pattern, (algo, cat) in _CALL_PATTERNS.items():
-                    if pattern in arg.value:
-                        evidence = {
-                            "call": func_name,
-                            "arg": arg.value,
-                            "pattern": pattern,
-                            "line": line_no,
-                        }
-                        self.assets.append(
-                            CryptoAsset(
-                                algorithm=algo,
-                                category=cat,
-                                source="ast",
-                                location=self.filepath,
-                                evidence=evidence,
-                                confidence=0.90,
-                            )
-                        )
-
-        # Check function name itself
-        for pattern, (algo, cat) in _CALL_PATTERNS.items():
-            if pattern in {"sha256", "sha512", "sha1", "md5", "blake2b", "blake2s"}:
-                continue
-            if pattern in func_name:
-                evidence = {
-                    "call": func_name,
-                    "line": line_no,
-                    "match": pattern,
-                }
-                # Avoid duplicate if already recorded from arg
-                if not any(
-                    a.evidence.get("line") == line_no and a.algorithm == algo
-                    for a in self.assets
-                ):
-                    self.assets.append(
-                        CryptoAsset(
-                            algorithm=algo,
-                            category=cat,
-                            source="ast",
-                            location=self.filepath,
-                            evidence=evidence,
-                            confidence=0.90,
-                        )
-                    )
-
-        # hashlib.sha256() etc.
-        if func_name in ("hashlib.sha256", "hashlib.sha512",
-                         "hashlib.sha1", "hashlib.md5", "hashlib.blake2b",
-                         "hashlib.blake2s"):
-            algo_map = {
-                "hashlib.sha256": "SHA-256",
-                "hashlib.sha512": "SHA-512",
-                "hashlib.sha1": "SHA-1",
-                "hashlib.md5": "MD5",
-                "hashlib.blake2b": "BLAKE2",
-                "hashlib.blake2s": "BLAKE2",
-            }
-            algo = algo_map.get(func_name, "hash")
-            evidence = {"call": func_name, "line": line_no}
-            self.assets.append(
-                CryptoAsset(
-                    algorithm=algo,
-                    category="hash",
-                    source="ast",
-                    location=self.filepath,
-                    evidence=evidence,
-                    confidence=0.90,
-                )
-            )
-
+        func_name = self._resolve(node.func)
+        hashes = {"sha256": "SHA-256", "sha512": "SHA-512", "sha1": "SHA-1",
+                  "md5": "MD5", "blake2b": "BLAKE2", "blake2s": "BLAKE2"}
+        algorithm = None
+        category, usage = "hash", "hashing"
+        if func_name.startswith("hashlib."):
+            name = func_name.removeprefix("hashlib.")
+            if name == "new":
+                selector = node.args[0] if node.args else next(
+                    (kw.value for kw in node.keywords if kw.arg == "name"), None)
+                if isinstance(selector, ast.Constant) and isinstance(selector.value, str):
+                    name = selector.value.lower().replace("-", "")
+            algorithm = hashes.get(name)
+        elif func_name.startswith("cryptography.hazmat.primitives.hashes."):
+            algorithm = hashes.get(func_name.rsplit('.', 1)[-1].lower())
+        elif func_name in {"hmac.new", "hmac.digest"}:
+            selector = node.args[2] if len(node.args) > 2 else next(
+                (kw.value for kw in node.keywords if kw.arg in {"digestmod", "digest"}), None)
+            if isinstance(selector, ast.Constant) and isinstance(selector.value, str):
+                algorithm = hashes.get(selector.value.lower().replace('-', ''))
+            elif selector is not None:
+                resolved = self._resolve(selector)
+                if resolved.startswith('hashlib.'):
+                    algorithm = hashes.get(resolved.removeprefix('hashlib.'))
+        elif func_name in {
+            "cryptography.hazmat.primitives.asymmetric.padding.OAEP",
+            "cryptography.hazmat.primitives.asymmetric.padding.PKCS1v15",
+            "Crypto.Cipher.PKCS1_OAEP.new",
+        }:
+            algorithm, category, usage = "RSA", "encryption", "unknown"
+        if algorithm:
+            self.assets.append(CryptoAsset(
+                algorithm=algorithm, category=category, source="ast",
+                location=self.filepath, confidence=0.90,
+                evidence={"call": func_name, "line": node.lineno,
+                          "column": node.col_offset, "usage": usage,
+                          "operation_id": f"python-call:{node.lineno}:{node.col_offset}"},
+            ))
         self.generic_visit(node)
 
 

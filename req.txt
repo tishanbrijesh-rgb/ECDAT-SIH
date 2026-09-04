@@ -1,4 +1,7 @@
 # ECDAT-SIH Python runtime and API test dependencies.
 # Install from the repository root: python -m pip install -r req.txt
 # The dashboard is installed independently with: npm ci --prefix dashboard
+# Includes API integration tests; detection regressions need no extra packages.
+# Run tests from the repository root: python -m unittest discover -s tests -v
+# For runtime-only deployments, use backend/requirements.txt instead.
 -r backend/requirements-dev.txt

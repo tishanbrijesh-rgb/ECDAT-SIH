@@ -70,6 +70,11 @@ class OperationCorrelationTests(unittest.TestCase):
         second = record("signature", None, line=20)
         self.assertEqual(len(findings([first, second])), 2)
 
+    def test_column_fallback_preserves_same_line_operations(self):
+        first = record("signature", None, line=10, column=0)
+        second = record("signature", None, line=10, column=20)
+        self.assertEqual(len(findings([first, second])), 2)
+
     def test_category_does_not_override_explicit_or_unknown_usage(self):
         first = {**record("encryption"), "category": "signature"}
         second = {**record(), "category": "signature"}

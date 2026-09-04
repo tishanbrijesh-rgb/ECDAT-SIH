@@ -42,11 +42,48 @@ def _strip_comments(text: str, extension: str) -> str:
             # Retain only the safely tokenized prefix; AST reports the error.
             pass
         return tokenize.untokenize(tokens)
-    pattern = r'''"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|//[^\n]*|/\*[\s\S]*?\*/'''
-    return re.sub(pattern, lambda match: re.sub(r"[^\n\r]", " ", match.group(0))
-                  if match.group(0).startswith(("//", "/*")) or
-                  re.match(r'''["']https?://''', match.group(0), re.I)
-                  else match.group(0), text)
+    pattern = r'''"""[\s\S]*?"""|`(?:\\.|[^`\\])*`|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|//[^\n]*|/\*[\s\S]*?\*/'''
+    # Keep literals only in recognized algorithm-selector positions. A printed
+    # code example is one outer string token, never executable source.
+    output, end, prefix = [], 0, ""
+    for match in re.finditer(pattern, text):
+        segment = text[end:match.start()]
+        output.append(segment)
+        prefix = (prefix + segment)[-160:]
+        selector = re.search(
+            r'(?:\b(?:Cipher|Signature|MessageDigest|KeyGenerator|KeyPairGenerator|SSLContext)'
+            r'\s*\.\s*getInstance|\b(?:createHash|createHmac|ECGenParameterSpec))\s*\(\s*$', prefix)
+        token = match.group(0)
+        keep = selector and token.startswith(('"', "'")) and not token.startswith('"""')
+        masked = token if keep else re.sub(r"[^\n\r]", " ", token)
+        output.append(masked)
+        prefix = (prefix + masked)[-160:]
+        end = match.end()
+    output.append(text[end:])
+    return ''.join(output)
+
+
+def _key_size(line: str, algorithm: str) -> int | None:
+    """Read explicit API arguments only, never an unrelated number on the line."""
+    patterns = {
+        "AES": [r'''\bKeyGenerator\s*\.\s*getInstance\(\s*["']AES["']\s*\)\s*\.\s*init\(\s*(128|192|256)\s*\)'''],
+        "RSA": [r'\bRSA\.generate\(\s*(1024|2048|3072|4096|8192)\s*[,)]',
+                r'\brsa\.generate_private_key\([^)]*\bkey_size\s*=\s*(1024|2048|3072|4096|8192)\s*[,)]'],
+    }
+    sizes = {int(match.group(1)) for pattern in patterns.get(algorithm, [])
+             for match in re.finditer(pattern, line)}
+    return sizes.pop() if len(sizes) == 1 else None
+
+
+def _statements(text: str):
+    """Separate same-line statements without splitting quoted selector values."""
+    for line_no, line in enumerate(text.splitlines(), 1):
+        start = 0
+        for match in re.finditer(r'''"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|;''', line):
+            if match.group() == ';':
+                yield line_no, start, line[start:match.start()]
+                start = match.end()
+        yield line_no, start, line[start:]
 
 
 class RuleCollector:
@@ -67,23 +104,28 @@ class RuleCollector:
         text = _strip_comments(text, extension)
         rules = load_rules().get("algorithms", {})
         assets: list[CryptoAsset] = []
-        seen: set[tuple[str, int]] = set()
+        seen: set[tuple[str, int, int]] = set()
         dynamic_depth = 0
-        for line_no, line in enumerate(text.splitlines(), 1):
+        for line_no, column, line in _statements(text):
             dynamic_marker = any(marker in line for marker in ("import_module(", "getattr(", "base64.b64decode", "_load_crypto_module(", "_load_and_encrypt("))
             if dynamic_marker or dynamic_depth > 0:
                 dynamic_depth += line.count("(") - line.count(")")
                 dynamic_depth = max(0, dynamic_depth)
                 continue
             for algorithm, config in rules.items():
+                # Python hashes have binding-aware AST evidence. Lexical name
+                # hits are not independent observations and must not duplicate
+                # calls or revive shadowed/non-crypto names.
+                if extension == ".py" and config.get("category") == "hash":
+                    continue
                 for pattern in config.get("patterns", []):
                     try:
                         matched = re.search(pattern, line, flags=re.I)
                     except re.error:
                         matched = re.search(re.escape(pattern), line, flags=re.I)
-                    if not matched or (algorithm, line_no) in seen:
+                    if not matched or (algorithm, line_no, column) in seen:
                         continue
-                    seen.add((algorithm, line_no))
+                    seen.add((algorithm, line_no, column))
                     usage = _usage(line, algorithm)
                     library = ""
                     lowered = line.lower()
@@ -95,7 +137,6 @@ class RuleCollector:
                         library = "Python cryptography"
                     elif "crypto." in lowered:
                         library = "PyCryptodome"
-                    key_match = re.search(r"\b(128|192|2048|3072|4096)\b", line)
                     assets.append(CryptoAsset(
                         algorithm=algorithm,
                         category=config.get("category", "unknown"),
@@ -105,12 +146,13 @@ class RuleCollector:
                             "rule_id": f"crypto.{algorithm.lower().replace('-', '_')}",
                             "pattern": pattern,
                             "line": line_no,
+                            "column": column,
                             "snippet": line.strip()[:240],
                             "usage": usage,
                             "library": library,
                             "protocol": "TLS" if usage == "tls" else "",
-                            "key_size": int(key_match.group(1)) if key_match else None,
-                            "operation_id": f"{path}:{line_no}:{usage}",
+                            "key_size": _key_size(line, algorithm),
+                            "operation_id": f"{path}:{line_no}:{column}:{usage}",
                         },
                         confidence=self.confidence,
                     ))
