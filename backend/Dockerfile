@@ -1,16 +1,20 @@
 FROM python:3.11-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential gcc libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
 COPY backend/requirements.txt ./backend/requirements.txt
 RUN pip install --no-cache-dir -r backend/requirements.txt
 
-COPY backend/ /app/backend/
-COPY scanner/ /app/scanner/
+RUN groupadd --gid 10001 ecdat \
+    && useradd --uid 10001 --gid ecdat --no-create-home --shell /usr/sbin/nologin ecdat
+
+COPY --chown=10001:10001 backend/ /app/backend/
+COPY --chown=10001:10001 scanner/ /app/scanner/
+
+USER 10001:10001
 
 EXPOSE 8000
 
