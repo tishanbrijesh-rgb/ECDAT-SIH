@@ -184,6 +184,70 @@ class ApiIntegrationTests(unittest.TestCase):
     def tearDownClass(cls) -> None:
         cls.client_context.__exit__(None, None, None)
 
+    def test_asset_server_side_filters_sorting_and_pagination(self):
+        from backend.db import SessionLocal
+        from backend.models.asset import CryptoAssetDB
+        from backend.models.scan_job import ScanJobDB
+
+        with SessionLocal() as db:
+            job = ScanJobDB(repo_path="filter-fixture", status="completed")
+            db.add(job)
+            db.flush()
+            scan_id = job.id
+            fixtures = [
+                ("RSA", "encryption", "src/rsa.py", "OpenSSL", 0.95, True, 95, "CRITICAL"),
+                ("AES", "encryption", "src/aes.py", "cryptography", 0.90, False, 20, "LOW"),
+                ("SHA-1", "hash", "src/legacy_hash.py", "", 0.70, False, 75, "HIGH"),
+                ("ECDSA", "signature", "src/sign.py", "OpenSSL", 0.85, True, 85, "HIGH"),
+                ("ML-KEM", "encryption", "src/pqc.py", "liboqs", 0.99, False, 10, "LOW"),
+            ]
+            for algorithm, category, location, library, confidence, quantum, score, label in fixtures:
+                db.add(CryptoAssetDB(
+                    scan_job_id=scan_id,
+                    algorithm=algorithm,
+                    category=category,
+                    location=location,
+                    library=library,
+                    confidence=confidence,
+                    quantum_vulnerable=quantum,
+                    priority_score=score,
+                    priority_label=label,
+                ))
+            db.commit()
+
+        try:
+            base = f"/api/assets?scan_job_id={scan_id}"
+            unpaginated = self.client.get(base)
+            self.assertEqual(unpaginated.status_code, 200)
+            self.assertEqual(len(unpaginated.json()), 5)
+            self.assertEqual(unpaginated.headers["X-Total-Count"], "5")
+            cors = self.client.get(base, headers={"Origin": "http://localhost:3000"})
+            self.assertIn("X-Total-Count", cors.headers["Access-Control-Expose-Headers"])
+
+            page = self.client.get(base + "&limit=2&offset=1&sort=priority")
+            self.assertEqual([item["algorithm"] for item in page.json()], ["ECDSA", "SHA-1"])
+            self.assertEqual(page.headers["X-Total-Count"], "5")
+
+            searched = self.client.get(base + "&q=openssl&sort=algorithm")
+            self.assertEqual([item["algorithm"] for item in searched.json()], ["ECDSA", "RSA"])
+            self.assertEqual(searched.headers["X-Total-Count"], "2")
+
+            filtered = self.client.get(base + "&risk=HIGH&quantum=true&sort=confidence")
+            self.assertEqual([item["algorithm"] for item in filtered.json()], ["ECDSA"])
+            self.assertEqual(filtered.headers["X-Total-Count"], "1")
+
+            non_quantum = self.client.get(base + "&quantum=false")
+            self.assertEqual(len(non_quantum.json()), 3)
+            for query in ("limit=0", "limit=201", "offset=-1", "scan_job_id=0",
+                          "risk=URGENT", "sort=unknown", "q=", "q=%20%20"):
+                with self.subTest(query=query):
+                    self.assertEqual(self.client.get(base + "&" + query).status_code, 422)
+        finally:
+            with SessionLocal() as db:
+                db.query(CryptoAssetDB).filter(CryptoAssetDB.scan_job_id == scan_id).delete()
+                db.query(ScanJobDB).filter(ScanJobDB.id == scan_id).delete()
+                db.commit()
+
     def test_pipeline_failures_terminate_jobs_without_leaking_details(self):
         from backend.services.scanner_runner import run_scan
         for stage in ("scan_with_metrics", "correlate", "assess_risk"):

@@ -1,9 +1,10 @@
 // Portfolio posture, assurance measurements, and research evaluation.
-import { useEffect, useState, useRef } from "react";
+import { lazy, Suspense, useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { downloadReport, getDashboardSummary, getEvaluation, canWrite } from "../api/client";
 import type { DashboardSummary, Evaluation } from "../types";
+
+const RiskDistributionChart = lazy(() => import("../components/RiskDistributionChart"));
 
 // Animated number that counts up from 0 to the target value.
 function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string }) {
@@ -149,22 +150,9 @@ export default function Dashboard() {
             title="Risk distribution"
             sub="Migration urgency across the latest inventory"
           />
-          <ResponsiveContainer width="100%" height={270}>
-            <BarChart data={risk}>
-              <CartesianGrid stroke="#e9edf4" vertical={false} />
-              <XAxis dataKey="label" tickLine={false} axisLine={{ stroke: "#dfe5ef" }} />
-              <YAxis allowDecimals={false} tickLine={false} axisLine={{ stroke: "#dfe5ef" }} />
-              <Tooltip
-                contentStyle={{
-                  borderRadius: 10,
-                  border: "1px solid #dfe5ef",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                  fontSize: 13,
-                }}
-              />
-              <Bar dataKey="count" fill="#4257d6" radius={[8, 8, 0, 0]} maxBarSize={56} />
-            </BarChart>
-          </ResponsiveContainer>
+          <Suspense fallback={<div className="skeleton" style={{ height: 270 }} />}>
+            <RiskDistributionChart data={risk} />
+          </Suspense>
         </article>
         <article className="panel">
           <PanelTitle title="Evidence collectors" sub="Independent records supporting findings" />

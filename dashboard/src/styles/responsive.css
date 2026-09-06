@@ -1,0 +1,89 @@
+/* ── Responsive breakpoints ─────────────────────────────────── */
+@media (max-width: 1050px) {
+  .stats.six {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .dashboard-grid .span-2 {
+    grid-column: span 2;
+  }
+  .privacy-chip {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  main {
+    width: min(100% - 24px, 1240px);
+    padding-top: 25px;
+  }
+  .topbar {
+    height: auto;
+    min-height: 72px;
+    flex-wrap: wrap;
+    padding: 14px 18px;
+    gap: 12px;
+  }
+  .topbar nav {
+    order: 3;
+    width: 100%;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .hero,
+  .hero.compact {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .hero-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .stats.six {
+    grid-template-columns: 1fr 1fr;
+  }
+  .dashboard-grid,
+  .detail-grid,
+  .scan-layout {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-grid .span-2,
+  .detail-grid .span-2 {
+    grid-column: span 1;
+  }
+  .gap-list,
+  .recommendation,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .toolbar {
+    flex-wrap: wrap;
+  }
+  .toolbar input {
+    min-width: 100%;
+  }
+  .scan-copy ol {
+    grid-template-columns: 1fr;
+  }
+  .scan-layout {
+    gap: 20px;
+  }
+  .asset-hero {
+    padding: 20px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .risk-stack {
+    text-align: left;
+  }
+  .topbar nav a {
+    padding: 7px 9px;
+    font-size: 13px;
+  }
+  th,
+  td {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+}

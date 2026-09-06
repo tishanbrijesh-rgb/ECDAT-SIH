@@ -1,7 +1,8 @@
 // Repository scan launcher with job progress, coverage, and history.
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getScan, getScans, scanRepo, canWrite, cancelScan } from "../api/client";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import type { ScanJob } from "../types";
 
 const terminal = (status?: string) =>
@@ -33,6 +34,7 @@ export default function ScanPage() {
   const [error, setError] = useState("");
   const [starting, setStarting] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const navigate = useNavigate();
   useEffect(() => {
     getScans()
@@ -42,31 +44,38 @@ export default function ScanPage() {
   useEffect(() => {
     if (!scanId) return;
     let cancelled = false;
-    const poll = () =>
-      getScan(scanId)
-        .then((current) => {
-          if (cancelled) return;
-          setError("");
-          setJob(current);
-          if (current.status === "completed")
-            timer = setTimeout(() => navigate(`/assets?scan_id=${scanId}`), 900);
-          else if (!terminal(current.status)) timer = setTimeout(poll, 700);
-          else
-            getScans()
-              .then(setHistory)
-              .catch(() => undefined);
-        })
-        .catch(() => {
-          if (cancelled) return;
-          setError(
-            "Status connection interrupted. Retrying automatically; do not start another scan.",
-          );
-          timer = setTimeout(poll, 2000);
-        });
-    let timer = setTimeout(poll, 300);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const poll = async () => {
+      if (cancelled) return;
+      try {
+        const current = await getScan(scanId);
+        if (cancelled) return;
+        setError("");
+        setJob(current);
+        if (current.status === "completed") {
+          timer = setTimeout(() => navigate(`/assets?scan_id=${scanId}`), 900);
+        } else if (!terminal(current.status)) {
+          timer = setTimeout(poll, 700);
+        } else {
+          getScans()
+            .then(setHistory)
+            .catch(() => undefined);
+        }
+      } catch {
+        if (cancelled) return;
+        setError(
+          "Status connection interrupted. Retrying automatically; do not start another scan.",
+        );
+        timer = setTimeout(poll, 2000);
+      }
+    };
+
+    timer = setTimeout(poll, 0);
+
     return () => {
       cancelled = true;
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
     };
   }, [scanId, navigate]);
   const start = async () => {
@@ -95,6 +104,7 @@ export default function ScanPage() {
       setCancelling(false);
     }
   };
+  const askCancel = useCallback(() => setShowCancelConfirm(true), []);
   const running = starting || (!!scanId && !terminal(job?.status));
 
   return (
@@ -137,7 +147,7 @@ export default function ScanPage() {
             {starting ? "Starting scan…" : "Run discovery scan"}
           </button>
           {scanId && running && (
-            <button className="button" onClick={() => void cancel()} disabled={cancelling}>
+            <button className="button" onClick={askCancel} disabled={cancelling}>
               {cancelling ? "Cancellation requested…" : "Cancel scan"}
             </button>
           )}
@@ -179,6 +189,18 @@ export default function ScanPage() {
           )}
           {error && <div className="callout error">{error}</div>}
         </fieldset>
+        <ConfirmDialog
+          open={showCancelConfirm}
+          title="Cancel scan?"
+          message="Any collected evidence will be discarded. The scan status will be marked as cancelled."
+          confirmLabel="Cancel scan"
+          danger
+          onConfirm={async () => {
+            setShowCancelConfirm(false);
+            await cancel();
+          }}
+          onCancel={() => setShowCancelConfirm(false)}
+        />
       </section>
       <section className="history">
         <div className="panel-title">

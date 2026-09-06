@@ -1,5 +1,5 @@
-// Renders source badges with expandable evidence details. Shows a summary
-// line even when collapsed so empty evidence lists aren't confusing.
+// Renders source badges with expandable evidence details.
+// Formats JSON records into readable key-value pairs instead of raw dumps.
 import React, { useState } from "react";
 
 interface EvidenceDetail {
@@ -25,6 +25,43 @@ const SOURCE_CLASS: Record<string, string> = {
   dep: "badge-dep",
   cert: "badge-cert",
 };
+
+const VALUE_STYLE: Record<string, React.CSSProperties> = {
+  line: { color: "#6366f1", fontWeight: 600 },
+  key_size: { color: "#14b8a6", fontWeight: 600 },
+  algorithm: { fontWeight: 600 },
+};
+
+function formatValue(key: string, val: unknown): React.ReactNode {
+  if (val == null) return <span style={{ opacity: 0.4 }}>null</span>;
+  if (key === "line" || key === "key_size")
+    return <span style={VALUE_STYLE[key]}>{String(val)}</span>;
+  if (typeof val === "string") return <span>"{val}"</span>;
+  if (typeof val === "number") return <span>{val}</span>;
+  if (typeof val === "boolean") return <span>{val ? "true" : "false"}</span>;
+  return <span>{JSON.stringify(val)}</span>;
+}
+
+function EvidenceRecord({ record }: { record: EvidenceDetail }) {
+  const keys = Object.keys(record).filter((k) => record[k] != null && record[k] !== "");
+  if (keys.length === 0)
+    return (
+      <pre>
+        <em style={{ opacity: 0.5 }}>Empty record</em>
+      </pre>
+    );
+  return (
+    <pre>
+      {keys.map((k) => (
+        <div key={k} style={{ display: "inline" }}>
+          <span style={{ opacity: 0.5 }}>{k}: </span>
+          {formatValue(k, record[k])}
+          {k !== keys[keys.length - 1] && ", "}
+        </div>
+      ))}
+    </pre>
+  );
+}
 
 export const EvidenceChain: React.FC<Props> = ({ sources, evidenceDetails = [] }) => {
   const [expanded, setExpanded] = useState(false);
@@ -52,7 +89,7 @@ export const EvidenceChain: React.FC<Props> = ({ sources, evidenceDetails = [] }
       {expanded && totalRecords > 0 && (
         <div className="evidence-details">
           {evidenceDetails.map((ev, i) => (
-            <pre key={i}>{JSON.stringify(ev, null, 2)}</pre>
+            <EvidenceRecord key={i} record={ev} />
           ))}
         </div>
       )}

@@ -1,0 +1,89 @@
+/* ── Evidence chain improvements ──────────────────── */
+.evidence-details {
+  margin-top: 8px;
+}
+.evidence-details pre {
+  font-size: 12px;
+  line-height: 1.5;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  padding: 10px 12px;
+  overflow-x: auto;
+  color: var(--text);
+  margin: 4px 0;
+}
+
+/* ── Scan progress improvement ────────────────────── */
+.scan-progress {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.progress-track {
+  height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.progress-track i {
+  display: block;
+  height: 100%;
+  width: 40%;
+  background: var(--indigo);
+  border-radius: 2px;
+  animation: progressPulse 1.4s ease-in-out infinite;
+}
+.progress-track i.done {
+  width: 100%;
+  background: var(--green);
+  animation: none;
+}
+@keyframes progressPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ── Dark mode toggle button ──────────────────────── */
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--text);
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.theme-toggle:hover {
+  background: var(--panel);
+  border-color: var(--indigo);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

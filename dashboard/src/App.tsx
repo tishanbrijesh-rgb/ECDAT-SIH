@@ -1,94 +1,115 @@
 // Application shell and navigation for the ECDAT assurance console.
-import { lazy, Suspense, useState, useEffect } from "react";
-import { login, logout, canWrite, SESSION_EXPIRED } from "./api/client";
+import { lazy, Suspense, useState, useEffect, useCallback } from "react";
+import {
+  logout,
+  canWrite,
+  getInitialSessionExpiry,
+  hasSession,
+  restoreSession,
+  SESSION_EXPIRED,
+} from "./api/client";
 import { NavLink, Route, Routes } from "react-router-dom";
+import { MotionConfig } from "framer-motion";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ToastProvider, useToast } from "./components/Toast";
+import { ConfirmDialog } from "./components/ConfirmDialog";
+import Login from "./pages/Login";
+import NotFound from "./pages/NotFound";
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const AssetDetail = lazy(() => import("./pages/AssetDetail"));
 const ScanPage = lazy(() => import("./pages/ScanPage"));
 const AssetsPage = lazy(() => import("./pages/AssetsPage"));
 
-export default function App() {
-  const [signedIn, setSignedIn] = useState(false);
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
+function ThemeToggle() {
+  const [theme, setTheme] = useState(() =>
+    typeof window !== "undefined"
+      ? document.documentElement.getAttribute("data-theme") || "light"
+      : "light",
+  );
+
+  const toggle = useCallback(() => {
+    setTheme((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      localStorage.setItem("ecdat-theme", next);
+      return next;
+    });
+  }, []);
+
+  return (
+    <button
+      className="theme-toggle"
+      onClick={toggle}
+      title={theme === "dark" ? "Light mode" : "Dark mode"}
+      aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+    >
+      <span aria-hidden="true">{theme === "dark" ? "☀" : "☽"}</span>
+    </button>
+  );
+}
+
+function AppInner() {
+  const [authState, setAuthState] = useState<"checking" | "signed-in" | "signed-out">(() =>
+    hasSession() ? "checking" : "signed-out",
+  );
+  const [loginMessage, setLoginMessage] = useState(() => getInitialSessionExpiry());
+  const [confirmLogout, setConfirmLogout] = useState(false);
+  const { toast } = useToast();
+
   useEffect(() => {
-    const expired = () => {
-      setSignedIn(false);
-      setError("Your session expired. Please sign in again.");
+    const expired = (event: Event) => {
+      setLoginMessage(
+        (event as CustomEvent<string>).detail || "Your session expired. Please sign in again.",
+      );
+      setAuthState("signed-out");
     };
     window.addEventListener(SESSION_EXPIRED, expired);
     return () => window.removeEventListener(SESSION_EXPIRED, expired);
   }, []);
-  if (!signedIn)
+
+  useEffect(() => {
+    if (authState !== "checking") return;
+    let active = true;
+    void restoreSession().then((restored) => {
+      if (active) setAuthState(restored ? "signed-in" : "signed-out");
+    });
+    return () => {
+      active = false;
+    };
+  }, [authState]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("ecdat-theme");
+    if (saved) {
+      document.documentElement.setAttribute("data-theme", saved);
+    } else if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+    ) {
+      document.documentElement.setAttribute("data-theme", "dark");
+    }
+  }, []);
+
+  if (authState === "checking") {
     return (
-      <div className="login-shell">
-        <div className="login-card">
-          <div className="brand-row">
-            <div className="brand-mark">E</div>
-            <div>
-              <div className="brand-text">ECDAT</div>
-              <div className="brand-sub">Discovery Assurance</div>
-            </div>
-          </div>
-          <h1>Sign in</h1>
-          <p>
-            Authenticated access to the cryptographic inventory and discovery-assurance console.
-          </p>
-          {error && (
-            <div className="login-error" role="alert">
-              {error}
-            </div>
-          )}
-          <form
-            onSubmit={async (event) => {
-              event.preventDefault();
-              const form = event.currentTarget;
-              const data = new FormData(form);
-              setBusy(true);
-              setError("");
-              try {
-                await login(String(data.get("username")), String(data.get("password")));
-                form.reset();
-                setSignedIn(true);
-              } catch {
-                setError(
-                  "Invalid credentials. Check username, password, and server configuration.",
-                );
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            <label>
-              <span>Username</span>
-              <input name="username" autoComplete="username" required placeholder="e.g. analyst" />
-            </label>
-            <label>
-              <span>Password</span>
-              <input
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                placeholder="Enter your password"
-              />
-            </label>
-            <button type="submit" className="button" disabled={busy}>
-              {busy ? "Signing in…" : "Sign in"}
-            </button>
-          </form>
-          <div className="login-hint">
-            <strong>Administrator-provisioned access</strong>
-            <br />
-            Use your configured account. There are no default passwords.
-          </div>
-        </div>
-        <div className="login-footer">
-          <span className="shield">&#128737;</span> ECDAT &middot; SIH26164 &middot; Local &amp;
-          explainable
-        </div>
+      <div className="state" role="status" aria-live="polite">
+        <span className="spinner" aria-hidden="true" />
+        <h1>Restoring your session</h1>
       </div>
+    );
+  }
+
+  if (authState === "signed-out")
+    return (
+      <Login
+        message={loginMessage}
+        onSuccess={() => {
+          toast("Welcome back", "success");
+          setLoginMessage("");
+          setAuthState("signed-in");
+        }}
+      />
     );
   return (
     <div className="app-shell">
@@ -107,14 +128,8 @@ export default function App() {
           {canWrite() && <NavLink to="/scan">New scan</NavLink>}
         </nav>
         <span className="privacy-chip">Local & explainable</span>
-        <button
-          onClick={() => {
-            logout();
-            setSignedIn(false);
-          }}
-        >
-          Sign out
-        </button>
+        <ThemeToggle />
+        <button onClick={() => setConfirmLogout(true)}>Sign out</button>
       </header>
       <main>
         <Suspense
@@ -125,15 +140,41 @@ export default function App() {
             </div>
           }
         >
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/assets" element={<AssetsPage />} />
-            <Route path="/assets/:id" element={<AssetDetail />} />
-            <Route path="/scan" element={<ScanPage />} />
-          </Routes>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/assets" element={<AssetsPage />} />
+              <Route path="/assets/:id" element={<AssetDetail />} />
+              <Route path="/scan" element={<ScanPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </ErrorBoundary>
         </Suspense>
       </main>
       <footer>ECDAT · SIH26164 · Evidence-backed cryptographic discovery assurance</footer>
+      <ConfirmDialog
+        open={confirmLogout}
+        title="Sign out?"
+        message="Your session will be cleared. You will need to sign in again to access the console."
+        confirmLabel="Sign out"
+        onConfirm={() => {
+          logout();
+          setLoginMessage("");
+          setAuthState("signed-out");
+          setConfirmLogout(false);
+        }}
+        onCancel={() => setConfirmLogout(false)}
+      />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <MotionConfig reducedMotion="user">
+      <ToastProvider>
+        <AppInner />
+      </ToastProvider>
+    </MotionConfig>
   );
 }

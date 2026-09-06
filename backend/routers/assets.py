@@ -1,5 +1,9 @@
 """Assets router — list and retrieve crypto assets."""
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import JSONResponse
+from sqlalchemy import or_
 
 from backend.db import SessionLocal
 from backend.models.asset import CryptoAssetDB
@@ -11,11 +15,25 @@ router = APIRouter(prefix="/api", tags=["assets"])
 
 
 @router.get("/assets", response_model=list[AssetResponse])
-def list_assets(scan_job_id: int | None = Query(default=None)) -> list[AssetResponse]:
-    """List assets from the requested scan, or the latest completed scan by default."""
+def list_assets(
+    scan_job_id: int | None = Query(default=None, ge=1),
+    limit: int | None = Query(default=None, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    search: str | None = Query(
+        default=None, alias="q", min_length=1, max_length=200, pattern=r".*\S.*"
+    ),
+    risk: Literal["CRITICAL", "HIGH", "MEDIUM", "LOW"] | None = Query(default=None),
+    quantum: bool | None = Query(default=None),
+    sort: Literal["priority", "confidence", "algorithm"] = Query(default="priority"),
+) -> JSONResponse:
+    """List assets, with optional server-side filtering and pagination.
+
+    Omitting ``limit`` preserves the original unpaginated response.  The
+    ``X-Total-Count`` header always describes the filtered result set before
+    pagination.
+    """
     db = SessionLocal()
     try:
-        q = db.query(CryptoAssetDB)
         target_scan_id = scan_job_id
         if target_scan_id is None:
             latest = (
@@ -26,10 +44,41 @@ def list_assets(scan_job_id: int | None = Query(default=None)) -> list[AssetResp
             )
             target_scan_id = latest.id if latest else None
         if target_scan_id is None:
-            return []
-        q = q.filter(CryptoAssetDB.scan_job_id == target_scan_id)
-        assets = q.order_by(CryptoAssetDB.id.desc()).all()
-        return [AssetResponse.model_validate(a) for a in assets]
+            return JSONResponse(content=[], headers={"X-Total-Count": "0"})
+        q = db.query(CryptoAssetDB).filter(CryptoAssetDB.scan_job_id == target_scan_id)
+        if search_text := (search.strip() if search else ""):
+            escaped = search_text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            pattern = f"%{escaped}%"
+            q = q.filter(or_(
+                CryptoAssetDB.algorithm.ilike(pattern, escape="\\"),
+                CryptoAssetDB.category.ilike(pattern, escape="\\"),
+                CryptoAssetDB.location.ilike(pattern, escape="\\"),
+                CryptoAssetDB.library.ilike(pattern, escape="\\"),
+                CryptoAssetDB.protocol.ilike(pattern, escape="\\"),
+                CryptoAssetDB.usage.ilike(pattern, escape="\\"),
+            ))
+        if risk is not None:
+            q = q.filter(CryptoAssetDB.priority_label == risk)
+        if quantum is not None:
+            q = q.filter(CryptoAssetDB.quantum_vulnerable.is_(quantum))
+        total = q.count()
+        if offset >= total:
+            return JSONResponse(content=[], headers={"X-Total-Count": str(total)})
+        if sort == "confidence":
+            q = q.order_by(CryptoAssetDB.confidence.desc(), CryptoAssetDB.id.desc())
+        elif sort == "algorithm":
+            q = q.order_by(CryptoAssetDB.algorithm.asc(), CryptoAssetDB.id.desc())
+        else:
+            q = q.order_by(CryptoAssetDB.priority_score.desc(), CryptoAssetDB.id.desc())
+        q = q.offset(offset)
+        if limit is not None:
+            q = q.limit(limit)
+        assets = q.all()
+        validated = [AssetResponse.model_validate(a) for a in assets]
+        return JSONResponse(
+            content=[a.model_dump(mode="json") for a in validated],
+            headers={"X-Total-Count": str(total)},
+        )
     finally:
         db.close()
 

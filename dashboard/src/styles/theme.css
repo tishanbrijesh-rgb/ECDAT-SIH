@@ -1,0 +1,92 @@
+/* Polished responsive design system for the ECDAT assurance console. */
+
+/* ── Design tokens ─────────────────────────────────────────── */
+:root {
+  font-family: "DM Sans", system-ui, sans-serif;
+  color: #172039;
+  background: #f4f7fb;
+  font-synthesis: none;
+
+  --navy: #111a3d;
+  --indigo: #4257d6;
+  --line: #dfe5ef;
+  --muted: #69758d;
+  --panel: #fff;
+  --teal: #21a995;
+  --teal-light: #e6f7f4;
+  --amber: #efa83e;
+  --amber-light: #fff8ed;
+  --red: #e25361;
+  --red-light: #fff0f1;
+  --violet: #845ed7;
+  --violet-light: #f5f0ff;
+
+  --bg: #f4f7fb;
+  --text: #172039;
+
+  --teal-dark: #178a77;
+  --amber-dark: #b86e1a;
+  --red-dark: #b82d3b;
+  --violet-dark: #5e3ea6;
+
+  --shadow-sm: 0 2px 8px rgba(17, 26, 61, 0.06);
+  --shadow-md: 0 8px 28px rgba(37, 49, 80, 0.08);
+  --shadow-lg: 0 25px 60px rgba(0, 0, 0, 0.3);
+  --radius: 14px;
+  --radius-sm: 9px;
+  --radius-xs: 6px;
+  --transition: 0.2s ease;
+}
+
+/* ── Base reset ─────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #f4f7fb;
+}
+button,
+input,
+select {
+  font: inherit;
+}
+a {
+  color: #3549bc;
+  text-decoration: none;
+}
+
+/* ── Typography ─────────────────────────────────────────────── */
+h1,
+h2,
+h3 {
+  font-family: Manrope, sans-serif;
+  color: #151e3b;
+}
+h1 {
+  font-size: clamp(30px, 4vw, 44px);
+  letter-spacing: -0.04em;
+  line-height: 1.08;
+  margin: 5px 0 10px;
+}
+h2 {
+  font-size: 19px;
+  margin: 0;
+}
+h3 {
+  font-size: 14px;
+  margin: 24px 0 12px;
+}
+.eyebrow {
+  margin: 0;
+  color: #5364c6;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 11px;
+  font-weight: 800;
+}
+.muted {
+  color: var(--muted);
+  font-size: 13px;
+}

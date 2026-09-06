@@ -2,3 +2,4 @@
 # Newer Starlette uses httpx2; older supported releases use httpx.
 httpx2>=2.0
 httpx>=0.28,<0.29
+pytest>=8.3

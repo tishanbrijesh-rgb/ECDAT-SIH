@@ -24,6 +24,8 @@ coverage/
 .vite/
 .npm/
 .npm-audit-cache/
+playwright-report/
+test-results/
 
 # Local configuration and secrets (keep the documented demo template)
 .env
