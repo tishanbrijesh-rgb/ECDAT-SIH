@@ -4,4 +4,5 @@
 # Includes API integration tests; detection regressions need no extra packages.
 # Run tests from the repository root: python -m unittest discover -s tests -v
 # For runtime-only deployments, use backend/requirements.txt instead.
+# External benchmark and Compose verification scripts use only the Python standard library.
 -r backend/requirements-dev.txt

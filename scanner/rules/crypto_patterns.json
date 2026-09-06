@@ -30,7 +30,7 @@
     "DH": {
       "category": "key_exchange",
       "patterns": [
-        "DH", "DiffieHellman", "Diffie-Hellman"
+        "\\bDH\\b", "DiffieHellman", "Diffie-Hellman"
       ]
     },
     "DSA": {
@@ -43,18 +43,48 @@
       "category": "hash",
       "patterns": [
         "SHA-?256", "sha256", "SHA256"
+      ],
+      "java_patterns": [
+        "\\bSHA256Digest\\s*(?:\\.\\s*newInstance)?\\s*\\(",
+        "\\b(?:getSha256Digest|sha256(?:Hex|Crypt)?)\\s*\\(",
+        "\\b(?:sha2Crypt|getDigest|get)\\s*\\([^;\\n]*\\bSHA_256\\b",
+        "\\bMessageDigest\\s*\\.\\s*getInstance\\s*\\(\\s*[\"']SHA-?256[\"']"
       ]
     },
     "SHA-512": {
       "category": "hash",
       "patterns": [
         "SHA-?512", "sha512", "SHA512"
+      ],
+      "java_patterns": [
+        "\\bSHA512Digest\\s*\\(",
+        "\\b(?:getSha512Digest|sha512(?:Hex|Crypt)?)\\s*\\(",
+        "\\b(?:sha2Crypt|getDigest|get)\\s*\\([^;\\n]*\\bSHA_512\\b",
+        "\\bMessageDigest\\s*\\.\\s*getInstance\\s*\\(\\s*[\"']SHA-?512[\"']"
+      ]
+    },
+    "SHA-1": {
+      "category": "hash",
+      "patterns": [
+        "SHA-?1", "sha1", "SHA1"
+      ],
+      "java_patterns": [
+        "\\bSHA1Digest\\s*\\(",
+        "\\b(?:getSha1Digest|sha1(?:Hex)?)\\s*\\(",
+        "\\b(?:getDigest|get)\\s*\\([^;\\n]*\\bSHA_1\\b",
+        "\\bMessageDigest\\s*\\.\\s*getInstance\\s*\\(\\s*[\"']SHA-?1[\"']"
       ]
     },
     "MD5": {
       "category": "hash",
       "patterns": [
         "MD5", "md5"
+      ],
+      "java_patterns": [
+        "\\bMD5Digest\\s*\\(",
+        "\\b(?:getMd5Digest|md5(?:Hex|Crypt)?|apr1Crypt)\\s*\\(",
+        "\\b(?:getDigest|get)\\s*\\([^;\\n]*\\bMD5\\b",
+        "\\bMessageDigest\\s*\\.\\s*getInstance\\s*\\(\\s*[\"']MD5[\"']"
       ]
     },
     "BLAKE2": {

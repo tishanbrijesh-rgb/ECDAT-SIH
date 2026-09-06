@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "algorithms": ["SHA-1", "HMAC", "MD5"],
+  "label_status": "independently reviewed after scanner tuning; regression-only",
+  "scope": "Static crypto API and named crypto-wrapper call sites, not runtime execution counts. Hash update/finalization calls are part of their initialized digest operation. Dynamic HMAC algorithms are labelled HMAC, not guessed SHA-1.",
+  "sources": [
+    {
+      "name": "python",
+      "repository": "https://github.com/pallets/itsdangerous.git",
+      "checkout": ".runtime/benchmarks/itsdangerous",
+      "revision": "096c8d42545d3b68ea21a4f890fb2b2d8979c0bd",
+      "path": ".runtime/benchmarks/itsdangerous/src/itsdangerous/signer.py",
+      "sha256": "85d41ef5f64eb63e1299cad82d775b6021950cbfad355af3021084267be663c6",
+      "algorithm": "SHA-1",
+      "operations": [
+        {"line": 45, "algorithm": "SHA-1", "usage": "hashing", "key_size": null},
+        {"line": 63, "algorithm": "HMAC", "usage": "unknown", "key_size": null},
+        {"line": 207, "algorithm": "HMAC", "usage": "unknown", "key_size": null}
+      ]
+    },
+    {
+      "name": "java",
+      "repository": "https://github.com/apache/commons-codec.git",
+      "checkout": ".runtime/benchmarks/commons-codec",
+      "revision": "5d809fe3d729bde9b507a51d2b2ed659da053692",
+      "path": ".runtime/benchmarks/commons-codec/src/main/java/org/apache/commons/codec/digest/Md5Crypt.java",
+      "sha256": "eadebc3b0fdb94d32ec20e7c09f30040d2a12dc69bc13e564d11932d8d57b922",
+      "algorithm": "MD5",
+      "operations": [
+        {"line": 79, "algorithm": "MD5", "usage": "hashing", "key_size": null},
+        {"line": 97, "algorithm": "MD5", "usage": "hashing", "key_size": null},
+        {"line": 122, "algorithm": "MD5", "usage": "hashing", "key_size": null},
+        {"line": 139, "algorithm": "MD5", "usage": "hashing", "key_size": null},
+        {"line": 161, "algorithm": "MD5", "usage": "hashing", "key_size": null},
+        {"line": 180, "algorithm": "MD5", "usage": "hashing", "key_size": null},
+        {"line": 203, "algorithm": "MD5", "usage": "hashing", "key_size": null},
+        {"line": 225, "algorithm": "MD5", "usage": "hashing", "key_size": null},
+        {"line": 249, "algorithm": "MD5", "usage": "hashing", "key_size": null},
+        {"line": 292, "algorithm": "MD5", "usage": "hashing", "key_size": null},
+        {"line": 312, "algorithm": "MD5", "usage": "hashing", "key_size": null},
+        {"line": 353, "algorithm": "MD5", "usage": "hashing", "key_size": null}
+      ]
+    }
+  ]
+}

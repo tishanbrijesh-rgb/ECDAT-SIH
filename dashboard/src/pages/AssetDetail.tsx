@@ -38,14 +38,17 @@ export default function AssetDetail() {
         <h1>Loading evidence</h1>
       </div>
     );
+  const planWindow = asset.data_lifetime_years + asset.migration_time_years;
+  const threatGap = planWindow - asset.threat_horizon_years;
+  const threatOverlap = asset.quantum_vulnerable && threatGap >= 0;
   return (
     <>
       <Link className="back" to="/assets">
-        ← Inventory
+        &larr; Inventory
       </Link>
       <section className="hero compact asset-hero">
         <div>
-          <p className="eyebrow">Logical asset · {asset.logical_asset_id}</p>
+          <p className="eyebrow">Logical asset &middot; {asset.logical_asset_id}</p>
           <h1>
             {asset.algorithm}
             {asset.key_size ? `-${asset.key_size}` : ""}
@@ -62,7 +65,20 @@ export default function AssetDetail() {
       {asset.conflict && (
         <div className="callout error">
           <strong>Evidence conflict detected.</strong> Review the operation-level evidence before
-          migration.
+          migration. Multiple sources disagree about this finding.
+        </div>
+      )}
+      {threatOverlap && (
+        <div
+          className="callout"
+          style={{ background: "#fff8ed", border: "1px solid #f0d78c", color: "#7c5e10" }}
+        >
+          <strong>Mosca window reaches the threat horizon.</strong> This quantum-vulnerable asset's
+          planning window ({planWindow} years) meets or exceeds the modeled threat horizon (
+          {asset.threat_horizon_years} years).{" "}
+          {threatGap > 0
+            ? `It exceeds the horizon by ${threatGap} years.`
+            : "No migration safety margin remains."}
         </div>
       )}
       <section className="detail-grid">
@@ -71,7 +87,7 @@ export default function AssetDetail() {
           <ConfidenceBar confidence={asset.confidence} />
           <dl className="facts">
             <dt>Component</dt>
-            <dd>{asset.evidence_json.component}</dd>
+            <dd>{asset.evidence_json.component || "—"}</dd>
             <dt>Usage</dt>
             <dd>{asset.usage}</dd>
             <dt>Library</dt>
@@ -101,7 +117,9 @@ export default function AssetDetail() {
             </p>
           )}
           {!canWrite() && (
-            <p>Read-only access. An administrator or security analyst can edit risk context.</p>
+            <p className="muted">
+              Read-only access. An administrator or security analyst can edit risk context.
+            </p>
           )}
           <fieldset
             className="form-grid"
@@ -148,13 +166,19 @@ export default function AssetDetail() {
               onChange={(v) => change("threat_horizon_years", v)}
             />
           </fieldset>
-          <div className="mosca">
+          <div className={`mosca${threatOverlap ? " mosca-warning" : ""}`}>
             <strong>Mosca planning window</strong>
             <span>
-              {asset.data_lifetime_years} + {asset.migration_time_years} ={" "}
-              {asset.data_lifetime_years + asset.migration_time_years} years
+              {asset.data_lifetime_years} + {asset.migration_time_years} = {planWindow} years
             </span>
             <small>Compared with a {asset.threat_horizon_years}-year threat horizon</small>
+            {threatOverlap && (
+              <small style={{ color: "#b86e1a", fontWeight: 600 }}>
+                {threatGap > 0
+                  ? `Plan window exceeds horizon by ${threatGap} years`
+                  : "Plan window meets the horizon; no safety margin remains"}
+              </small>
+            )}
           </div>
         </article>
         <article className="panel span-2 recommendation">

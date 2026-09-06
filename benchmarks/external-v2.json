@@ -1,0 +1,128 @@
+{
+  "schema": 1,
+  "algorithms": ["MD5", "SHA-1", "SHA-256", "SHA-512"],
+  "label_status": "frozen before first scanner run; independently reviewed after baseline; consumed holdout",
+  "scope": "Static call sites selecting MD5, SHA-1, SHA-256, or SHA-512 by API or named wrapper. Declarations, constants, comments, generic digest calls with runtime-selected algorithms, and unsupported SHA-512/224 and SHA-512/256 variants are excluded.",
+  "sources": [
+    {
+      "name": "py-encoding-negative",
+      "repository": "https://github.com/pallets/itsdangerous.git",
+      "checkout": ".runtime/benchmarks/itsdangerous",
+      "revision": "096c8d42545d3b68ea21a4f890fb2b2d8979c0bd",
+      "path": ".runtime/benchmarks/itsdangerous/src/itsdangerous/encoding.py",
+      "sha256": "6546d4dcaca3a497dc280795fabd49d76fda2a19f68be6441560ffc5b48bcfac",
+      "operations": []
+    },
+    {
+      "name": "py-serializer-negative",
+      "repository": "https://github.com/pallets/itsdangerous.git",
+      "checkout": ".runtime/benchmarks/itsdangerous",
+      "revision": "096c8d42545d3b68ea21a4f890fb2b2d8979c0bd",
+      "path": ".runtime/benchmarks/itsdangerous/src/itsdangerous/serializer.py",
+      "sha256": "ec07e7f71ed11e8e7efbff91856b56684589bc2ebdc758445450b4ad257d1f35",
+      "operations": []
+    },
+    {
+      "name": "py-url-safe-negative",
+      "repository": "https://github.com/pallets/itsdangerous.git",
+      "checkout": ".runtime/benchmarks/itsdangerous",
+      "revision": "096c8d42545d3b68ea21a4f890fb2b2d8979c0bd",
+      "path": ".runtime/benchmarks/itsdangerous/src/itsdangerous/url_safe.py",
+      "sha256": "4d7db7718099818b3ec71b700d8397e3b5ce12ee9dcb345885b77ade693fb1be",
+      "operations": []
+    },
+    {
+      "name": "java-crypt",
+      "repository": "https://github.com/apache/commons-codec.git",
+      "checkout": ".runtime/benchmarks/commons-codec",
+      "revision": "5d809fe3d729bde9b507a51d2b2ed659da053692",
+      "path": ".runtime/benchmarks/commons-codec/src/main/java/org/apache/commons/codec/digest/Crypt.java",
+      "sha256": "4f9f7f90233dd88fa57b1121c8f874c669184fc9fff40656c161f51f1fdc0596",
+      "operations": [
+        {"line": 75, "algorithm": "SHA-512", "usage": "hashing", "key_size": null},
+        {"line": 78, "algorithm": "SHA-512", "usage": "hashing", "key_size": null},
+        {"line": 81, "algorithm": "SHA-256", "usage": "hashing", "key_size": null},
+        {"line": 84, "algorithm": "MD5", "usage": "hashing", "key_size": null}
+      ]
+    },
+    {
+      "name": "java-sha2crypt",
+      "repository": "https://github.com/apache/commons-codec.git",
+      "checkout": ".runtime/benchmarks/commons-codec",
+      "revision": "5d809fe3d729bde9b507a51d2b2ed659da053692",
+      "path": ".runtime/benchmarks/commons-codec/src/main/java/org/apache/commons/codec/digest/Sha2Crypt.java",
+      "sha256": "7893cf6c28d719574abd48da4389a0fcdb6a49ba83c0cd180a845b548f0998d7",
+      "operations": [
+        {"line": 90, "algorithm": "SHA-256", "usage": "hashing", "key_size": null},
+        {"line": 114, "algorithm": "SHA-256", "usage": "hashing", "key_size": null},
+        {"line": 140, "algorithm": "SHA-256", "usage": "hashing", "key_size": null},
+        {"line": 562, "algorithm": "SHA-512", "usage": "hashing", "key_size": null},
+        {"line": 587, "algorithm": "SHA-512", "usage": "hashing", "key_size": null},
+        {"line": 614, "algorithm": "SHA-512", "usage": "hashing", "key_size": null}
+      ]
+    },
+    {
+      "name": "java-digest-utils",
+      "repository": "https://github.com/apache/commons-codec.git",
+      "checkout": ".runtime/benchmarks/commons-codec",
+      "revision": "5d809fe3d729bde9b507a51d2b2ed659da053692",
+      "path": ".runtime/benchmarks/commons-codec/src/main/java/org/apache/commons/codec/digest/DigestUtils.java",
+      "sha256": "644ea70e5c7a7dd9ae076f4098206f93f5db30133e02c19d3cc5566d25e24ef0",
+      "operations": [
+        {"line": 202, "algorithm": "MD5", "usage": "hashing", "key_size": null},
+        {"line": 228, "algorithm": "SHA-1", "usage": "hashing", "key_size": null},
+        {"line": 239, "algorithm": "SHA-256", "usage": "hashing", "key_size": null},
+        {"line": 331, "algorithm": "SHA-512", "usage": "hashing", "key_size": null},
+        {"line": 343, "algorithm": "SHA-1", "usage": "hashing", "key_size": null},
+        {"line": 432, "algorithm": "MD5", "usage": "hashing", "key_size": null},
+        {"line": 444, "algorithm": "MD5", "usage": "hashing", "key_size": null},
+        {"line": 454, "algorithm": "MD5", "usage": "hashing", "key_size": null},
+        {"line": 464, "algorithm": "MD5", "usage": "hashing", "key_size": null},
+        {"line": 476, "algorithm": "MD5", "usage": "hashing", "key_size": null},
+        {"line": 486, "algorithm": "MD5", "usage": "hashing", "key_size": null},
+        {"line": 498, "algorithm": "SHA-1", "usage": "hashing", "key_size": null},
+        {"line": 512, "algorithm": "SHA-1", "usage": "hashing", "key_size": null},
+        {"line": 524, "algorithm": "SHA-1", "usage": "hashing", "key_size": null},
+        {"line": 535, "algorithm": "SHA-1", "usage": "hashing", "key_size": null},
+        {"line": 547, "algorithm": "SHA-1", "usage": "hashing", "key_size": null},
+        {"line": 557, "algorithm": "SHA-1", "usage": "hashing", "key_size": null},
+        {"line": 568, "algorithm": "SHA-1", "usage": "hashing", "key_size": null},
+        {"line": 580, "algorithm": "SHA-1", "usage": "hashing", "key_size": null},
+        {"line": 591, "algorithm": "SHA-1", "usage": "hashing", "key_size": null},
+        {"line": 602, "algorithm": "SHA-256", "usage": "hashing", "key_size": null},
+        {"line": 614, "algorithm": "SHA-256", "usage": "hashing", "key_size": null},
+        {"line": 625, "algorithm": "SHA-256", "usage": "hashing", "key_size": null},
+        {"line": 636, "algorithm": "SHA-256", "usage": "hashing", "key_size": null},
+        {"line": 648, "algorithm": "SHA-256", "usage": "hashing", "key_size": null},
+        {"line": 659, "algorithm": "SHA-256", "usage": "hashing", "key_size": null},
+        {"line": 1010, "algorithm": "SHA-512", "usage": "hashing", "key_size": null},
+        {"line": 1022, "algorithm": "SHA-512", "usage": "hashing", "key_size": null},
+        {"line": 1033, "algorithm": "SHA-512", "usage": "hashing", "key_size": null},
+        {"line": 1180, "algorithm": "SHA-512", "usage": "hashing", "key_size": null},
+        {"line": 1192, "algorithm": "SHA-512", "usage": "hashing", "key_size": null},
+        {"line": 1203, "algorithm": "SHA-512", "usage": "hashing", "key_size": null},
+        {"line": 1215, "algorithm": "SHA-1", "usage": "hashing", "key_size": null},
+        {"line": 1229, "algorithm": "SHA-1", "usage": "hashing", "key_size": null},
+        {"line": 1241, "algorithm": "SHA-1", "usage": "hashing", "key_size": null}
+      ]
+    },
+    {
+      "name": "java-algorithm-constants-negative",
+      "repository": "https://github.com/apache/commons-codec.git",
+      "checkout": ".runtime/benchmarks/commons-codec",
+      "revision": "5d809fe3d729bde9b507a51d2b2ed659da053692",
+      "path": ".runtime/benchmarks/commons-codec/src/main/java/org/apache/commons/codec/digest/MessageDigestAlgorithms.java",
+      "sha256": "f6d8ae947fac89b2fe0846b6f12c2d704330c48631a4d368bb7dccb6bc57d95b",
+      "operations": []
+    },
+    {
+      "name": "java-interface-negative",
+      "repository": "https://github.com/apache/commons-codec.git",
+      "checkout": ".runtime/benchmarks/commons-codec",
+      "revision": "5d809fe3d729bde9b507a51d2b2ed659da053692",
+      "path": ".runtime/benchmarks/commons-codec/src/main/java/org/apache/commons/codec/BinaryEncoder.java",
+      "sha256": "70aca0eeaa114cb589ad237843d311438a2e2e5477ce433efeff20c3e8ce8642",
+      "operations": []
+    }
+  ]
+}

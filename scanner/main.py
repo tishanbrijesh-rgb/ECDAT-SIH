@@ -22,6 +22,7 @@ from scanner.collectors.dep_collector import DepCollector
 from scanner.collectors.cert_collector import CertCollector
 from scanner.collectors.rule_collector import CODE_EXTENSIONS, RuleCollector
 from scanner.redaction import redact_evidence
+from scanner.limits import positive_int, max_file_bytes
 
 # Ensure `scanner` package is importable
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -42,15 +43,23 @@ def _inventory(repo_path: str) -> tuple[list[str], list[str], list[str]]:
     all_files: list[str] = []
     supported: list[str] = []
     failed: list[str] = []
+    file_limit = positive_int('ECDAT_MAX_SCAN_FILES', 100000, 1000000)
+    byte_limit = max_file_bytes()
     for dirpath, dirnames, filenames in os.walk(repo_path):
-        dirnames[:] = [d for d in dirnames if d not in {".git", "node_modules", "dist", "build", "__pycache__"}]
+        dirnames[:] = [d for d in dirnames if d not in {".git", "node_modules", "dist", "build", "__pycache__"}
+                      and not os.path.islink(os.path.join(dirpath, d))
+                      and not getattr(os.path, 'isjunction', lambda p: False)(os.path.join(dirpath, d))]
         for filename in filenames:
             path = os.path.join(dirpath, filename)
             all_files.append(path)
+            if len(all_files) > file_limit:
+                raise ValueError('Repository exceeds configured file count limit')
             ext = os.path.splitext(filename)[1].lower()
             if ext in CODE_EXTENSIONS or filename in {"requirements.txt", "pom.xml"} or ext in {".crt", ".pem", ".cer"}:
                 supported.append(path)
                 try:
+                    if os.path.islink(path) or os.path.getsize(path) > byte_limit:
+                        raise OSError('Linked or oversized file')
                     with open(path, "rb") as stream:
                         stream.read(1)
                 except OSError:
@@ -115,6 +124,7 @@ def scan_with_metrics(
         "Container images, cloud services, network traffic and HSMs are not inspected",
         "Scope excludes .git, node_modules, dist, build and __pycache__ directories",
         "Coverage measures files processed without reported collector errors, not detection completeness",
+        "Linked directories/files are excluded; oversized files count as processing failures",
     ]
     if not supported:
         blind_spots.append("No supported files were found; coverage is not established")

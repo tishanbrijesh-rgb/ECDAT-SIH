@@ -13,23 +13,39 @@ export default function AssetsPage() {
   const [risk, setRisk] = useState("ALL");
   const [quantum, setQuantum] = useState(false);
   const [error, setError] = useState("");
+  const [sortBy, setSortBy] = useState<"priority" | "confidence" | "algorithm">("priority");
+
+  const riskOrder: Record<string, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+
   useEffect(() => {
     getAssets(scanId ? Number(scanId) : undefined)
       .then(setAssets)
       .catch((e) => setError(String(e)));
   }, [scanId]);
-  const filtered = useMemo(
-    () =>
-      assets.filter(
-        (a) =>
-          (risk === "ALL" || a.priority_label === risk) &&
-          (!quantum || a.quantum_vulnerable) &&
-          `${a.algorithm} ${a.location} ${a.library} ${a.usage}`
-            .toLowerCase()
-            .includes(query.toLowerCase()),
-      ),
-    [assets, query, risk, quantum],
-  );
+
+  const filtered = useMemo(() => {
+    let result = assets.filter(
+      (a) =>
+        (risk === "ALL" || a.priority_label === risk) &&
+        (!quantum || a.quantum_vulnerable) &&
+        `${a.algorithm} ${a.location} ${a.library} ${a.usage}`
+          .toLowerCase()
+          .includes(query.toLowerCase()),
+    );
+    result = [...result].sort((a, b) => {
+      if (sortBy === "priority")
+        return (
+          (riskOrder[a.priority_label] ?? 4) - (riskOrder[b.priority_label] ?? 4) ||
+          b.priority_score - a.priority_score
+        );
+      if (sortBy === "confidence") return b.confidence - a.confidence;
+      return a.algorithm.localeCompare(b.algorithm);
+    });
+    return result;
+  }, [assets, query, risk, quantum, sortBy]);
+
+  const filterActive = risk !== "ALL" || quantum || query;
+
   return (
     <>
       <section className="hero compact">
@@ -37,7 +53,9 @@ export default function AssetsPage() {
           <p className="eyebrow">Standardized inventory</p>
           <h1>Cryptographic assets</h1>
           <p>
-            {filtered.length} of {assets.length} correlated findings
+            {filtered.length !== assets.length
+              ? `${filtered.length} of ${assets.length} shown`
+              : `${assets.length} correlated finding${assets.length === 1 ? "" : "s"}`}
           </p>
         </div>
         {canWrite() && (
@@ -54,16 +72,39 @@ export default function AssetsPage() {
           onChange={(e) => setQuery(e.target.value)}
         />
         <select value={risk} onChange={(e) => setRisk(e.target.value)}>
-          <option>ALL</option>
-          <option>CRITICAL</option>
-          <option>HIGH</option>
-          <option>MEDIUM</option>
-          <option>LOW</option>
+          <option value="ALL">All risks</option>
+          <option value="CRITICAL">Critical</option>
+          <option value="HIGH">High</option>
+          <option value="MEDIUM">Medium</option>
+          <option value="LOW">Low</option>
         </select>
-        <label className="check">
+        <label className="check" title="Show only quantum-vulnerable assets">
           <input type="checkbox" checked={quantum} onChange={(e) => setQuantum(e.target.checked)} />
-          Quantum vulnerable only
+          Quantum vulnerable
         </label>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+          aria-label="Sort assets"
+          style={{ minWidth: 140 }}
+        >
+          <option value="priority">Sort: Priority</option>
+          <option value="confidence">Sort: Confidence</option>
+          <option value="algorithm">Sort: Algorithm</option>
+        </select>
+        {filterActive && (
+          <button
+            className="button secondary"
+            style={{ padding: "11px 14px", fontSize: 13, flexShrink: 0 }}
+            onClick={() => {
+              setQuery("");
+              setRisk("ALL");
+              setQuantum(false);
+            }}
+          >
+            Clear
+          </button>
+        )}
       </section>
       {error && <div className="callout error">{error}</div>}
       <div className="panel table-wrap">
@@ -109,18 +150,24 @@ export default function AssetsPage() {
                   <small>{a.conflict ? "Review conflict" : "Evidence consistent"}</small>
                 </td>
                 <td>
-                  <RiskBadge label={a.priority_label} score={a.priority_score} />
+                  <RiskBadge label={a.priority_label} score={a.priority_score} size="sm" />
                 </td>
                 <td>
                   <Link className="row-link" to={`/assets/${a.id}`}>
-                    Inspect →
+                    Inspect &rarr;
                   </Link>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {!filtered.length && !error && <p className="empty">No assets match these filters.</p>}
+        {!filtered.length && !error && (
+          <div className="empty-table-msg">
+            {filterActive
+              ? "No assets match these filters."
+              : "No assets found. Run a scan to begin."}
+          </div>
+        )}
       </div>
     </>
   );

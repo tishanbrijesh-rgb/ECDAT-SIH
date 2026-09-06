@@ -12,7 +12,7 @@ class ScanJobDB(Base):
     repo_path: str = Column(String, nullable=False)
     started_at: datetime = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     finished_at: datetime | None = Column(DateTime, nullable=True)
-    status: str = Column(String, default="pending")  # pending|running|completed|failed
+    status: str = Column(String, default="pending")  # pending|queued|running|completed|failed|cancelled|timed_out
     assets_found: int = Column(Integer, default=0)
     avg_confidence: float | None = Column(Float, nullable=True)
     total_files: int = Column(Integer, default=0)

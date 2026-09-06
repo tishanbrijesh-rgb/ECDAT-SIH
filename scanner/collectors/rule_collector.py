@@ -9,6 +9,7 @@ import tokenize
 from pathlib import Path
 
 from scanner.models.asset import CryptoAsset
+from scanner.limits import read_text
 from scanner.rules.crypto_patterns import load_rules
 
 CODE_EXTENSIONS = {".py", ".java", ".js", ".ts", ".c", ".cpp", ".go", ".cs"}
@@ -16,6 +17,14 @@ CODE_EXTENSIONS = {".py", ".java", ".js", ".ts", ".c", ".cpp", ".go", ".cs"}
 
 def _usage(line: str, algorithm: str) -> str:
     value = line.lower()
+    if algorithm in {"SHA-256", "SHA-512", "SHA-1", "MD5", "BLAKE2"}:
+        return "hashing"
+    if algorithm in {"ECDSA", "DSA", "Ed25519", "ML-DSA"}:
+        return "signature"
+    if algorithm in {"ECDH", "DH", "ML-KEM"}:
+        return "key_establishment"
+    if algorithm == "AES":
+        return "encryption"
     if any(word in value for word in ("sign", "verify", "signature")):
         return "signature"
     if any(word in value for word in ("digest", "hash", "sha", "md5")):
@@ -86,6 +95,31 @@ def _statements(text: str):
         yield line_no, start, line[start:]
 
 
+def _java_hash_non_operation(line: str) -> bool:
+    """Reject declarations and nested MAC construction from hash call matching."""
+    value = line.strip()
+    modified_declaration = re.match(
+        r'^(?:(?:public|private|protected|static|final|synchronized|abstract|native|default)\s+)+'
+        r'(?:[\w<>\[\].,?]+\s+)?\w+\s*\([^;]*\)\s*(?:throws\s+[^{}]+)?(?:\{|\{\s*\})?\s*$',
+        value,
+    )
+    digest_constructor = re.match(
+        r'^(?:SHA1|SHA256|SHA512|MD5)Digest\s*\([^;{}]*\)\s*'
+        r'(?:throws\s+[^{}]+)?(?:\{|\{\s*\})?\s*$',
+        value,
+        re.I,
+    )
+    interface_declaration = None
+    if not re.match(r'^(?:return|new|throw|yield)\b', value):
+        interface_declaration = re.match(
+            r'^[\w<>\[\].,?]+\s+\w+\s*\([^;{}]*\)\s*'
+            r'(?:throws\s+[^{}]+)?(?:\{|\{\s*\})?\s*$',
+            value,
+        )
+    nested_mac = re.search(r'\b(?:Old)?HMac\s*\(', value)
+    return bool(modified_declaration or digest_constructor or interface_declaration or nested_mac)
+
+
 class RuleCollector:
     """Scans supported source languages using transparent JSON regex rules."""
 
@@ -96,7 +130,7 @@ class RuleCollector:
         if extension not in CODE_EXTENSIONS:
             return []
         try:
-            text = Path(path).read_text(encoding="utf-8", errors="replace")
+            text = read_text(path, errors="replace")
         except OSError:
             if on_error is not None:
                 on_error(path)
@@ -118,7 +152,19 @@ class RuleCollector:
                 # calls or revive shadowed/non-crypto names.
                 if extension == ".py" and config.get("category") == "hash":
                     continue
-                for pattern in config.get("patterns", []):
+                if extension == '.java' and config.get('category') == 'hash':
+                    # Declarations/constants are not digest operations. Keep
+                    # constructor and factory calls, including assignment RHSs.
+                    if '(' not in line or re.match(
+                        r'^\s*(?:(?:public|private|protected|static|final|synchronized|abstract|native)\s+)+'
+                        r'(?:[\w<>\[\].]+\s+)?\w+\s*\([^;]*\)\s*(?:throws\s+[^{}]+)?\{\s*$', line):
+                        continue
+                    if _java_hash_non_operation(line):
+                        continue
+                patterns = list(config.get(
+                    "java_patterns" if extension == '.java' and config.get('category') == 'hash'
+                    else "patterns", []))
+                for pattern in patterns:
                     try:
                         matched = re.search(pattern, line, flags=re.I)
                     except re.error:

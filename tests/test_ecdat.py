@@ -124,7 +124,7 @@ class ScannerTests(unittest.TestCase):
         updates = []
         evidence, metrics = scan_with_metrics(str(TEST_REPOSITORY), updates.append)
         # Binding-aware hash calls replace lexical duplicates and declarations.
-        self.assertEqual(sum(map(len, evidence.values())), 72)
+        self.assertEqual(sum(map(len, evidence.values())), 69)
         self.assertEqual(updates[0]["_files_processed"], 0)
         self.assertEqual(updates[-1]["_files_processed"], metrics["in_scope_files"])
         self.assertEqual(updates[-1]["_files_total"], metrics["in_scope_files"])
@@ -289,10 +289,8 @@ class ApiIntegrationTests(unittest.TestCase):
                    "failed_files": 0, "coverage_pct": 100.0, "duration_ms": 1,
                    "collector_stats": {"rule": 3}, "blind_spots": []}
         with patch("backend.services.scanner_runner.scan_with_metrics", return_value=({"mixed": records}, metrics)):
-            response = self.client.post("/api/scan", json={"repo_path": "/test-repo"},
-                                        headers={"X-ECDAT-Role": "security_analyst"})
-        self.assertEqual(response.status_code, 200)
-        scan_id = response.json()["scan_id"]
+            from backend.services.scanner_runner import run_scan
+            scan_id = run_scan(str(TEST_REPOSITORY))["scan_id"]
         assets = self.client.get(f"/api/assets?scan_job_id={scan_id}").json()
         self.assertEqual(len(assets), 3)
         self.assertEqual({a["usage"] for a in assets}, {"signature", "encryption", "unknown"})
@@ -343,10 +341,10 @@ class ApiIntegrationTests(unittest.TestCase):
         assets = self.client.get("/api/assets").json()
         summary = self.client.get("/api/dashboard/summary").json()
         # Operation-v2 retains separate locations/usages rather than 15 broad pairs.
-        self.assertEqual(len(assets), 64)
-        self.assertEqual(len({a["logical_asset_id"] for a in assets}), 64)
+        self.assertEqual(len(assets), 61)
+        self.assertEqual(len({a["logical_asset_id"] for a in assets}), 61)
         self.assertTrue(all(a["evidence_json"]["correlation_version"] == "operation-v2" for a in assets))
-        self.assertEqual(summary["total_assets"], 64)
+        self.assertEqual(summary["total_assets"], 61)
         self.assertEqual(summary["coverage_pct"], 100.0)
         self.assertEqual(summary["quantum_vulnerable_count"], 29)
         self.assertEqual(summary["conflict_count"], 2)
@@ -357,11 +355,11 @@ class ApiIntegrationTests(unittest.TestCase):
         self.assertEqual(evaluation["f1"], 1.0)
         self.assertEqual(evaluation["granularity"], "component_algorithm")
         self.assertEqual(evaluation["found"], 15)
-        self.assertEqual(evaluation["operation_findings"], 64)
+        self.assertEqual(evaluation["operation_findings"], 61)
         components = self.client.get("/api/cbom").json()["components"]
         priorities = self.client.get("/api/reports/risk").json()["migration_priorities"]
-        self.assertEqual(len(components), 64)
-        self.assertEqual(len(priorities), 64)
+        self.assertEqual(len(components), 61)
+        self.assertEqual(len(priorities), 61)
         by_id = {a["logical_asset_id"]: a for a in assets}
         for item in priorities:
             original = by_id[item["logical_asset_id"]]
@@ -404,11 +402,11 @@ class ApiIntegrationTests(unittest.TestCase):
         second_id = second.json()["scan_id"]
         latest_summary = self.client.get("/api/dashboard/summary").json()
         self.assertEqual(latest_summary["latest_scan_id"], second_id)
-        self.assertEqual(latest_summary["total_assets"], 64)
+        self.assertEqual(latest_summary["total_assets"], 61)
         latest_assets = self.client.get("/api/assets").json()
-        self.assertEqual(len(latest_assets), 64)
+        self.assertEqual(len(latest_assets), 61)
         self.assertEqual({a["logical_asset_id"] for a in latest_assets}, set(by_id))
-        self.assertEqual(len(self.client.get(f"/api/assets?scan_job_id={first_id}").json()), 64)
+        self.assertEqual(len(self.client.get(f"/api/assets?scan_job_id={first_id}").json()), 61)
         self.assertEqual(self.client.get("/api/assets/999999").status_code, 404)
 
 

@@ -9,6 +9,7 @@ import ast
 import os
 
 from scanner.models.asset import CryptoAsset
+from scanner.limits import read_text
 from scanner.rules.crypto_patterns import get_category
 
 # ---------------------------------------------------------------------------
@@ -227,6 +228,9 @@ class _CryptoVisitor(ast.NodeVisitor):
                 resolved = self._resolve(selector)
                 if resolved.startswith('hashlib.'):
                     algorithm = hashes.get(resolved.removeprefix('hashlib.'))
+            if algorithm is None:
+                # HMAC is known even when its configurable digest is not.
+                algorithm, category, usage = "HMAC", "mac", "unknown"
         elif func_name in {
             "cryptography.hazmat.primitives.asymmetric.padding.OAEP",
             "cryptography.hazmat.primitives.asymmetric.padding.PKCS1v15",
@@ -251,8 +255,7 @@ class ASTCollector:
         """Parse a Python file and return detected crypto assets."""
         assets: list[CryptoAsset] = []
         try:
-            with open(path, "r", encoding="utf-8", errors="replace") as fh:
-                source = fh.read()
+            source = read_text(path, errors="replace")
             tree = ast.parse(source)
             visitor = _CryptoVisitor(path)
             visitor.visit(tree)

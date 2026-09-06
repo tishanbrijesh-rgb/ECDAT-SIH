@@ -17,6 +17,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import dsa, ec, ed25519, rsa
 from cryptography.x509.oid import NameOID
 from scanner.models.asset import CryptoAsset
+from scanner.limits import read_bytes
 
 
 def _split_pem_blocks(data: str) -> list[str]:
@@ -45,8 +46,7 @@ class CertCollector:
         """Parse a single PEM certificate file and return crypto assets."""
         assets: list[CryptoAsset] = []
         try:
-            with open(path, "rb") as fh:
-                data = fh.read()
+            data = read_bytes(path)
         except OSError:
             if on_error is not None:
                 on_error(path)

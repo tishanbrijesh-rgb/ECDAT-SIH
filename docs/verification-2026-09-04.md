@@ -1,5 +1,8 @@
 # Verification — 2026-09-04
 
+Latest follow-up: [five-step verification and remaining release gates](five-step-verification.md).
+The historical results below predate that follow-up.
+
 Follow-up: [detection/correlation regression fixes](detection-regressions.md)
 update the demo counts and targeted precision results below.
 

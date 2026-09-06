@@ -1,0 +1,83 @@
+{
+  "schema": 1,
+  "algorithms": ["SHA-1", "SHA-256", "SHA-512"],
+  "label_status": "frozen and independently reviewed before first scanner run; consumed holdout after post-fix evaluation",
+  "scope": "Direct Java digest construction or named digest call sites selecting supported SHA-1, SHA-256, or SHA-512. HMAC construction, provider registration, identifier and prefix constants, runtime-selected MessageDigest calls, SHA-1-INTERLEAVE, SHA-512/t, SHA-512/224, SHA-512/256, and SHAKE are excluded.",
+  "sources": [
+    {
+      "name": "bc-sha1",
+      "repository": "https://github.com/bcgit/bc-java.git",
+      "checkout": ".runtime/benchmarks/bc-java",
+      "revision": "acd2178417ebc6be9df4a8b2582fc8cd2a041f9a",
+      "path": ".runtime/benchmarks/bc-java/prov/src/main/java/org/bouncycastle/jcajce/provider/digest/SHA1.java",
+      "sha256": "a8126a097e99f86da0ff8f2cfc65790c881eba91a73d4cbd9e478d46fb5c9230",
+      "operations": [
+        {"line": 29, "algorithm": "SHA-1", "usage": "hashing", "key_size": null},
+        {"line": 36, "algorithm": "SHA-1", "usage": "hashing", "key_size": null}
+      ]
+    },
+    {
+      "name": "bc-sha256",
+      "repository": "https://github.com/bcgit/bc-java.git",
+      "checkout": ".runtime/benchmarks/bc-java",
+      "revision": "acd2178417ebc6be9df4a8b2582fc8cd2a041f9a",
+      "path": ".runtime/benchmarks/bc-java/prov/src/main/java/org/bouncycastle/jcajce/provider/digest/SHA256.java",
+      "sha256": "84d20a6c2b051063b848fa41b32e8121b49a62eb5a20ad6d0470d1c639835fca",
+      "operations": [
+        {"line": 27, "algorithm": "SHA-256", "usage": "hashing", "key_size": null},
+        {"line": 34, "algorithm": "SHA-256", "usage": "hashing", "key_size": null}
+      ]
+    },
+    {
+      "name": "bc-sha512",
+      "repository": "https://github.com/bcgit/bc-java.git",
+      "checkout": ".runtime/benchmarks/bc-java",
+      "revision": "acd2178417ebc6be9df4a8b2582fc8cd2a041f9a",
+      "path": ".runtime/benchmarks/bc-java/prov/src/main/java/org/bouncycastle/jcajce/provider/digest/SHA512.java",
+      "sha256": "71d43b6520b57487aa7dcb359faec1bddeff42fe9a48343ffadb462ff24648a4",
+      "operations": [
+        {"line": 28, "algorithm": "SHA-512", "usage": "hashing", "key_size": null},
+        {"line": 35, "algorithm": "SHA-512", "usage": "hashing", "key_size": null}
+      ]
+    },
+    {
+      "name": "bc-pqc-utils",
+      "repository": "https://github.com/bcgit/bc-java.git",
+      "checkout": ".runtime/benchmarks/bc-java",
+      "revision": "acd2178417ebc6be9df4a8b2582fc8cd2a041f9a",
+      "path": ".runtime/benchmarks/bc-java/core/src/main/java/org/bouncycastle/pqc/crypto/util/Utils.java",
+      "sha256": "3e3c68d45c67b18bfefb6e7c9332676c7a8890810d47c1abc29b4e315cad3a99",
+      "operations": [
+        {"line": 696, "algorithm": "SHA-256", "usage": "hashing", "key_size": null},
+        {"line": 700, "algorithm": "SHA-512", "usage": "hashing", "key_size": null}
+      ]
+    },
+    {
+      "name": "bc-xmss-constants-negative",
+      "repository": "https://github.com/bcgit/bc-java.git",
+      "checkout": ".runtime/benchmarks/bc-java",
+      "revision": "acd2178417ebc6be9df4a8b2582fc8cd2a041f9a",
+      "path": ".runtime/benchmarks/bc-java/core/src/main/java/org/bouncycastle/pqc/crypto/xmss/XMSSKeyParameters.java",
+      "sha256": "12ef8d68ec99359f57a02a17c7847a3e6e8c3a09ead39750d12d979fb962d00d",
+      "operations": []
+    },
+    {
+      "name": "bc-nist-identifiers-negative",
+      "repository": "https://github.com/bcgit/bc-java.git",
+      "checkout": ".runtime/benchmarks/bc-java",
+      "revision": "acd2178417ebc6be9df4a8b2582fc8cd2a041f9a",
+      "path": ".runtime/benchmarks/bc-java/core/src/main/java/org/bouncycastle/asn1/nist/NISTObjectIdentifiers.java",
+      "sha256": "7ed2037d6e3ef09ffc22ec8c37ca98fac686e3351588963631986fc64a5a4aca",
+      "operations": []
+    },
+    {
+      "name": "bc-dynamic-digest-negative",
+      "repository": "https://github.com/bcgit/bc-java.git",
+      "checkout": ".runtime/benchmarks/bc-java",
+      "revision": "acd2178417ebc6be9df4a8b2582fc8cd2a041f9a",
+      "path": ".runtime/benchmarks/bc-java/prov/src/test/java/org/bouncycastle/jce/provider/test/DigestTest.java",
+      "sha256": "d8cdcbe32b4e36fb27c519fdba0f8b250195f3a5ca27daf3df5323acb7ae1ea1",
+      "operations": []
+    }
+  ]
+}

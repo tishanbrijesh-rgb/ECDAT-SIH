@@ -1,6 +1,7 @@
 """Small adversarial cases independent of the bundled demonstration corpus."""
 import unittest
-from unittest.mock import mock_open, patch
+import tempfile
+from pathlib import Path
 
 from backend.services.confidence import score_finding
 from scanner.collectors.dep_collector import DepCollector
@@ -22,12 +23,16 @@ class ConfidenceRegressionTests(unittest.TestCase):
 
 class DependencyRegressionTests(unittest.TestCase):
     def requirements(self, text):
-        with patch("os.path.isfile", return_value=True), patch("builtins.open", mock_open(read_data=text)):
-            return DepCollector().scan_requirements("requirements.txt")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'requirements.txt'
+            path.write_text(text, encoding='utf-8')
+            return DepCollector().scan_requirements(str(path))
 
     def pom(self, text):
-        with patch("os.path.isfile", return_value=True), patch("builtins.open", mock_open(read_data=text)):
-            return DepCollector().scan_pom_xml("pom.xml")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'pom.xml'
+            path.write_text(text, encoding='utf-8')
+            return DepCollector().scan_pom_xml(str(path))
 
     def test_requirement_comments_markers_and_normalized_names(self):
         for text, package in (

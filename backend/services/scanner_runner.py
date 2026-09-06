@@ -1,6 +1,6 @@
 """
-Scanner runner — orchestrates the full scan pipeline inside the FastAPI
-process: scan -> correlate -> confidence -> risk -> persist.
+Scanner runner — orchestrates the full scan pipeline in the supervised worker
+(or synchronously for direct callers): scan -> correlate -> confidence -> risk -> persist.
 """
 
 from __future__ import annotations

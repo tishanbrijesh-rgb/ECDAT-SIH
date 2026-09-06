@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from scanner.models.asset import CryptoAsset
+from scanner.limits import read_text
 from scanner.rules.crypto_patterns import get_category
 
 
@@ -69,8 +70,7 @@ class DepCollector:
                 on_error(path)
             return assets
         try:
-            with open(path, "r", encoding="utf-8") as fh:
-                lines = fh.readlines()
+            lines = read_text(path).splitlines()
         except (OSError, UnicodeError):
             if on_error is not None:
                 on_error(path)
@@ -110,8 +110,7 @@ class DepCollector:
                 on_error(path)
             return assets
         try:
-            with open(path, "r", encoding="utf-8") as fh:
-                content = fh.read()
+            content = read_text(path)
         except (OSError, UnicodeError):
             if on_error is not None:
                 on_error(path)

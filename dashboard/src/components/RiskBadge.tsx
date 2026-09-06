@@ -1,6 +1,11 @@
+// Renders a color-coded badge for risk severity levels.
+// CRITICAL and HIGH badges pulse to draw attention.
+import React from "react";
+
 interface Props {
   label: string;
   score?: number;
+  size?: "sm" | "md";
 }
 
 const CLASS: Record<string, string> = {
@@ -10,16 +15,22 @@ const CLASS: Record<string, string> = {
   LOW: "risk-low",
 };
 
-export const RiskBadge: React.FC<Props> = ({ label, score }) => {
+const SIZE_CLASS: Record<string, string> = {
+  sm: "risk-badge-sm",
+  md: "",
+};
+
+export const RiskBadge: React.FC<Props> = ({ label, score, size = "md" }) => {
   const cls = CLASS[label] || "";
+  const pulse = label === "CRITICAL" || label === "HIGH";
   return (
     <span
-      className={`risk-badge ${cls}`}
+      className={`risk-badge ${cls} ${SIZE_CLASS[size]}`}
       title={score != null ? `Priority score: ${score}` : undefined}
     >
-      <span className="dot" />
+      <span className={`dot${pulse ? " pulse-dot" : ""}`} />
       {label}
-      {score != null ? ` (${score})` : ""}
+      {score != null ? (size === "sm" ? ` ${score}` : ` (${score})`) : ""}
     </span>
   );
 };

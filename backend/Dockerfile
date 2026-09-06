@@ -15,6 +15,5 @@ COPY scanner/ /app/scanner/
 EXPOSE 8000
 
 ENV SCANNER_PATH=/app
-ENV DATABASE_URL=postgresql://ecdat:ecdat@db:5432/ecdat
 
 CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]

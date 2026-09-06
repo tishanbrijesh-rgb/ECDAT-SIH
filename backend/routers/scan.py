@@ -9,9 +9,9 @@ class ScanRequest(BaseModel):
 from backend.db import SessionLocal
 from backend.models.scan_job import ScanJobDB
 from backend.schemas.asset import ScanJobResponse
-from backend.services.scanner_runner import run_scan
 from backend.services.repository_guard import resolve_repository
 from backend.security import current_role, ensure_write_role, record_audit
+from backend.services.scan_control import reserve, release, supervise, request_cancel, _finish_if_active
 
 router = APIRouter(prefix="/api", tags=["scan"])
 
@@ -24,16 +24,48 @@ def post_scan(payload: ScanRequest, background_tasks: BackgroundTasks, role: str
         raise HTTPException(400, detail="repo_path is required")
     ensure_write_role(role)
     repo_path = resolve_repository(repo_path)
-    db = SessionLocal()
+    control = reserve()
+    db = None
     try:
+        db = SessionLocal()
         job = ScanJobDB(repo_path=repo_path, status="queued")
         db.add(job); db.commit(); db.refresh(job)
         scan_id = job.id
+        control.scan_id = scan_id
+    except Exception:
+        try:
+            if control.scan_id is not None:
+                _finish_if_active(control.scan_id, 'failed', 'Scan submission failed before worker launch')
+        finally:
+            release(control)
+        raise
     finally:
-        db.close()
-    background_tasks.add_task(run_scan, repo_path, scan_id)
-    record_audit("scan.started", f"scan:{scan_id}", role, {"repo_path": repo_path})
+        if db is not None:
+            db.close()
+    try:
+        record_audit("scan.started", f"scan:{scan_id}", role, {"repo_path": repo_path})
+        background_tasks.add_task(supervise, repo_path, control)
+    except Exception:
+        try:
+            _finish_if_active(scan_id, 'failed', 'Scan submission failed before worker launch')
+        finally:
+            release(control)
+        raise
     return {"scan_id": scan_id, "status": "started"}
+
+
+@router.post('/scans/{scan_id}/cancel', status_code=202)
+def cancel_scan(scan_id: int, role: str = Depends(current_role)) -> dict:
+    ensure_write_role(role)
+    with SessionLocal() as db:
+        job = db.get(ScanJobDB, scan_id)
+        if job is None:
+            raise HTTPException(404, 'Scan job not found')
+        if job.status not in {'pending', 'queued', 'running'}:
+            raise HTTPException(409, 'Scan is already finished')
+    request_cancel(scan_id)
+    record_audit('scan.cancel_requested', f'scan:{scan_id}', role, {})
+    return {'scan_id': scan_id, 'status': 'cancellation_requested'}
 
 
 @router.get("/scans", response_model=list[ScanJobResponse])

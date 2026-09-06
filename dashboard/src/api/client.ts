@@ -97,6 +97,10 @@ export async function getScan(id: number): Promise<import("../types").ScanJob> {
   return _get(`/api/scans/${id}`);
 }
 
+export async function cancelScan(id: number): Promise<{ status: string }> {
+  return _post(`/api/scans/${id}/cancel`, {});
+}
+
 export async function getAssets(scanJobId?: number): Promise<import("../types").CryptoAsset[]> {
   const qs = scanJobId != null ? `?scan_job_id=${scanJobId}` : "";
   return _get(`/api/assets${qs}`);

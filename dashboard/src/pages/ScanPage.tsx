@@ -1,8 +1,29 @@
 // Repository scan launcher with job progress, coverage, and history.
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getScan, getScans, scanRepo, canWrite } from "../api/client";
+import { getScan, getScans, scanRepo, canWrite, cancelScan } from "../api/client";
 import type { ScanJob } from "../types";
+
+const terminal = (status?: string) =>
+  ["completed", "failed", "cancelled", "timed_out"].includes(status || "");
+
+const STATUS_CLASS: Record<string, string> = {
+  completed: "status-completed",
+  failed: "status-failed",
+  running: "status-running",
+  cancelled: "status-cancelled",
+  timed_out: "status-timed_out",
+  queued: "status-running",
+};
+
+function formatDuration(ms: number): string {
+  if (ms < 1000) return `${ms} ms`;
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return `${s} s`;
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  return rem ? `${m}m ${rem}s` : `${m}m`;
+}
 
 export default function ScanPage() {
   const [path, setPath] = useState("/test-repo");
@@ -11,6 +32,7 @@ export default function ScanPage() {
   const [history, setHistory] = useState<ScanJob[]>([]);
   const [error, setError] = useState("");
   const [starting, setStarting] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const navigate = useNavigate();
   useEffect(() => {
     getScans()
@@ -28,7 +50,11 @@ export default function ScanPage() {
           setJob(current);
           if (current.status === "completed")
             timer = setTimeout(() => navigate(`/assets?scan_id=${scanId}`), 900);
-          else if (current.status !== "failed") timer = setTimeout(poll, 700);
+          else if (!terminal(current.status)) timer = setTimeout(poll, 700);
+          else
+            getScans()
+              .then(setHistory)
+              .catch(() => undefined);
         })
         .catch(() => {
           if (cancelled) return;
@@ -46,6 +72,7 @@ export default function ScanPage() {
   const start = async () => {
     if (!canWrite() || starting) return;
     setStarting(true);
+    setCancelling(false);
     setError("");
     setScanId(undefined);
     setJob(undefined);
@@ -58,7 +85,18 @@ export default function ScanPage() {
       setStarting(false);
     }
   };
-  const running = starting || (!!scanId && job?.status !== "completed" && job?.status !== "failed");
+  const cancel = async () => {
+    if (!scanId || cancelling || !canWrite()) return;
+    setCancelling(true);
+    try {
+      await cancelScan(scanId);
+    } catch (e) {
+      setError(String(e));
+      setCancelling(false);
+    }
+  };
+  const running = starting || (!!scanId && !terminal(job?.status));
+
   return (
     <>
       <section className="scan-layout">
@@ -96,20 +134,30 @@ export default function ScanPage() {
             <small>Use /test-repo for the bundled controlled dataset.</small>
           </label>
           <button className="button wide" onClick={() => void start()} disabled={!path || running}>
-            {running ? "Scanning securely…" : "Run discovery scan"}
+            {starting ? "Starting scan…" : "Run discovery scan"}
           </button>
+          {scanId && running && (
+            <button className="button" onClick={() => void cancel()} disabled={cancelling}>
+              {cancelling ? "Cancellation requested…" : "Cancel scan"}
+            </button>
+          )}
           {scanId && (
             <div className="scan-progress">
               <div className="progress-track">
                 <i className={job?.status === "completed" ? "done" : ""} />
               </div>
               <div>
-                <strong>{job?.status || "queued"}</strong>
+                <strong>
+                  {job?.status === "running" && (
+                    <span className="pulse-dot" style={{ background: "#4257d6", marginRight: 6 }} />
+                  )}
+                  {job?.status || "queued"}
+                </strong>
                 <span>Scan #{scanId}</span>
               </div>
-              {job?.status === "failed" ? (
+              {terminal(job?.status) && job?.status !== "completed" ? (
                 <small>
-                  {job.blind_spots.join("; ") || "Scan failed. Results are incomplete."}
+                  {job?.blind_spots.join("; ") || "Scan stopped. Results are incomplete."}
                 </small>
               ) : running && job?.collector_stats._files_total !== undefined ? (
                 <small>
@@ -156,18 +204,42 @@ export default function ScanPage() {
                   <td>#{scan.id}</td>
                   <td className="path">{scan.repo_path}</td>
                   <td>
-                    <span className={`status status-${scan.status}`}>{scan.status}</span>
+                    <span className={`status ${STATUS_CLASS[scan.status] || ""}`}>
+                      {scan.status}
+                    </span>
                   </td>
                   <td>{scan.assets_found}</td>
                   <td>{scan.coverage_pct}%</td>
-                  <td>{scan.duration_ms} ms</td>
+                  <td>{formatDuration(scan.duration_ms)}</td>
                   <td>
                     {scan.status === "completed" && (
-                      <Link to={`/assets?scan_id=${scan.id}`}>Open →</Link>
+                      <Link className="row-link" to={`/assets?scan_id=${scan.id}`}>
+                        Open results →
+                      </Link>
+                    )}
+                    {!terminal(scan.status) && (
+                      <button
+                        className="button secondary"
+                        style={{ padding: "6px 12px", fontSize: 12, marginRight: 6 }}
+                        onClick={() => {
+                          setScanId(scan.id);
+                          setJob(scan);
+                          setCancelling(false);
+                        }}
+                      >
+                        Monitor
+                      </button>
                     )}
                   </td>
                 </tr>
               ))}
+              {!history.length && !error && (
+                <tr>
+                  <td colSpan={7} className="empty-table-msg">
+                    No scan history yet.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
