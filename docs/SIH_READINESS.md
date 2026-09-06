@@ -18,12 +18,14 @@
 
 ## Must be verified on the presentation machine
 
-- [ ] Docker Desktop is installed and `docker compose up --build` succeeds
-- [ ] Ports 3000, 8000 and 5432 are available
-- [ ] The `/test-repo` scan completes before the live presentation
+- [x] Docker Desktop is installed and disposable Compose verification succeeds
+- [x] Ports 18080 and 18081 were available for isolated verification; the regular
+  demo still requires ports 3000, 8000 and 5432 to be free at presentation time
+- [x] The `/test-repo` scan completes through the Docker/PostgreSQL deployment
 - [ ] Browser downloads for the risk report are allowed
 - [ ] A screen recording and screenshots are available as offline fallback
-- [ ] The repository is pushed to the team Git remote and the CI workflow passes
+- [x] The verified branch is pushed to the team Git remote
+- [ ] Confirm the latest GitHub Actions run is green before the presentation
 
 ## Deliberately out of SIH prototype scope
 

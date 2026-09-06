@@ -13,7 +13,7 @@ authority because the existing graph refers to older project paths.
 | 2. Precision/recall and metadata | V2 operation metrics repeated three times identically; joint metadata scoring added | External positive key-size labels are absent |
 | 3. Detection defects | Dynamic HMAC misses, Java digest declaration/constant false positives, SHA-1 and selector misses, Apache wrapper misses and nested-hash usage labels corrected | Broad lexical rules remain heuristic; this is not exhaustive detection validation |
 | 4. Scan execution safety | Isolated child, admission lock, timeout, bounded reads, file-count limit and API/UI cancellation | OS sandboxing, distributed admission and crash recovery remain production work |
-| 5. Docker/PostgreSQL | Static Compose checks repeated three times; disposable three-round smoke script added | Docker is absent; zero real Docker/PostgreSQL rounds ran |
+| 5. Docker/PostgreSQL | Three real disposable rounds pass, including authentication, scanning, PostgreSQL connectivity, backend restart persistence, dashboard delivery and cleanup | Migration upgrade/rollback, backup/restore and production TLS remain separate gates |
 
 ## Accuracy evidence
 
@@ -59,7 +59,7 @@ containing digest/verify no longer override encryption usage.
 
 ## Repeated local checks
 
-- Final suite: 87 tests discovered; 86 pass, one symlink creation test
+- Final suite: 88 tests pass; one symlink creation test
   skipped because Windows does not permit it. Three final rounds with
   `ResourceWarning` promoted to errors.
 - Tests cover real subprocess success, timeout, cancellation, launch failure,
@@ -120,8 +120,7 @@ This builds a uniquely named disposable Compose project with random credentials,
 checks readiness/authentication/scans/reports/frontend/PostgreSQL, restarts the
 backend and verifies persistence in three rounds. Its final cleanup removes only
 that verification project's containers and volume. It does not migrate or delete
-the regular project's database. The script is prepared but could not be executed
-beyond its explicit missing-Docker check here. Static YAML checks are not deployment
-tests. TLS/reverse proxy, backup/restore, OS isolation, production serving and
-multi-instance coordination are separate release gates. Do not merge or deploy on
-the strength of this report alone.
+the regular project's database. On 2026-09-06 all three real Docker/PostgreSQL
+rounds passed after the backend and dashboard production images were hardened.
+TLS/reverse proxy, backup/restore, OS isolation and multi-instance coordination are
+separate release gates. Database migration testing is the next planned phase.
