@@ -1,5 +1,5 @@
 # Builds and serves the React dashboard for the demo.
-FROM node:20-alpine
+FROM node:22-alpine
 WORKDIR /app
 COPY dashboard/package.json dashboard/package-lock.json ./
 RUN npm ci
