@@ -19,13 +19,19 @@ import uuid
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def require(condition, message):
+    if not condition:
+        raise RuntimeError(message)
+
+
 def request(path, token=None, payload=None):
     headers = {'Content-Type': 'application/json'}
     if token:
         headers['Authorization'] = 'Bearer ' + token
     data = json.dumps(payload).encode() if payload is not None else None
     req = urllib.request.Request('http://127.0.0.1:18080' + path, data=data, headers=headers)
-    with urllib.request.urlopen(req, timeout=10) as response:
+    # The URL is assembled under the fixed HTTP loopback origin above.
+    with urllib.request.urlopen(req, timeout=10) as response:  # nosec B310
         return json.load(response)
 
 
@@ -60,12 +66,12 @@ def main():
             compose('config', '--quiet')  # never print generated secrets
             compose('up', '-d', '--build', '--wait', '--wait-timeout', '180')
             for round_no in range(1, 4):
-                assert request('/ready')['database'] == 'reachable'
+                require(request('/ready')['database'] == 'reachable', 'Database readiness check failed')
                 try:
                     request('/api/assets')
                     raise AssertionError('Anonymous inventory was accessible')
                 except urllib.error.HTTPError as exc:
-                    assert exc.code == 401
+                    require(exc.code == 401, f'Anonymous inventory returned HTTP {exc.code}')
                 token = request('/api/auth/login', payload={'username': 'verifier', 'password': password})['access_token']
                 scan = request('/api/scan', token, {'repo_path': '/test-repo'})['scan_id']
                 deadline = time.monotonic() + 120
@@ -73,22 +79,28 @@ def main():
                     state = request(f'/api/scans/{scan}', token)
                     if state['status'] == 'completed':
                         break
-                    assert state['status'] in {'queued', 'pending', 'running'}, state['status']
+                    require(state['status'] in {'queued', 'pending', 'running'},
+                            f"Unexpected scan status: {state['status']}")
                     if time.monotonic() >= deadline:
                         raise AssertionError('Docker scan timed out')
                     time.sleep(0.2)
-                assert state['assets_found'] > 0
-                assert request('/api/evaluation', token)['recall'] == 1.0
-                assert request('/api/cbom', token)['components']
-                with urllib.request.urlopen('http://127.0.0.1:18081', timeout=10) as response:
-                    assert response.status == 200
+                require(state['assets_found'] > 0, 'Docker scan returned no assets')
+                require(request('/api/evaluation', token)['recall'] == 1.0,
+                        'Controlled evaluation recall was not 1.0')
+                require(bool(request('/api/cbom', token)['components']), 'CBOM contained no components')
+                # The dashboard verifier always targets this fixed loopback URL.
+                with urllib.request.urlopen(  # nosec B310
+                    'http://127.0.0.1:18081', timeout=10,
+                ) as response:
+                    require(response.status == 200, f'Dashboard returned HTTP {response.status}')
                 compose('exec', '-T', 'db', 'psql', '-U', 'ecdat', '-d', 'ecdat', '-c', 'SELECT 1;')
                 compose('restart', 'backend')
                 for attempt in range(50):
                     try:
-                        assert request(f'/api/scans/{scan}', token)['status'] == 'completed'
+                        require(request(f'/api/scans/{scan}', token)['status'] == 'completed',
+                                'Persisted scan was not completed after backend restart')
                         break
-                    except (OSError, AssertionError):
+                    except (OSError, RuntimeError):
                         if attempt == 49:
                             raise
                         time.sleep(0.2)

@@ -5,8 +5,9 @@ Mounts CORS, initialises DB tables on startup, and exposes three routers:
     /api/scan, /api/assets, /api/dashboard
 """
 
-import os
 import json
+import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Depends
 from backend.security import current_role
@@ -23,10 +24,19 @@ from backend.routers.audit import router as audit_router
 from backend.routers.auth import router as auth_router
 import backend.models.audit_log  # registers the audit table with SQLAlchemy metadata
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    print("[ecdat] DB tables ensured")
+    yield
+
+
 app = FastAPI(
     title="ECDAT",
     description="Enterprise Cryptographic Discovery & Analysis Tool — Smart India Hackathon 2026",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 
@@ -57,13 +67,6 @@ app.include_router(dashboard_router, dependencies=[Depends(current_role)])
 app.include_router(outputs_router, dependencies=[Depends(current_role)])
 app.include_router(audit_router)
 app.include_router(auth_router)
-
-
-# ── Startup ─────────────────────────────────────────────────────────────────
-@app.on_event("startup")
-def _startup() -> None:
-    Base.metadata.create_all(bind=engine)
-    print("[ecdat] DB tables ensured")
 
 
 @app.get("/health")

@@ -1,7 +1,7 @@
 """Pydantic schemas for API serialization."""
 from __future__ import annotations
 from datetime import datetime
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from scanner.redaction import redact_evidence
 from typing import Any
 
@@ -38,6 +38,8 @@ class AssetCreate(BaseModel):
 
 class AssetResponse(BaseModel):
     """Full asset response returned by the API."""
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     scan_job_id: int
     algorithm: str
@@ -72,10 +74,6 @@ class AssetResponse(BaseModel):
     def sanitize_evidence(cls, value):
         return redact_evidence(value)
 
-    class Config:
-        from_attributes = True
-
-
 class AssetUpdate(BaseModel):
     """Partial update — e.g. change business_criticality."""
     business_criticality: str | None = None
@@ -89,6 +87,8 @@ class AssetUpdate(BaseModel):
 
 class ScanJobResponse(BaseModel):
     """Scan job summary."""
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     repo_path: str
     status: str
@@ -104,10 +104,6 @@ class ScanJobResponse(BaseModel):
     duration_ms: int = 0
     collector_stats: dict[str, int] = Field(default_factory=dict)
     blind_spots: list[str] = Field(default_factory=list)
-
-    class Config:
-        from_attributes = True
-
 
 class DashboardSummary(BaseModel):
     """Aggregated dashboard data."""

@@ -7,9 +7,11 @@ from __future__ import annotations
 
 import os
 import re
-import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from typing import Any
+
+from defusedxml import ElementTree as ET
+from defusedxml.common import DefusedXmlException
 
 from scanner.models.asset import CryptoAsset
 from scanner.limits import read_text
@@ -124,7 +126,7 @@ class DepCollector:
             return assets
         try:
             root = ET.fromstring(content)
-        except ET.ParseError:
+        except (ET.ParseError, DefusedXmlException):
             if on_error is not None:
                 on_error(path)
             return assets
