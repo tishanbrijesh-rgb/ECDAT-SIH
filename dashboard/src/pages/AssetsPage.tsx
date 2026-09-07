@@ -1,9 +1,10 @@
 // Searchable, filterable, paginated cryptographic inventory.
 // Filter state is synced to URL search params for shareability.
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { getAssets, canWrite } from "../api/client";
 import { RiskBadge } from "../components/RiskBadge";
+import { highlightText } from "../utils/format";
 import type { CryptoAsset } from "../types";
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
@@ -115,6 +116,7 @@ export default function AssetsPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const hasFilters = risk !== "ALL" || quantum || query;
+  const shouldHighlight = query.trim().length > 0;
 
   const goToPage = useCallback(
     (p: number) => {
@@ -129,7 +131,9 @@ export default function AssetsPage() {
         <div>
           <p className="eyebrow">Standardized inventory</p>
           <h1>Cryptographic assets</h1>
-          <p>{loading ? "Loading…" : `${total} matching finding${total === 1 ? "" : "s"}`}</p>
+          <p aria-live="polite" aria-atomic="true">
+            {loading ? "Loading…" : `${total} matching finding${total === 1 ? "" : "s"}`}
+          </p>
         </div>
         {canWrite() && (
           <Link className="button" to="/scan">
@@ -144,7 +148,11 @@ export default function AssetsPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <select value={risk} onChange={(e) => setRisk(e.target.value as RiskFilter)}>
+        <select
+          value={risk}
+          onChange={(e) => setRisk(e.target.value as RiskFilter)}
+          aria-label="Filter by risk level"
+        >
           <option value="ALL">All risks</option>
           <option value="CRITICAL">Critical</option>
           <option value="HIGH">High</option>
@@ -179,25 +187,29 @@ export default function AssetsPage() {
           </button>
         )}
       </section>
-      {error && !loading && <div className="callout error">{error}</div>}
-      <div className="panel table-wrap">
-        <table>
+      {error && !loading && (
+        <div className="callout error" role="alert">
+          {error}
+        </div>
+      )}
+      <div className="panel table-wrap" role="region" aria-label="Cryptographic assets table">
+        <table role="grid" aria-rowcount={Math.max(total, pageSize) + 1}>
           <thead>
             <tr>
-              <th>Asset</th>
-              <th>Context</th>
-              <th>Evidence</th>
-              <th>Assurance</th>
-              <th>Priority</th>
-              <th />
+              <th scope="col">Asset</th>
+              <th scope="col">Context</th>
+              <th scope="col">Evidence</th>
+              <th scope="col">Assurance</th>
+              <th scope="col">Priority</th>
+              <th scope="col" />
             </tr>
           </thead>
           <tbody>
             {loading
               ? Array.from({ length: pageSize }).map((_, i) => (
-                  <tr key={`sk-${i}`}>
+                  <tr key={`sk-${i}`} aria-rowindex={page * pageSize + i + 2}>
                     {Array.from({ length: 6 }).map((_, j) => (
-                      <td key={j}>
+                      <td key={j} aria-colindex={j + 1}>
                         <div
                           className="skeleton"
                           style={{ height: 12, width: j === 0 ? "80%" : "50%" }}
@@ -206,22 +218,30 @@ export default function AssetsPage() {
                     ))}
                   </tr>
                 ))
-              : assets.map((a) => (
-                  <tr key={a.id}>
-                    <td>
-                      <strong>
-                        {a.algorithm}
-                        {a.key_size ? `-${a.key_size}` : ""}
-                      </strong>
+              : assets.map((a, rowIndex) => (
+                  <tr key={a.id} aria-rowindex={page * pageSize + rowIndex + 2}>
+                    <td aria-colindex={1} data-label="Asset">
+                      <strong
+                        dangerouslySetInnerHTML={{
+                          __html: highlightText(
+                            a.algorithm + (a.key_size ? `-${a.key_size}` : ""),
+                            query,
+                          ),
+                        }}
+                      />
                       <small>
-                        {a.category} &middot; {a.usage}
+                        {a.category} ·{" "}
+                        <span dangerouslySetInnerHTML={{ __html: highlightText(a.usage, query) }} />
                       </small>
                     </td>
-                    <td>
-                      <span className="path">{a.location}</span>
+                    <td aria-colindex={2} data-label="Context">
+                      <span
+                        className="path"
+                        dangerouslySetInnerHTML={{ __html: highlightText(a.location, query) }}
+                      />
                       <small>{a.library || a.protocol || "Direct source usage"}</small>
                     </td>
-                    <td>
+                    <td aria-colindex={3} data-label="Evidence">
                       <div className="source-row">
                         {a.source.map((s) => (
                           <span className={`source source-${s}`} key={s}>
@@ -231,14 +251,14 @@ export default function AssetsPage() {
                       </div>
                       <small>{a.evidence_json.evidence_list?.length || 0} records</small>
                     </td>
-                    <td>
+                    <td aria-colindex={4} data-label="Assurance">
                       <strong>{Math.round(a.confidence * 100)}%</strong>
                       <small>{a.conflict ? "Review conflict" : "Evidence consistent"}</small>
                     </td>
-                    <td>
+                    <td aria-colindex={5} data-label="Priority">
                       <RiskBadge label={a.priority_label} score={a.priority_score} size="sm" />
                     </td>
-                    <td>
+                    <td aria-colindex={6} data-label="Action">
                       <Link className="row-link" to={`/assets/${a.id}`}>
                         Inspect &rarr;
                       </Link>
@@ -247,7 +267,7 @@ export default function AssetsPage() {
                 ))}
             {!loading && !assets.length && (
               <tr>
-                <td colSpan={6} className="empty-table-msg">
+                <td colSpan={6} className="empty-table-msg" aria-live="polite">
                   {hasFilters
                     ? "No assets match these filters."
                     : "No assets found. Run a scan to begin."}
@@ -292,7 +312,7 @@ function PaginationControls({
   const end = Math.min((page + 1) * pageSize, total);
 
   return (
-    <div className="pagination-bar">
+    <nav className="pagination-bar" aria-label="Pagination">
       <span className="muted">
         {start}–{end} of {total}
       </span>
@@ -327,6 +347,6 @@ function PaginationControls({
           Next &rarr;
         </button>
       </div>
-    </div>
+    </nav>
   );
 }

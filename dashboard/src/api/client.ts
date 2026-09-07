@@ -255,8 +255,51 @@ export const getRiskReport = (scanId?: number) =>
 export const getCbom = (scanId?: number) =>
   _get<Record<string, unknown>>(`/api/cbom${scanId ? `?scan_id=${scanId}` : ""}`);
 
-export async function getDashboardSummary(): Promise<import("../types").DashboardSummary> {
-  return _get("/api/dashboard/summary");
+export async function getScanDetail(id: number): Promise<import("../types").ScanDetail> {
+  const scan = await getScan(id);
+  const { items: assets, total } = await getAssets(id, { limit: 200 });
+  return { ...scan, assets, assets_total: total };
+}
+
+export async function getEvidenceGraph(scanId?: number): Promise<Record<string, unknown>> {
+  return _get(`/api/evidence-graph${scanId ? `?scan_id=${scanId}` : ""}`);
+}
+
+export async function downloadCsv(
+  filename: string,
+  rows: Record<string, unknown>[],
+  columns: string[],
+): Promise<void> {
+  const header = columns.join(",");
+  const body = rows
+    .map((row) =>
+      columns
+        .map((col) => {
+          const val = row[col];
+          const str = val == null ? "" : String(val);
+          return str.includes(",") || str.includes('"') || str.includes("\n")
+            ? `"${str.replace(/"/g, '""')}"`
+            : str;
+        })
+        .join(","),
+    )
+    .join("\n");
+  const blob = new Blob([`${header}\n${body}\n`], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
+export async function getDashboardSummary(
+  scanId?: number,
+): Promise<import("../types").DashboardSummary> {
+  const qs = scanId != null ? `?scan_id=${scanId}` : "";
+  return _get(`/api/dashboard/summary${qs}`);
 }
 
 const storedSession = readStoredSession();

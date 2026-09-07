@@ -29,8 +29,8 @@
 
 ## Accepted SIH prototype limitations
 
-- The bundled password and token-secret defaults are for an offline demonstration only.
-- Scan execution is an in-process background task, not an isolated worker.
+- Local demo credentials are operator-provisioned in an untracked environment file.
+- Scan execution uses a supervised child process, but not a hardened OS sandbox.
 - Source parsers do not execute scanned repository code.
 - Binary, runtime, cloud KMS, network and HSM discovery remain declared blind spots.
 - A production deployment must add SSO, TLS, secret management, rate limits, worker sandboxing and penetration testing.

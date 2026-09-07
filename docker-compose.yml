@@ -26,6 +26,7 @@ services:
       ECDAT_ALLOW_ROLE_HEADER: "false"
       ECDAT_SCAN_TIMEOUT_SECONDS: ${ECDAT_SCAN_TIMEOUT_SECONDS:-300}
       ECDAT_MAX_FILE_BYTES: ${ECDAT_MAX_FILE_BYTES:-8388608}
+      ECDAT_AUTO_CREATE_TABLES: "false"
       ECDAT_MAX_SCAN_FILES: ${ECDAT_MAX_SCAN_FILES:-100000}
       ECDAT_USERS_JSON: ${ECDAT_USERS_JSON:?Configure ECDAT_USERS_JSON}
       ECDAT_TOKEN_SECRET: ${ECDAT_TOKEN_SECRET:?Configure ECDAT_TOKEN_SECRET}
@@ -35,14 +36,32 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     command: uvicorn backend.main:app --host 0.0.0.0 --port 8000
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready')"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready')",
+        ]
       interval: 5s
       timeout: 3s
       retries: 10
+
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://ecdat:${ECDAT_DB_PASSWORD:?Configure ECDAT_DB_PASSWORD}@db:5432/ecdat
+    depends_on:
+      db:
+        condition: service_healthy
+    command: alembic upgrade head
+    restart: "no"
 
   dashboard:
     build:

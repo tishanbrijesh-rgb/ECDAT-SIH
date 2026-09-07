@@ -20,6 +20,7 @@ from scanner.main import _print as _scanner_print
 
 from backend.models.scan_job import ScanJobDB
 from backend.models.asset import CryptoAssetDB
+from backend.models.scan_failure import ScanFailureDB
 from backend.db import SessionLocal
 from backend.services.correlator import correlate
 from backend.services.confidence import score_finding
@@ -167,7 +168,13 @@ def _run_scan(repo_path: str, scan_id: int | None = None) -> dict[str, Any]:
         job.coverage_pct = metrics["coverage_pct"]
         job.duration_ms = metrics["duration_ms"]
         job.collector_stats = metrics["collector_stats"]
-        job.blind_spots = metrics["blind_spots"]
+        job.blind_spots = list(metrics["blind_spots"])
+        for failure in metrics.get("failures", []):
+            db.add(ScanFailureDB(
+                scan_job_id=scan_id,
+                path=failure["path"],
+                reason=failure["reason"],
+            ))
         db.commit()
         _scanner_print(f"Job {scan_id}: done — {persisted} assets, avg confidence {avg_conf:.2%}")
     finally:

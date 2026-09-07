@@ -4,7 +4,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #111a3d 0%, #1e2b6b 40%, #2d397f 100%);
+  background: linear-gradient(135deg, var(--navy) 0%, #1e2b6b 40%, #2d397f 100%);
   position: relative;
   overflow: hidden;
 }
@@ -18,37 +18,16 @@
 .login-orb--1 {
   width: 300px;
   height: 300px;
-  background: #4257d6;
+  background: var(--indigo);
   top: 10%;
   left: 5%;
 }
 .login-orb--2 {
   width: 250px;
   height: 250px;
-  background: #42c9b7;
+  background: var(--teal);
   top: 60%;
   right: 10%;
-}
-.login-orb--3 {
-  width: 200px;
-  height: 200px;
-  background: #845ed7;
-  bottom: 10%;
-  left: 30%;
-}
-.login-orb--4 {
-  width: 180px;
-  height: 180px;
-  background: #4257d6;
-  top: 30%;
-  right: 25%;
-}
-.login-orb--5 {
-  width: 220px;
-  height: 220px;
-  background: #42c9b7;
-  top: 70%;
-  left: 50%;
 }
 .login-shell::before {
   content: "";
@@ -79,7 +58,7 @@
   padding: 44px 36px 36px;
   box-shadow:
     0 25px 60px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
+    0 0 0 1px var(--panel);
 }
 .login-brand {
   display: flex;
@@ -92,28 +71,28 @@
   place-items: center;
   width: 46px;
   height: 46px;
-  background: linear-gradient(145deg, #6d7ff0, #42c9b7);
+  background: linear-gradient(145deg, var(--indigo), var(--teal));
   border-radius: 13px;
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.3),
     0 4px 12px rgba(66, 87, 214, 0.3);
   font: 800 20px Manrope;
-  color: #fff;
+  color: var(--panel);
 }
 .brand-text {
   font: 800 22px Manrope;
-  color: #111a3d;
+  color: var(--navy);
   letter-spacing: 0.02em;
 }
 .brand-sub {
   font: 500 10px "DM Sans";
   letter-spacing: 0.18em;
-  color: #69758d;
+  color: var(--muted);
   text-transform: uppercase;
 }
 .login-card h1 {
   font: 700 24px Manrope;
-  color: #151e3b;
+  color: var(--text);
   margin: 0 0 6px;
 }
 .login-card > p {
@@ -123,9 +102,9 @@
   line-height: 1.55;
 }
 .login-error {
-  background: #fff0f1;
+  background: var(--red-light);
   border: 1px solid #f6c8cd;
-  color: #a02d3b;
+  color: var(--red-dark);
   padding: 10px 14px;
   border-radius: 10px;
   font-size: 13px;
@@ -134,17 +113,17 @@
 .login-hint {
   margin-top: 18px;
   padding: 12px 14px;
-  background: #f4f7fb;
+  background: var(--bg);
   border-radius: 10px;
   font-size: 11px;
   color: var(--muted);
   line-height: 1.6;
 }
 .login-hint strong {
-  color: #151e3b;
+  color: var(--text);
 }
 .login-hint code {
-  background: #e5e8f0;
+  background: var(--line);
   padding: 1px 5px;
   border-radius: 4px;
   font-size: 10.5px;
@@ -167,7 +146,7 @@
   left: 14px;
   top: 50%;
   font-size: 14px;
-  color: #69758d;
+  color: var(--muted);
   pointer-events: none;
   background: transparent;
   padding: 0;
@@ -181,16 +160,16 @@
 .float-field--active label {
   top: 6px;
   font-size: 10px;
-  color: #596bd1;
+  color: var(--indigo);
 }
 .float-field input {
   width: 100%;
-  border: 1.5px solid #cfd7e4;
+  border: 1.5px solid var(--line);
   border-radius: 10px;
   padding: 18px 14px 8px;
   font-size: 14px;
-  color: #172039;
-  background: #f9fafc;
+  color: var(--text);
+  background: var(--bg);
   outline: none;
   transition:
     border-color 0.15s,
@@ -198,13 +177,13 @@
     background 0.15s;
 }
 .float-field input:focus {
-  border-color: #596bd1;
-  box-shadow: 0 0 0 3px rgba(89, 107, 209, 0.1);
-  background: #fff;
+  border-color: var(--indigo);
+  box-shadow: 0 0 0 3px rgba(66, 87, 214, 0.1);
+  background: var(--panel);
 }
 .float-field--active input {
-  border-color: #596bd1;
-  background: #fff;
+  border-color: var(--indigo);
+  background: var(--panel);
 }
 .float-underline {
   position: absolute;
@@ -212,7 +191,7 @@
   left: 0;
   width: 100%;
   height: 2px;
-  background: linear-gradient(90deg, #4257d6, #42c9b7);
+  background: linear-gradient(90deg, var(--indigo), var(--teal));
   border-radius: 0 0 10px 10px;
   transform-origin: left;
   transform: scaleX(0);
@@ -227,8 +206,8 @@
   padding: 13px;
   border: 0;
   border-radius: 10px;
-  background: linear-gradient(135deg, #4257d6, #3041a5);
-  color: #fff !important;
+  background: linear-gradient(135deg, var(--indigo), #3041a5);
+  color: var(--panel) !important;
   font: 700 14px Manrope;
   cursor: pointer;
   box-shadow: 0 5px 16px rgba(66, 87, 214, 0.3);

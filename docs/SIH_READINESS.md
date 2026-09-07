@@ -26,6 +26,8 @@
 - [ ] A screen recording and screenshots are available as offline fallback
 - [x] The verified branch is pushed to the team Git remote
 - [ ] Confirm the latest GitHub Actions run is green before the presentation
+- [x] Alembic migrations (0001–0003) verified on clean and populated databases
+- [x] Scan failures persist via relational `scan_failures` table
 
 ## Deliberately out of SIH prototype scope
 

@@ -4,7 +4,8 @@ const browserChannel = process.env.ECDAT_E2E_BROWSER_CHANNEL;
 
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: true,
+  fullyParallel: false,
+  workers: 1,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? "github" : "list",
   use: {

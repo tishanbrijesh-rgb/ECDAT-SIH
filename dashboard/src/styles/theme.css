@@ -12,14 +12,15 @@
   --line: #dfe5ef;
   --muted: #69758d;
   --panel: #fff;
-  --teal: #21a995;
+  --teal: #087969;
   --teal-light: #e6f7f4;
-  --amber: #efa83e;
+  --amber: #a85a00;
   --amber-light: #fff8ed;
   --red: #e25361;
   --red-light: #fff0f1;
   --violet: #845ed7;
   --violet-light: #f5f0ff;
+  --green: #22c55e;
 
   --bg: #f4f7fb;
   --text: #172039;
@@ -42,6 +43,19 @@
 * {
   box-sizing: border-box;
 }
+
+/* Keyboard focus indicator — only on focus-visible (not mouse clicks) */
+:focus-visible {
+  outline: 2px solid var(--indigo);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+button:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible) {
+  outline: none;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -51,10 +65,18 @@ button,
 input,
 select {
   font: inherit;
+  min-height: 44px;
 }
 a {
   color: #3549bc;
   text-decoration: none;
+}
+
+.button,
+.topbar nav a,
+.row-link,
+.toast-close {
+  min-height: 44px;
 }
 
 /* ── Typography ─────────────────────────────────────────────── */

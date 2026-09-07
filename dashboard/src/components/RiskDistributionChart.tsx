@@ -7,7 +7,11 @@ export default function RiskDistributionChart({
 }) {
   return (
     <ResponsiveContainer width="100%" height={270}>
-      <BarChart data={data}>
+      <BarChart data={data} aria-label="Risk distribution by priority level">
+        <title>Cryptographic risk distribution</title>
+        <desc>
+          Bar chart showing the count of assets at each risk level: Critical, High, Medium, Low.
+        </desc>
         <CartesianGrid stroke="var(--line)" vertical={false} />
         <XAxis
           dataKey="label"
@@ -30,6 +34,7 @@ export default function RiskDistributionChart({
             boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
             fontSize: 13,
           }}
+          cursor={{ fill: "var(--indigo)", fillOpacity: 0.06 }}
         />
         <Bar dataKey="count" fill="var(--indigo)" radius={[8, 8, 0, 0]} maxBarSize={56} />
       </BarChart>

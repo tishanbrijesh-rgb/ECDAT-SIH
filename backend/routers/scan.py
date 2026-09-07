@@ -1,5 +1,5 @@
 """Scan router — start scans and query scan job history."""
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, StrictStr
 
 
@@ -69,11 +69,20 @@ def cancel_scan(scan_id: int, role: str = Depends(current_role)) -> dict:
 
 
 @router.get("/scans", response_model=list[ScanJobResponse])
-def list_scans() -> list[ScanJobResponse]:
+def list_scans(
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+) -> list[ScanJobResponse]:
     """List all scan jobs, most recent first."""
     db = SessionLocal()
     try:
-        jobs = db.query(ScanJobDB).order_by(ScanJobDB.id.desc()).all()
+        jobs = (
+            db.query(ScanJobDB)
+            .order_by(ScanJobDB.id.desc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
         return [ScanJobResponse.model_validate(j) for j in jobs]
     finally:
         db.close()

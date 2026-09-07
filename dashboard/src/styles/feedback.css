@@ -57,6 +57,16 @@
   box-shadow: var(--shadow-lg);
   animation: toastIn 0.3s ease-out;
   pointer-events: auto;
+  position: relative;
+  overflow: hidden;
+}
+.toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 0 0 0 var(--radius-xs);
 }
 .toast.exit {
   animation: toastOut 0.25s ease-in forwards;
@@ -76,7 +86,8 @@
   color: #fff;
   font-size: 18px;
   cursor: pointer;
-  padding: 0;
+  padding: 8px;
+  min-width: 44px;
   line-height: 1;
   opacity: 0.7;
   flex-shrink: 0;

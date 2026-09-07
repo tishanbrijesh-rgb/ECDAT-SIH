@@ -1,8 +1,10 @@
 // Repository scan launcher with job progress, coverage, and history.
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import type { FormEvent, ChangeEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getScan, getScans, scanRepo, canWrite, cancelScan } from "../api/client";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { relativeTime, formatDate } from "../utils/format";
 import type { ScanJob } from "../types";
 
 const terminal = (status?: string) =>
@@ -28,6 +30,7 @@ function formatDuration(ms: number): string {
 
 export default function ScanPage() {
   const [path, setPath] = useState("/test-repo");
+  const [pathError, setPathError] = useState("");
   const [scanId, setScanId] = useState<number>();
   const [job, setJob] = useState<ScanJob>();
   const [history, setHistory] = useState<ScanJob[]>([]);
@@ -36,6 +39,31 @@ export default function ScanPage() {
   const [cancelling, setCancelling] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const navigate = useNavigate();
+
+  const validatePath = useCallback((raw: string): string => {
+    const trimmed = raw.trim();
+    if (!trimmed) return "Repository path is required.";
+    if (!trimmed.startsWith("/") && !trimmed.startsWith("./")) {
+      return "Path must be absolute (/) or relative (./).";
+    }
+    if (/[\n\r|;&$`(){}[\]\\<>]/.test(trimmed)) {
+      return "Path contains invalid characters.";
+    }
+    return "";
+  }, []);
+
+  const handlePathChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const next = e.target.value;
+      setPath(next);
+      if (pathError) setPathError(validatePath(next));
+    },
+    [pathError, validatePath],
+  );
+
+  const handlePathBlur = useCallback(() => {
+    setPathError(validatePath(path));
+  }, [path, validatePath]);
   useEffect(() => {
     getScans()
       .then(setHistory)
@@ -80,6 +108,12 @@ export default function ScanPage() {
   }, [scanId, navigate]);
   const start = async () => {
     if (!canWrite() || starting) return;
+    const validationError = validatePath(path);
+    if (validationError) {
+      setPathError(validationError);
+      return;
+    }
+    setPathError("");
     setStarting(true);
     setCancelling(false);
     setError("");
@@ -105,6 +139,11 @@ export default function ScanPage() {
     }
   };
   const askCancel = useCallback(() => setShowCancelConfirm(true), []);
+  const monitor = useCallback((scan: ScanJob) => {
+    setScanId(scan.id);
+    setJob(scan);
+    setCancelling(false);
+  }, []);
   const running = starting || (!!scanId && !terminal(job?.status));
 
   return (
@@ -138,12 +177,30 @@ export default function ScanPage() {
           {!canWrite() && (
             <p>Read-only access. An administrator or security analyst can start scans.</p>
           )}
-          <label>
+          <label htmlFor="scan-path">
             Repository path
-            <input value={path} onChange={(e) => setPath(e.target.value)} disabled={running} />
-            <small>Use /test-repo for the bundled controlled dataset.</small>
+            <input
+              id="scan-path"
+              value={path}
+              onChange={handlePathChange}
+              onBlur={handlePathBlur}
+              disabled={running}
+              aria-invalid={Boolean(pathError)}
+              aria-describedby={pathError ? "scan-path-error" : "scan-path-hint"}
+              autoComplete="off"
+            />
+            <small id="scan-path-hint">Use /test-repo for the bundled controlled dataset.</small>
+            {pathError && (
+              <small id="scan-path-error" className="field-error" role="alert">
+                {pathError}
+              </small>
+            )}
           </label>
-          <button className="button wide" onClick={() => void start()} disabled={!path || running}>
+          <button
+            className="button wide"
+            onClick={() => void start()}
+            disabled={!path || !!pathError || starting || running}
+          >
             {starting ? "Starting scan…" : "Run discovery scan"}
           </button>
           {scanId && running && (
@@ -152,14 +209,17 @@ export default function ScanPage() {
             </button>
           )}
           {scanId && (
-            <div className="scan-progress">
+            <div className="scan-progress" role="status" aria-live="polite">
               <div className="progress-track">
                 <i className={job?.status === "completed" ? "done" : ""} />
               </div>
               <div>
                 <strong>
                   {job?.status === "running" && (
-                    <span className="pulse-dot" style={{ background: "#4257d6", marginRight: 6 }} />
+                    <span
+                      className="pulse-dot"
+                      style={{ background: "var(--indigo)", marginRight: 6 }}
+                    />
                   )}
                   {job?.status || "queued"}
                 </strong>
@@ -208,7 +268,7 @@ export default function ScanPage() {
           <p>Coverage and assurance history</p>
         </div>
         <div className="panel table-wrap">
-          <table>
+          <table aria-label="Scan history">
             <thead>
               <tr>
                 <th>ID</th>
@@ -217,6 +277,7 @@ export default function ScanPage() {
                 <th>Assets</th>
                 <th>Coverage</th>
                 <th>Duration</th>
+                <th>Started</th>
                 <th />
               </tr>
             </thead>
@@ -234,6 +295,15 @@ export default function ScanPage() {
                   <td>{scan.coverage_pct}%</td>
                   <td>{formatDuration(scan.duration_ms)}</td>
                   <td>
+                    {scan.started_at ? (
+                      <small title={formatDate(scan.started_at)}>
+                        {relativeTime(scan.started_at)}
+                      </small>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td>
                     {scan.status === "completed" && (
                       <Link className="row-link" to={`/assets?scan_id=${scan.id}`}>
                         Open results →
@@ -243,11 +313,7 @@ export default function ScanPage() {
                       <button
                         className="button secondary"
                         style={{ padding: "6px 12px", fontSize: 12, marginRight: 6 }}
-                        onClick={() => {
-                          setScanId(scan.id);
-                          setJob(scan);
-                          setCancelling(false);
-                        }}
+                        onClick={() => monitor(scan)}
                       >
                         Monitor
                       </button>
@@ -257,7 +323,7 @@ export default function ScanPage() {
               ))}
               {!history.length && !error && (
                 <tr>
-                  <td colSpan={7} className="empty-table-msg">
+                  <td colSpan={8} className="empty-table-msg">
                     No scan history yet.
                   </td>
                 </tr>

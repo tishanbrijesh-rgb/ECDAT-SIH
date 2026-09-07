@@ -8,14 +8,13 @@ from __future__ import annotations
 
 import os
 import re
-from dataclasses import dataclass
-from typing import Any
+import warnings
 
 from cryptography import x509
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import dsa, ec, ed25519, rsa
+from cryptography.utils import CryptographyDeprecationWarning
 from cryptography.x509.oid import NameOID
+
 from scanner.models.asset import CryptoAsset
 from scanner.limits import read_bytes
 
@@ -30,13 +29,73 @@ def _split_pem_blocks(data: str) -> list[str]:
 
 
 def _parse_pem_block(pem_bytes: bytes) -> x509.Certificate | None:
-    """Try to load a single PEM block as an X.509 certificate."""
-    for label in ("CERTIFICATE", "X509 CERTIFICATE"):
-        try:
-            return x509.load_pem_x509_certificate(pem_bytes, default_backend())
-        except Exception:
-            pass
-    return None
+    """Load one X.509 block, treating deprecations as controlled failures."""
+    try:
+        with warnings.catch_warnings():
+            # Some currently accepted certificates (for example, those with a
+            # non-positive serial number) are scheduled to become hard errors.
+            # Handle them consistently now instead of changing scan behavior on
+            # a future cryptography upgrade.
+            warnings.simplefilter("error", CryptographyDeprecationWarning)
+            return x509.load_pem_x509_certificate(pem_bytes)
+    except Exception:
+        return None
+
+
+def _common_name(name: x509.Name) -> str:
+    """Return a printable common name without leaking malformed-name errors."""
+    try:
+        return str(name.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value)
+    except CryptographyDeprecationWarning:
+        raise
+    except Exception:
+        return ""
+
+
+def _asset_from_certificate(cert: x509.Certificate, path: str) -> CryptoAsset:
+    """Convert a validated certificate to evidence; callers contain failures."""
+    pub_key = cert.public_key()
+    try:
+        key_size = pub_key.key_size
+    except (AttributeError, TypeError):
+        key_size = 0
+
+    algo_name = type(pub_key).__name__
+    if isinstance(pub_key, rsa.RSAPublicKey):
+        algorithm = "RSA"
+        category = "encryption"
+    elif isinstance(pub_key, ec.EllipticCurvePublicKey):
+        algorithm = "ECDSA"
+        category = "signature"
+    elif isinstance(pub_key, ed25519.Ed25519PublicKey):
+        algorithm = "Ed25519"
+        category = "signature"
+    elif isinstance(pub_key, dsa.DSAPublicKey):
+        algorithm = "DSA"
+        category = "signature"
+    else:
+        algorithm = algo_name
+        category = "unknown"
+
+    not_after = cert.not_valid_after_utc.isoformat() if cert.not_valid_after_utc else ""
+    signature_hash = cert.signature_hash_algorithm
+    evidence = {
+        "key_size": key_size,
+        "subject_cn": _common_name(cert.subject),
+        "issuer": _common_name(cert.issuer),
+        "not_after": not_after,
+        "serial_number": str(cert.serial_number),
+        "signature_hash_algorithm": signature_hash.name if signature_hash else "unknown",
+    }
+
+    return CryptoAsset(
+        algorithm=algorithm,
+        category=category,
+        source="cert",
+        location=path,
+        evidence=evidence,
+        confidence=0.95,
+    )
 
 
 class CertCollector:
@@ -65,67 +124,13 @@ class CertCollector:
                     on_error(path)
                 continue
 
-            # --- Algorithm & key size ---
-            pub_key = cert.public_key()
             try:
-                key_size = pub_key.key_size
-            except (AttributeError, TypeError):
-                key_size = 0
-
-            algo_name = type(pub_key).__name__
-            if isinstance(pub_key, rsa.RSAPublicKey):
-                algorithm = "RSA"
-                category = "encryption"
-            elif isinstance(pub_key, ec.EllipticCurvePublicKey):
-                algorithm = "ECDSA"
-                category = "signature"
-            elif isinstance(pub_key, ed25519.Ed25519PublicKey):
-                algorithm = "Ed25519"
-                category = "signature"
-            elif isinstance(pub_key, dsa.DSAPublicKey):
-                algorithm = "DSA"
-                category = "signature"
-            else:
-                algorithm = algo_name
-                category = "unknown"
-
-            # --- Subject CN ---
-            subject_cn = ""
-            try:
-                subject_cn = cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
-            except (IndexError, Exception):
-                pass
-
-            # --- Issuer ---
-            issuer_cn = ""
-            try:
-                issuer_cn = cert.issuer.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
-            except (IndexError, Exception):
-                pass
-
-            # --- Expiry ---
-            not_after = cert.not_valid_after_utc.isoformat() if cert.not_valid_after_utc else ""
-
-            evidence = {
-                "key_size": key_size,
-                "subject_cn": str(subject_cn),
-                "issuer": str(issuer_cn),
-                "not_after": not_after,
-                "serial_number": str(cert.serial_number),
-                "signature_hash_algorithm": cert.signature_hash_algorithm.name
-                if cert.signature_hash_algorithm else "unknown",
-            }
-
-            assets.append(
-                CryptoAsset(
-                    algorithm=algorithm,
-                    category=category,
-                    source="cert",
-                    location=path,
-                    evidence=evidence,
-                    confidence=0.95,
-                )
-            )
+                with warnings.catch_warnings():
+                    warnings.simplefilter("error", CryptographyDeprecationWarning)
+                    assets.append(_asset_from_certificate(cert, path))
+            except Exception:
+                if on_error is not None:
+                    on_error(path)
         return assets
 
     def scan_directory(self, root: str) -> dict[tuple[str, str], list[dict]]:

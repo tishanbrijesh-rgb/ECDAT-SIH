@@ -7,18 +7,20 @@ function Assert-NativeSuccess([string]$Step) {
 }
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
+$venvPython = Join-Path $projectRoot ".venv\Scripts\python.exe"
+$pythonCommand = if (Test-Path -LiteralPath $venvPython) { $venvPython } else { "python" }
 Push-Location $projectRoot
 try {
     Write-Host "[1/5] Python compilation"
-    python -m compileall -q backend scanner scripts tests
+    & $pythonCommand -m compileall -q backend scanner scripts tests
     Assert-NativeSuccess "Python compilation"
 
     Write-Host "[2/5] Unit and API integration tests"
-    python -W error::ResourceWarning -m unittest discover -s tests -v
+    & $pythonCommand -W error::ResourceWarning -m unittest discover -s tests -v
     Assert-NativeSuccess "Unit and API integration tests"
 
     Write-Host "[3/5] Python dependency consistency"
-    python -m pip check
+    & $pythonCommand -m pip check
     Assert-NativeSuccess "Python dependency consistency"
 
     Push-Location dashboard

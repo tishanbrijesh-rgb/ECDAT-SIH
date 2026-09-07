@@ -1,0 +1,294 @@
+/* ── CBOM page ────────────────────────────────────────────── */
+.cbom-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.cbom-meta-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  box-shadow: var(--shadow-sm);
+}
+.cbom-meta-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.cbom-meta-value {
+  display: block;
+  font: 700 15px Manrope;
+  color: var(--text);
+}
+.cbom-meta-value code {
+  font:
+    500 13px ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  background: var(--bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.cbom-section {
+  margin-bottom: 28px;
+}
+.cbom-section h2 {
+  font: 700 18px Manrope;
+  margin: 0 0 14px;
+  color: var(--text);
+}
+.cbom-section > p {
+  color: var(--muted);
+  font-size: 13px;
+}
+.cbom-component-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+}
+.cbom-component-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+.cbom-comp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.cbom-comp-type {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--indigo);
+  background: var(--bg);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+.cbom-purl {
+  font:
+    500 11px ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  color: var(--muted);
+  background: var(--bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.cbom-component-card h3 {
+  font: 800 15px Manrope;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+.cbom-component-card > p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.cbom-evidence-list {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  margin-top: 8px;
+}
+.cbom-evidence-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.cbom-evidence-item:last-child {
+  border-bottom: none;
+}
+.cbom-evidence-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.cbom-algorithm {
+  font: 700 12px Manrope;
+  color: var(--navy);
+}
+.cbom-category {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.cbom-confidence {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--teal-dark);
+  margin-left: auto;
+}
+.cbom-evidence-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.cbom-hashes {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.cbom-hash {
+  font:
+    400 10px ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  background: var(--bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--muted);
+  word-break: break-all;
+}
+.cbom-graph {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+.cbom-graph-visual {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+}
+.cbom-graph-node {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cbom-node-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.cbom-node-card strong {
+  display: block;
+  font: 700 13px Manrope;
+  margin-bottom: 4px;
+}
+.cbom-node-type {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--indigo);
+  background: var(--bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.cbom-node-deps {
+  margin-left: 16px;
+  padding-left: 12px;
+  border-left: 2px solid var(--line);
+}
+.cbom-dep-edge {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 4px 0;
+}
+.cbom-graph-raw {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 18px;
+  font:
+    400 13px ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  color: var(--text);
+  line-height: 1.7;
+}
+.cbom-raw-json {
+  background: var(--navy);
+  color: #e2e8f0;
+  border-radius: var(--radius);
+  padding: 20px;
+  overflow-x: auto;
+  font:
+    400 12px ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  line-height: 1.6;
+  margin: 0;
+}
+.cbom-vuln-list,
+.cbom-service-list {
+  display: grid;
+  gap: 10px;
+}
+.cbom-vuln-item {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 10px;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+}
+.cbom-vuln-id {
+  font: 800 12px Manrope;
+  color: var(--navy);
+}
+.cbom-vuln-severity {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  justify-self: start;
+}
+.sev-critical {
+  background: var(--red-light);
+  color: var(--red-dark);
+}
+.sev-high {
+  background: #fff0e6;
+  color: #c2410c;
+}
+.sev-medium {
+  background: var(--amber-light);
+  color: var(--amber-dark);
+}
+.sev-low {
+  background: var(--teal-light);
+  color: var(--teal-dark);
+}
+.sev-unknown {
+  background: #f1f5f9;
+  color: #64748b;
+}
+.cbom-service-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px 18px;
+}
+.cbom-service-item span {
+  color: var(--muted);
+  font-size: 12px;
+}

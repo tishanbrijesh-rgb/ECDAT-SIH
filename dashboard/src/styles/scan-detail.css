@@ -1,0 +1,96 @@
+/* ── Scan detail page ─────────────────────────────────────── */
+.scan-detail-facts {
+  display: grid;
+  gap: 10px;
+}
+.scan-fact {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 12px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.scan-fact:last-child {
+  border-bottom: none;
+}
+.scan-fact-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.scan-fact-value {
+  font: 600 13px Manrope;
+  color: var(--text);
+  word-break: break-word;
+}
+.scan-risk-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.scan-risk-row:last-child {
+  border-bottom: none;
+}
+.scan-risk-count {
+  font: 800 22px Manrope;
+  color: var(--text);
+}
+.status {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: var(--line);
+  letter-spacing: 0.04em;
+}
+.status-completed {
+  background: var(--teal-light);
+  color: var(--teal-dark);
+}
+.status-failed {
+  background: var(--red-light);
+  color: var(--red-dark);
+}
+.status-running {
+  background: #eef0ff;
+  color: #4257d6;
+}
+.status-cancelled,
+.status-timed_out {
+  background: var(--amber-light);
+  color: var(--amber-dark);
+}
+.scan-failures {
+  border-color: color-mix(in srgb, var(--red) 35%, var(--line));
+}
+.scan-failure-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.scan-failure-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.scan-failure-list li:last-child {
+  border-bottom: 0;
+}
+@media (max-width: 480px) {
+  .scan-failure-list li {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

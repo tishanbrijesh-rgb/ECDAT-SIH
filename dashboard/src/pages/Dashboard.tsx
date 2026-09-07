@@ -1,34 +1,43 @@
 // Portfolio posture, assurance measurements, and research evaluation.
-import { lazy, Suspense, useEffect, useState, useRef } from "react";
-import { Link } from "react-router-dom";
+import { lazy, Suspense, useEffect, useState, useRef, useMemo, memo, type ReactNode } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { downloadReport, getDashboardSummary, getEvaluation, canWrite } from "../api/client";
 import type { DashboardSummary, Evaluation } from "../types";
 
 const RiskDistributionChart = lazy(() => import("../components/RiskDistributionChart"));
 
 // Animated number that counts up from 0 to the target value.
-function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string }) {
+// Memoized so parent Dashboard doesn't re-render every frame.
+const AnimatedNumber = memo(function AnimatedNumber({
+  value,
+  suffix = "",
+}: {
+  value: number;
+  suffix?: string;
+}) {
   const [display, setDisplay] = useState(0);
-  const ref = useRef<number>();
+  const rafRef = useRef<number>(0);
+  const fromRef = useRef(0);
+
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setDisplay(value);
+      fromRef.current = value;
       return;
     }
     const target = value;
     const duration = 600;
     const start = performance.now();
-    const from = display;
+    fromRef.current = display;
+    const from = fromRef.current;
     const step = (now: number) => {
       const t = Math.min(1, (now - start) / duration);
       const eased = 1 - Math.pow(1 - t, 3);
       setDisplay(Math.round(from + (target - from) * eased));
-      if (t < 1) ref.current = requestAnimationFrame(step);
+      if (t < 1) rafRef.current = requestAnimationFrame(step);
     };
-    ref.current = requestAnimationFrame(step);
-    return () => {
-      if (ref.current !== undefined) cancelAnimationFrame(ref.current);
-    };
+    rafRef.current = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(rafRef.current);
   }, [value]);
   return (
     <>
@@ -36,20 +45,48 @@ function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string
       {suffix}
     </>
   );
-}
+});
 
 export default function Dashboard() {
   const [summary, setSummary] = useState<DashboardSummary>();
   const [evaluation, setEvaluation] = useState<Evaluation>();
   const [error, setError] = useState("");
+  const [sending, setSending] = useState<string>("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawScanId = searchParams.get("scan_id");
+  const scanId = rawScanId && /^\d+$/.test(rawScanId) ? Number(rawScanId) : undefined;
   useEffect(() => {
-    Promise.all([getDashboardSummary(), getEvaluation().catch(() => undefined)])
+    setSummary(undefined);
+    setEvaluation(undefined);
+    Promise.all([getDashboardSummary(scanId), getEvaluation(scanId).catch(() => undefined)])
       .then(([s, e]) => {
         setSummary(s);
         setEvaluation(e);
       })
       .catch((e) => setError(String(e)));
-  }, []);
+  }, [scanId]);
+  const clearScanFilter = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("scan_id");
+    setSearchParams(next, { replace: true });
+  };
+  const risk = useMemo(
+    () =>
+      ["CRITICAL", "HIGH", "MEDIUM", "LOW"].map((label) => ({
+        label,
+        count:
+          summary?.risk_distribution[label as keyof DashboardSummary["risk_distribution"]] || 0,
+      })),
+    [summary?.risk_distribution],
+  );
+  const collectors = useMemo(
+    () =>
+      Object.entries(summary?.collector_stats ?? {}).map(([label, count]) => ({
+        label: label.toUpperCase(),
+        count,
+      })),
+    [summary?.collector_stats],
+  );
   if (error) return <State title="Dashboard unavailable" body={error} />;
   if (!summary)
     return (
@@ -58,24 +95,38 @@ export default function Dashboard() {
         body="Loading inventory, risk, and evidence metrics…"
       />
     );
-  if (!summary.latest_scan_id) return <Empty />;
+  if (!summary.latest_scan_id) {
+    if (scanId) {
+      return (
+        <State
+          title="Scan not found"
+          body={`Scan #${scanId} was not found or has not completed yet.`}
+        />
+      );
+    }
+    return <Empty />;
+  }
 
   const confidencePct = Math.round(summary.avg_confidence * 100);
-
-  const risk = ["CRITICAL", "HIGH", "MEDIUM", "LOW"].map((label) => ({
-    label,
-    count: summary.risk_distribution[label as keyof typeof summary.risk_distribution] || 0,
-  }));
-  const collectors = Object.entries(summary.collector_stats).map(([label, count]) => ({
-    label: label.toUpperCase(),
-    count,
-  }));
+  const scanQuery = scanId ? `?scan_id=${scanId}` : "";
 
   // Build a confidence indicator color for the conf stat
   const confTone = confidencePct >= 80 ? "teal" : confidencePct >= 50 ? "amber" : "red";
 
   return (
     <>
+      {scanId && (
+        <div className="scan-filter-banner">
+          <span>Viewing results from scan #{scanId}</span>
+          <button
+            className="button secondary"
+            onClick={clearScanFilter}
+            style={{ padding: "4px 12px", fontSize: 12 }}
+          >
+            Show latest
+          </button>
+        </div>
+      )}
       <section className="hero">
         <div>
           <p className="eyebrow">Enterprise posture</p>
@@ -88,22 +139,22 @@ export default function Dashboard() {
         <div className="hero-actions">
           <button
             className="button secondary"
-            onClick={() =>
-              downloadReport("/api/reports/risk.txt", "ecdat-risk-report.txt").catch((e) =>
-                setError(String(e)),
+            disabled={sending !== ""}
+            onClick={() => {
+              setSending("risk");
+              downloadReport(
+                `/api/reports/risk.txt${scanQuery}`,
+                scanId ? `ecdat-risk-report-scan-${scanId}.txt` : "ecdat-risk-report.txt",
               )
-            }
+                .catch((e) => setError(String(e)))
+                .finally(() => setSending(""));
+            }}
           >
-            Download risk report
+            {sending === "risk" ? "Preparing…" : "Download risk report"}
           </button>
-          <button
-            className="button"
-            onClick={() =>
-              downloadReport("/api/cbom", "ecdat-cbom.json").catch((e) => setError(String(e)))
-            }
-          >
+          <Link className="button" to={`/cbom${scanQuery}`}>
             View CBOM
-          </button>
+          </Link>
         </div>
       </section>
       <section className="stats six">
@@ -207,14 +258,14 @@ export default function Dashboard() {
     </>
   );
 }
-function Stat({
+const Stat = memo(function Stat({
   label,
   value,
   note,
   tone = "blue",
 }: {
   label: string;
-  value: React.ReactNode;
+  value: ReactNode;
   note: string;
   tone?: string;
 }) {
@@ -225,24 +276,35 @@ function Stat({
       <small>{note}</small>
     </article>
   );
-}
-function PanelTitle({ title, sub }: { title: string; sub: string }) {
+});
+
+const PanelTitle = memo(function PanelTitle({ title, sub }: { title: string; sub: string }) {
   return (
     <div className="panel-title">
       <h2>{title}</h2>
       <p>{sub}</p>
     </div>
   );
-}
-function Metric({ label, value, raw }: { label: string; value?: number; raw?: string }) {
+});
+
+const Metric = memo(function Metric({
+  label,
+  value,
+  raw,
+}: {
+  label: string;
+  value?: number;
+  raw?: string;
+}) {
   return (
     <div>
       <strong>{raw ?? `${Math.round((value || 0) * 100)}%`}</strong>
       <span>{label}</span>
     </div>
   );
-}
-function State({ title, body }: { title: string; body: string }) {
+});
+
+const State = memo(function State({ title, body }: { title: string; body: string }) {
   return (
     <div className="state">
       <span className="spinner" />
@@ -250,8 +312,9 @@ function State({ title, body }: { title: string; body: string }) {
       <p>{body}</p>
     </div>
   );
-}
-function Empty() {
+});
+
+const Empty = memo(function Empty() {
   return (
     <div className="empty-hero">
       <span className="radar">&#9672;</span>
@@ -272,4 +335,4 @@ function Empty() {
       )}
     </div>
   );
-}
+});

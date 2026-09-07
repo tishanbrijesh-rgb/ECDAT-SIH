@@ -1,43 +1,87 @@
 """CBOM, risk-report, evidence-graph, and evaluation output endpoints."""
 from __future__ import annotations
 from collections import Counter
-from fastapi import APIRouter, HTTPException, Response
+import json
+from typing import Annotated
+from uuid import NAMESPACE_URL, uuid5
+from fastapi import APIRouter, HTTPException, Query, Response
 from backend.db import SessionLocal
 from backend.models.asset import CryptoAssetDB
 from backend.models.scan_job import ScanJobDB
 from backend.services.evaluation import evaluate_assets
 
 router = APIRouter(prefix="/api", tags=["outputs"])
+ScanId = Annotated[int | None, Query(ge=1)]
 
 def _scan_and_assets(db, scan_id: int | None):
-    scan = db.query(ScanJobDB).filter(ScanJobDB.id == scan_id).first() if scan_id else db.query(ScanJobDB).filter(ScanJobDB.status == "completed").order_by(ScanJobDB.id.desc()).first()
-    if not scan:
+    if scan_id is None:
+        scan = db.query(ScanJobDB).filter(ScanJobDB.status == "completed").order_by(ScanJobDB.id.desc()).first()
+    else:
+        scan = db.query(ScanJobDB).filter(ScanJobDB.id == scan_id).first()
+        if scan is not None and scan.status != "completed":
+            raise HTTPException(409, "Scan is not complete")
+    if scan is None:
         raise HTTPException(404, "No completed scan found")
     return scan, db.query(CryptoAssetDB).filter(CryptoAssetDB.scan_job_id == scan.id).all()
 
 @router.get("/cbom")
-def cbom(scan_id: int | None = None) -> dict:
+def cbom(scan_id: ScanId = None) -> dict:
     db = SessionLocal()
     try:
         scan, assets = _scan_and_assets(db, scan_id)
+        def properties(asset: CryptoAssetDB) -> list[dict[str, str]]:
+            evidence = asset.evidence_json or {}
+            values = {
+                "ecdat:asset:id": asset.logical_asset_id,
+                "ecdat:category": asset.category,
+                "ecdat:usage": asset.usage,
+                "ecdat:operation-anchor": evidence.get("operation_anchor", ""),
+                "ecdat:context-conflicts": evidence.get("context_conflicts", {}),
+                "ecdat:location": asset.location,
+                "ecdat:library": asset.library,
+                "ecdat:protocol": asset.protocol,
+                "ecdat:key-size": asset.key_size,
+                "ecdat:evidence:sources": asset.source,
+                "ecdat:confidence": asset.confidence,
+                "ecdat:quantum-vulnerable": asset.quantum_vulnerable,
+            }
+            return [
+                {"name": name, "value": (
+                    str(value).lower() if isinstance(value, bool) else
+                    json.dumps(value, sort_keys=True) if isinstance(value, (list, dict)) else
+                    str(value)
+                )}
+                for name, value in values.items()
+                if value not in (None, "", [], {})
+            ]
+
         return {
-            "bomFormat": "CycloneDX", "specVersion": "1.6", "version": 1,
-            "serialNumber": f"urn:uuid:ecdat-scan-{scan.id}", "scan_id": scan.id,
-            "metadata": {"tool": {"name": "ECDAT", "version": "1.0.0"}, "repository": scan.repo_path, "coverage_pct": scan.coverage_pct},
+            "$schema": "https://cyclonedx.org/schema/bom-1.6.schema.json",
+            "bomFormat": "CycloneDX",
+            "specVersion": "1.6",
+            "serialNumber": f"urn:uuid:{uuid5(NAMESPACE_URL, f'ecdat:scan:{scan.id}')}",
+            "version": 1,
+            "metadata": {
+                "tools": {"components": [{
+                    "type": "application", "name": "ECDAT", "version": "1.0.0"
+                }]},
+                "properties": [
+                    {"name": "ecdat:scan:id", "value": str(scan.id)},
+                    {"name": "ecdat:repository:path", "value": scan.repo_path},
+                    {"name": "ecdat:scan:coverage-percent", "value": str(scan.coverage_pct)},
+                ],
+            },
             "components": [{
-                "id": asset.logical_asset_id, "type": "cryptographic-asset",
-                "name": asset.algorithm, "category": asset.category, "usage": asset.usage,
-                "operation_anchor": (asset.evidence_json or {}).get("operation_anchor", ""),
-                "context_conflicts": (asset.evidence_json or {}).get("context_conflicts", {}),
-                "location": asset.location, "library": asset.library, "protocol": asset.protocol,
-                "key_size": asset.key_size, "evidence_sources": asset.source,
-                "confidence": asset.confidence, "quantum_vulnerable": asset.quantum_vulnerable,
+                "type": "library",
+                "bom-ref": f"ecdat:asset:{asset.id}",
+                "name": asset.algorithm,
+                "properties": properties(asset),
             } for asset in assets],
         }
     finally: db.close()
 
 @router.get("/reports/risk")
-def risk_report(scan_id: int | None = None) -> dict:
+def risk_report(scan_id: ScanId = None) -> dict:
     db = SessionLocal()
     try:
         scan, assets = _scan_and_assets(db, scan_id)
@@ -47,7 +91,7 @@ def risk_report(scan_id: int | None = None) -> dict:
             "title": "ECDAT Cryptographic Risk and PQC Migration Report", "scan_id": scan.id,
             "repository": scan.repo_path, "coverage_pct": scan.coverage_pct,
             "summary": {"assets": len(assets), "quantum_vulnerable": sum(a.quantum_vulnerable for a in assets), "conflicts": sum(a.conflict for a in assets), "risk_distribution": dict(distribution)},
-            "blind_spots": scan.blind_spots or [],
+            "blind_spots": list(scan.blind_spots or []),
             "migration_priorities": [{"asset_id": a.id, "logical_asset_id": a.logical_asset_id,
                 "algorithm": a.algorithm, "usage": a.usage,
                 "operation_anchor": (a.evidence_json or {}).get("operation_anchor", ""),
@@ -58,7 +102,7 @@ def risk_report(scan_id: int | None = None) -> dict:
     finally: db.close()
 
 @router.get("/evidence-graph")
-def evidence_graph(scan_id: int | None = None) -> dict:
+def evidence_graph(scan_id: ScanId = None) -> dict:
     db = SessionLocal()
     try:
         scan, assets = _scan_and_assets(db, scan_id)
@@ -77,7 +121,7 @@ def evidence_graph(scan_id: int | None = None) -> dict:
     finally: db.close()
 
 @router.get("/evaluation")
-def evaluation(scan_id: int | None = None) -> dict:
+def evaluation(scan_id: ScanId = None) -> dict:
     db = SessionLocal()
     try:
         scan, assets = _scan_and_assets(db, scan_id)
@@ -87,7 +131,7 @@ def evaluation(scan_id: int | None = None) -> dict:
     finally: db.close()
 
 @router.get("/reports/risk.txt")
-def risk_report_text(scan_id: int | None = None) -> Response:
+def risk_report_text(scan_id: ScanId = None) -> Response:
     report = risk_report(scan_id)
     lines = [report["title"], f"Repository: {report['repository']}", f"Coverage: {report['coverage_pct']}%", "", "Migration priorities:"]
     lines.extend(f"P{index + 1} | {item['label']} {item['score']}/100 | {item['algorithm']} ({item['usage']}) | {item['location']} | {item['operation_anchor']} | {item['recommendation']}" for index, item in enumerate(report["migration_priorities"]))

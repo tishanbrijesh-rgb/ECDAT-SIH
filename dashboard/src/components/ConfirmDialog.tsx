@@ -1,5 +1,5 @@
 // Confirm dialog for destructive actions (cancel scan, sign out, etc.).
-import { useEffect, useId, useRef, useState } from "react";
+import { memo, useEffect, useId, useRef, useState } from "react";
 
 interface Props {
   open: boolean;
@@ -11,7 +11,7 @@ interface Props {
   onCancel: () => void;
 }
 
-export const ConfirmDialog = ({
+export const ConfirmDialog = memo(function ConfirmDialog({
   open,
   title,
   message,
@@ -19,7 +19,7 @@ export const ConfirmDialog = ({
   danger = false,
   onConfirm,
   onCancel,
-}: Props) => {
+}: Props) {
   const [confirming, setConfirming] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -128,4 +128,4 @@ export const ConfirmDialog = ({
       </div>
     </div>
   );
-};
+});

@@ -184,6 +184,25 @@ class ApiIntegrationTests(unittest.TestCase):
     def tearDownClass(cls) -> None:
         cls.client_context.__exit__(None, None, None)
 
+    def test_dashboard_scan_filter_rejects_incomplete_snapshots(self):
+        from backend.db import SessionLocal
+        from backend.models.scan_job import ScanJobDB
+
+        with SessionLocal() as db:
+            job = ScanJobDB(repo_path="dashboard-filter-fixture", status="running")
+            db.add(job)
+            db.commit()
+            scan_id = job.id
+
+        try:
+            response = self.client.get(f"/api/dashboard/summary?scan_id={scan_id}")
+            self.assertEqual(response.status_code, 200)
+            self.assertIsNone(response.json()["latest_scan_id"])
+        finally:
+            with SessionLocal() as db:
+                db.query(ScanJobDB).filter(ScanJobDB.id == scan_id).delete()
+                db.commit()
+
     def test_asset_server_side_filters_sorting_and_pagination(self):
         from backend.db import SessionLocal
         from backend.models.asset import CryptoAssetDB
@@ -367,7 +386,11 @@ class ApiIntegrationTests(unittest.TestCase):
             elif item["usage"] == "unknown":
                 self.assertNotIn("ML-KEM", item["recommendation"])
         cbom = self.client.get(f"/api/cbom?scan_id={scan_id}").json()["components"]
-        self.assertEqual({c["usage"] for c in cbom}, {"signature", "encryption", "unknown"})
+        usages = {
+            next(p["value"] for p in component["properties"] if p["name"] == "ecdat:usage")
+            for component in cbom
+        }
+        self.assertEqual(usages, {"signature", "encryption", "unknown"})
 
     def test_end_to_end_scan_outputs_rbac_and_latest_snapshot(self) -> None:
         self.assertEqual(self.client.get("/health").status_code, 200)

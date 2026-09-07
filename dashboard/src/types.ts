@@ -57,6 +57,12 @@ export interface ScanJob {
   duration_ms: number;
   collector_stats: Record<string, number>;
   blind_spots: string[];
+  failures?: ScanFailure[];
+}
+
+export interface ScanFailure {
+  path: string;
+  reason: "unreadable" | "oversized" | "linked_file" | "parse_error" | "certificate_error";
 }
 export interface DashboardSummary {
   total_assets: number;
@@ -106,4 +112,42 @@ export interface RiskReport {
     recommendation: string;
     hybrid: boolean;
   }>;
+}
+
+export interface CbomEntry {
+  $schema?: string;
+  bomFormat?: string;
+  specVersion?: string;
+  serialNumber?: string;
+  bom_format?: string;
+  spec_version?: string;
+  serial_number?: string;
+  metadata?: { timestamp?: string };
+  components?: CbomComponent[];
+  vulnerabilities?: unknown[];
+  dependencies?: unknown[];
+  services?: unknown[];
+  version?: number;
+}
+
+export interface CbomComponent {
+  type?: string;
+  name?: string;
+  purl?: string;
+  description?: string;
+  hashes?: unknown[];
+  evidence?: {
+    algorithm?: string;
+    category?: string;
+    location?: string;
+    usage?: string;
+    library?: string;
+    confidence?: number;
+    source?: string[];
+  }[];
+}
+
+export interface ScanDetail extends ScanJob {
+  assets: CryptoAsset[];
+  assets_total: number;
 }

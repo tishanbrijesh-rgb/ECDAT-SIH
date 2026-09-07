@@ -1,5 +1,5 @@
 // Application shell and navigation for the ECDAT assurance console.
-import { lazy, Suspense, useState, useEffect, useCallback } from "react";
+import { lazy, Suspense, useState, useEffect, useRef, useCallback } from "react";
 import {
   logout,
   canWrite,
@@ -8,7 +8,7 @@ import {
   restoreSession,
   SESSION_EXPIRED,
 } from "./api/client";
-import { NavLink, Route, Routes } from "react-router-dom";
+import { NavLink, Route, Routes, useSearchParams } from "react-router-dom";
 import { MotionConfig } from "framer-motion";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastProvider, useToast } from "./components/Toast";
@@ -20,6 +20,9 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const AssetDetail = lazy(() => import("./pages/AssetDetail"));
 const ScanPage = lazy(() => import("./pages/ScanPage"));
 const AssetsPage = lazy(() => import("./pages/AssetsPage"));
+const RiskReportPage = lazy(() => import("./pages/RiskReport"));
+const CbomPage = lazy(() => import("./pages/CbomPage"));
+const ScanDetailPage = lazy(() => import("./pages/ScanDetailPage"));
 
 function ThemeToggle() {
   const [theme, setTheme] = useState(() =>
@@ -56,6 +59,17 @@ function AppInner() {
   const [loginMessage, setLoginMessage] = useState(() => getInitialSessionExpiry());
   const [confirmLogout, setConfirmLogout] = useState(false);
   const { toast } = useToast();
+  const mainRef = useRef<HTMLElement>(null);
+  const [navParams] = useSearchParams();
+  const rawNavScanId = navParams.get("scan_id");
+  const scanQuery = rawNavScanId && /^\d+$/.test(rawNavScanId) ? `?scan_id=${rawNavScanId}` : "";
+
+  // Focus main content after sign-in so screen readers announce the page.
+  useEffect(() => {
+    if (authState === "signed-in") {
+      mainRef.current?.focus();
+    }
+  }, [authState]);
 
   useEffect(() => {
     const expired = (event: Event) => {
@@ -113,6 +127,9 @@ function AppInner() {
     );
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#main-content">
+        Skip to main content
+      </a>
       <header className="topbar">
         <NavLink className="brand" to="/">
           <span className="brand-mark">E</span>
@@ -120,18 +137,22 @@ function AppInner() {
             ECDAT<small>Discovery Assurance</small>
           </span>
         </NavLink>
-        <nav>
-          <NavLink to="/" end>
+        <nav aria-label="Main navigation">
+          <NavLink to={`/${scanQuery}`} end>
             Overview
           </NavLink>
-          <NavLink to="/assets">Inventory</NavLink>
+          <NavLink to={`/assets${scanQuery}`}>Inventory</NavLink>
           {canWrite() && <NavLink to="/scan">New scan</NavLink>}
+          <NavLink to={`/reports${scanQuery}`}>Reports</NavLink>
+          <NavLink to={`/cbom${scanQuery}`}>CBOM</NavLink>
         </nav>
         <span className="privacy-chip">Local & explainable</span>
         <ThemeToggle />
-        <button onClick={() => setConfirmLogout(true)}>Sign out</button>
+        <button onClick={() => setConfirmLogout(true)} aria-label="Sign out">
+          Sign out
+        </button>
       </header>
-      <main>
+      <main id="main-content" ref={mainRef} tabIndex={-1}>
         <Suspense
           fallback={
             <div className="state">
@@ -146,6 +167,9 @@ function AppInner() {
               <Route path="/assets" element={<AssetsPage />} />
               <Route path="/assets/:id" element={<AssetDetail />} />
               <Route path="/scan" element={<ScanPage />} />
+              <Route path="/reports" element={<RiskReportPage />} />
+              <Route path="/cbom" element={<CbomPage />} />
+              <Route path="/scans/:id" element={<ScanDetailPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </ErrorBoundary>

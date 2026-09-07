@@ -1,9 +1,30 @@
 """Pydantic schemas for API serialization."""
 from __future__ import annotations
+from pathlib import PurePosixPath
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from typing import Any, Literal
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
 from scanner.redaction import redact_evidence
-from typing import Any
+
+
+class ScanFailure(BaseModel):
+    """Persisted scan failure record."""
+    model_config = ConfigDict(from_attributes=True)
+
+    path: str
+    reason: str = Field(pattern="^(unreadable|oversized|linked_file|parse_error|certificate_error)$")
+
+    @field_validator("path")
+    @classmethod
+    def safe_relative_path(cls, value: str) -> str:
+        path = PurePosixPath(value)
+        if (not value or "\\" in value or ":" in value or path.is_absolute()
+                or any(part in {"", ".", ".."} for part in path.parts)
+                or any(ord(character) < 32 for character in value)):
+            raise ValueError("failure path must be scan-root-relative")
+        return value
 
 
 class AssetCreate(BaseModel):
@@ -76,13 +97,13 @@ class AssetResponse(BaseModel):
 
 class AssetUpdate(BaseModel):
     """Partial update — e.g. change business_criticality."""
-    business_criticality: str | None = None
-    data_sensitivity: str | None = None
+    business_criticality: Literal["low", "medium", "high", "critical"] | None = None
+    data_sensitivity: Literal["low", "medium", "high", "critical"] | None = None
     data_lifetime_years: int | None = Field(default=None, ge=0, le=100)
     migration_time_years: int | None = Field(default=None, ge=0, le=50)
     threat_horizon_years: int | None = Field(default=None, ge=1, le=100)
-    exposure: str | None = None
-    migration_effort: str | None = None
+    exposure: Literal["isolated", "internal", "partner", "internet"] | None = None
+    migration_effort: Literal["low", "medium", "high", "critical"] | None = None
 
 
 class ScanJobResponse(BaseModel):
@@ -104,6 +125,23 @@ class ScanJobResponse(BaseModel):
     duration_ms: int = 0
     collector_stats: dict[str, int] = Field(default_factory=dict)
     blind_spots: list[str] = Field(default_factory=list)
+    failures: list[ScanFailure] = Field(default_factory=list)
+
+    @field_validator("failures", mode="before")
+    @classmethod
+    def _coerce_failures(cls, value):
+        """Convert ScanFailureDB ORM objects to ScanFailure Pydantic models."""
+        if not value or isinstance(value[0], dict):
+            return value
+        return [ScanFailure.model_validate(f) for f in value]
+
+    @field_validator("blind_spots", mode="before")
+    @classmethod
+    def _clean_blind_spots(cls, value):
+        """Strip internal __failed_file__: prefixed entries (legacy data)."""
+        if not value:
+            return []
+        return [s for s in value if not str(s).startswith("__failed_file__:")]
 
 class DashboardSummary(BaseModel):
     """Aggregated dashboard data."""

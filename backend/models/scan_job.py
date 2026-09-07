@@ -1,6 +1,7 @@
 """ScanJob model — represents a single scan execution."""
 from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, DateTime, Float, JSON
+from sqlalchemy.orm import relationship
 
 from backend.db import Base
 
@@ -23,3 +24,10 @@ class ScanJobDB(Base):
     duration_ms: int = Column(Integer, default=0)
     collector_stats = Column(JSON, default=dict)
     blind_spots = Column(JSON, default=list)
+
+    failures = relationship(
+        "ScanFailureDB",
+        back_populates="scan_job",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )

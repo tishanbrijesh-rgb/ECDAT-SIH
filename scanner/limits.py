@@ -14,6 +14,11 @@ def max_file_bytes() -> int:
     return positive_int('ECDAT_MAX_FILE_BYTES', 8 * 1024 * 1024, 128 * 1024 * 1024)
 
 
+def max_evidence_count() -> int:
+    """Bound aggregate evidence retained before correlation and persistence."""
+    return positive_int('ECDAT_MAX_EVIDENCE', 100000, 1000000)
+
+
 def read_bytes(path: str) -> bytes:
     limit = max_file_bytes()
     if os.path.islink(path):

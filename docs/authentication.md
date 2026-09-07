@@ -5,8 +5,9 @@ login remain public. Reads are available to authenticated roles; modifications
 require admin/security_analyst; audit logs require admin/auditor. Project-level
 authorization and tenant isolation are not implemented.
 
-Before login, provision these through the server environment or an untracked .env
-for Docker Compose (plain Python startup does not automatically load .env):
+Before login, provision these through the server environment or an untracked `.env`.
+The FastAPI entrypoint loads the project-root `.env` for local development, and
+Docker Compose reads it for interpolation:
 
 - ECDAT_TOKEN_SECRET: a cryptographically random value of at least 32 characters.
 - ECDAT_DB_PASSWORD (Compose): a random 64-character hexadecimal password. Published

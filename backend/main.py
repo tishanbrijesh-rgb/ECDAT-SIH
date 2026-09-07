@@ -8,12 +8,21 @@ Mounts CORS, initialises DB tables on startup, and exposes three routers:
 import json
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI, Depends
+from dotenv import load_dotenv
+
+# Load .env from project root (ECDAT-SIH/.env) before any module reads os.environ.
+_project_root = Path(__file__).resolve().parent.parent
+load_dotenv(_project_root / ".env", override=False)
+
+from fastapi import FastAPI, Depends, HTTPException
 from backend.security import current_role
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import Response
+from sqlalchemy import inspect, text
+from sqlalchemy.exc import SQLAlchemyError
 
 from backend.db import Base, engine
 from backend.routers.scan import router as scan_router
@@ -24,11 +33,17 @@ from backend.routers.audit import router as audit_router
 from backend.routers.auth import router as auth_router
 import backend.models.audit_log  # registers the audit table with SQLAlchemy metadata
 
+SCHEMA_REVISION = "e1b4a7c93f52"
+REQUIRED_TABLES = {"scan_jobs", "crypto_assets", "scan_failures", "audit_logs"}
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    Base.metadata.create_all(bind=engine)
-    print("[ecdat] DB tables ensured")
+    if os.getenv("ECDAT_AUTO_CREATE_TABLES", "true").lower() == "true":
+        Base.metadata.create_all(bind=engine)
+        print("[ecdat] DB tables ensured via create_all")
+    else:
+        print("[ecdat] Skipping create_all — migrations manage schema")
     yield
 
 
@@ -77,12 +92,22 @@ def health() -> dict:
 @app.get("/ready")
 def readiness() -> dict:
     """Confirm that both the API process and database are ready for a demo scan."""
-    from sqlalchemy import text
     from backend.db import SessionLocal
 
     db = SessionLocal()
     try:
         db.execute(text("SELECT 1"))
+        tables = set(inspect(db.get_bind()).get_table_names())
+        if not REQUIRED_TABLES.issubset(tables):
+            raise HTTPException(503, "Database schema is missing or incomplete")
+        if os.getenv("ECDAT_AUTO_CREATE_TABLES", "true").lower() != "true":
+            revision = db.execute(text("SELECT version_num FROM alembic_version")).scalar_one_or_none()
+            if revision != SCHEMA_REVISION:
+                raise HTTPException(503, "Database schema migration is not current")
         return {"status": "ready", "database": "reachable"}
+    except HTTPException:
+        raise
+    except SQLAlchemyError:
+        raise HTTPException(503, "Database is unavailable or schema validation failed") from None
     finally:
         db.close()

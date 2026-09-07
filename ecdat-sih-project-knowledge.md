@@ -1,7 +1,7 @@
 # ECDAT project knowledge
 
-Last verified: 2026-09-06  
-Repository: `https://github.com/tishanbrijesh-rgb/ECDAT-SIH.git`  
+Last verified: 2026-09-07
+Repository: `https://github.com/tishanrijesh-rgb/ECDAT-SIH.git`
 Active branch: `fix/sha1-recommendation`
 
 ## Purpose
@@ -22,8 +22,9 @@ produces explainable quantum-risk and migration guidance.
    retaining disagreements.
 5. Confidence, coverage, conflicts, blind spots and the Mosca-style risk model are
    calculated independently and persisted through SQLAlchemy.
-6. PostgreSQL 16 is used by Docker Compose. SQLite remains available for local
-   development and tests.
+6. Alembic manages schema migrations (0001 baseline, 0002 scan_failures,
+   0003 remove_implicit_creation). PostgreSQL 16 is used by Docker Compose;
+   SQLite remains available for local development and tests.
 7. Inventory, CBOM, risk report, evidence graph, audit history and benchmark
    evaluation are exposed through authenticated API endpoints.
 
@@ -48,24 +49,28 @@ tests. Graphify reports no import cycles.
   unprivileged nginx. Node, npm and development dependencies are absent at runtime.
 - The backend image runs as UID/GID 10001 and does not contain compilers or build
   headers.
+- Production schema management is migration-only (`ECDAT_AUTO_CREATE_TABLES=false`);
+  local mode allows implicit creation (`true` by default).
 
 ## Current verification evidence
 
-The 2026-09-06 pre-migration release gate produced these results:
+The 2026-09-07 local verification produced these results:
 
-- 88 backend unit/API/regression tests passed; one Windows symlink test was skipped
-  because symlink creation was unavailable.
-- 7 frontend unit tests and 2 Microsoft Edge end-to-end tests passed.
+- 117 backend unit/API/regression tests pass, 1 skips, and 84 subtests pass. Migration tests restore
+  `DATABASE_URL`, preventing cross-test scan-worker failures.
+- 8/8 Alembic migration tests pass (upgrade, downgrade, data preservation, graph).
+- 15 frontend unit tests and 7 Microsoft Edge end-to-end tests passed; the full
+  E2E suite passed three consecutive times.
 - Python compilation, dependency consistency, Bandit medium/high analysis,
-  TypeScript, Prettier and the Vite production build passed.
+  TypeScript, Prettier and the Vite production build pass.
 - `pip-audit` and `npm audit` reported no known application dependency
   vulnerabilities.
 - No credential signatures or oversized tracked files were found.
-- Docker and Compose configuration/build checks passed.
-- The disposable Docker/PostgreSQL verifier passed three consecutive rounds after
-  both production images were hardened. It checked readiness, authentication,
-  scanning, CBOM/evaluation output, dashboard delivery, PostgreSQL connectivity and
-  persistence after backend restarts, then removed its containers and volume.
+- Two final disposable Docker/PostgreSQL verifier invocations passed three
+  consecutive rounds each after both production images were hardened. They checked
+  readiness, authentication, scanning, CBOM/evaluation output, dashboard delivery,
+  PostgreSQL connectivity and persistence after backend restarts, then removed its
+  containers and volume.
 - The dashboard runtime image is approximately 26 MB; the backend runtime image is
   approximately 77 MB.
 
@@ -78,9 +83,40 @@ The 2026-09-06 pre-migration release gate produced these results:
   negatives.
 - These consumed, narrow corpora prove the recorded regressions. They do not prove
   general accuracy across every language, library or crypto category.
-- The latest large local scan of `C:\Python314` processed 2,305 of 2,314 supported
-  files (99.61%). Its nine failures were invalid parser fixtures and certificate/key
-  fixtures, so this is a scale/coverage check rather than an accuracy claim.
+- The latest large local scan of `C:\Python314` processed 2,303 of 2,314 supported
+  files (99.52%) in 105,485 ms and produced 1,181 evidence records. Its eleven
+  failures were exposed only as relative paths and fixed safe categories, so
+  this is a scale/coverage check rather than an accuracy claim.
+- Certificate deprecation warnings and metadata failures now follow a controlled
+  error path while later valid PEM blocks continue.
+
+## Phase 3 completion summary
+
+- Alembic 1.19.2 configured with `env.py`, `alembic.ini`, and `ScriptDirectory`.
+- Three migrations: 0001_baseline, 0002_scan_failures, 0003_remove_implicit_creation.
+- `ScanFailureDB` model with FK relationship and cascade delete.
+- `ScanJobResponse` schema coerces ORM objects via `ConfigDict(from_attributes=True)`
+  and `field_validator(mode="before")`.
+- Legacy `__failed_file__:` entries stripped from `blind_spots` by schema validators.
+- `ECDAT_AUTO_CREATE_TABLES` env var guards production `create_all`.
+- `docker-compose.yml` sets `ECDAT_AUTO_CREATE_TABLES: "false"`.
+
+## Running the system
+
+Backend: `http://localhost:8000`
+Dashboard: `http://localhost:3000`
+Login: use the account configured in the untracked project-root `.env` file.
+
+Start commands:
+```powershell
+# Backend
+cd "C:\Users\Tishan Kumar B\Desktop\SIH\ECDAT-SIH"
+.venv\Scripts\python.exe -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
+
+# Dashboard
+cd "C:\Users\Tishan Kumar B\Desktop\SIH\ECDAT-SIH"
+cd dashboard && npx vite --host 0.0.0.0 --port 3000
+```
 
 ## Important commands
 
@@ -91,6 +127,9 @@ The 2026-09-06 pre-migration release gate produced these results:
 # Real disposable Docker/PostgreSQL test
 .\.venv\Scripts\python.exe -m scripts.verify_compose
 
+# Migration tests
+.\.venv\Scripts\python.exe -m pytest tests/test_alembic_migrations.py -v
+
 # Scanner CLI
 .\.venv\Scripts\python.exe -m scanner.main test-repo
 
@@ -100,8 +139,7 @@ The 2026-09-06 pre-migration release gate produced these results:
 
 ## Current limitations and next work
 
-- Phase 3 is pending explicit approval: introduce versioned database migrations and
-  verify upgrade and rollback paths against PostgreSQL.
+- Stages 1–4, Phase 3 migrations, and the scoped frontend/release hardening are complete.
 - Production SSO, TLS termination, secret management, backup/restore, distributed
   scan admission, hardened OS sandboxing and high availability remain future work.
 - React 19, Recharts 3 and TypeScript 7 are optional major migrations, not current
@@ -115,6 +153,11 @@ The 2026-09-06 pre-migration release gate produced these results:
 - `docs/ARCHITECTURE.md` — system flow and assurance principles
 - `docs/THREAT_MODEL.md` — trust boundaries and remaining threats
 - `docs/five-step-verification.md` — detailed verification evidence
+- `docs/verification-2026-09-07.md` — latest full local audit, limitations and next work
+- `docs/stages-1-4-verification-2026-09-07.md` — completed implementation and repeated verification evidence
+- `docs/improvement-plan-2026-09-07.md` — staged implementation and verification plan
 - `docs/authentication.md` — account and secret configuration
 - `benchmarks/README.md` — external benchmark protocol
 - `MEMORY.md` — concise handoff state for future work
+- `LOGIN_CREDENTIALS.md` — local dev credentials
+- `CLAUDE_HANDOFF_PROMPT.md` — handoff instructions for Claude sessions

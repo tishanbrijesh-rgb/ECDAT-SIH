@@ -1,9 +1,9 @@
 // Animated login page with framer-motion entrance, floating labels, and brand animation.
 import { useEffect, useId, useState, type FormEvent } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { login } from "../api/client";
 
-const ORB_COUNT = 5;
+const ORB_COUNT = 2;
 
 export default function Login({
   onSuccess,
@@ -16,6 +16,7 @@ export default function Login({
   const [password, setPassword] = useState("");
   const [error, setError] = useState(message);
   const [busy, setBusy] = useState(false);
+  const reduced = useReducedMotion();
 
   useEffect(() => setError(message), [message]);
 
@@ -40,16 +41,24 @@ export default function Login({
         <motion.div
           key={i}
           className={`login-orb login-orb--${i + 1}`}
-          animate={{
-            x: [0, 30 + i * 15, -20 + i * 10, 0],
-            y: [0, -25 - i * 12, 15 + i * 8, 0],
-            scale: [1, 1.15 + i * 0.05, 0.9, 1],
-          }}
-          transition={{
-            duration: 8 + i * 2,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
+          animate={
+            reduced
+              ? undefined
+              : {
+                  x: [0, 30 + i * 15, -20 + i * 10, 0],
+                  y: [0, -25 - i * 12, 15 + i * 8, 0],
+                  scale: [1, 1.15 + i * 0.05, 0.9, 1],
+                }
+          }
+          transition={
+            reduced
+              ? undefined
+              : {
+                  duration: 8 + i * 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }
+          }
         />
       ))}
 
@@ -70,14 +79,18 @@ export default function Login({
           <motion.div
             className="brand-mark"
             aria-hidden="true"
-            animate={{
-              boxShadow: [
-                "0 4px 12px rgba(66,87,214,0.3)",
-                "0 4px 20px rgba(66,87,214,0.5)",
-                "0 4px 12px rgba(66,87,214,0.3)",
-              ],
-            }}
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            animate={
+              reduced
+                ? {}
+                : {
+                    boxShadow: [
+                      "0 4px 12px rgba(66,87,214,0.3)",
+                      "0 4px 20px rgba(66,87,214,0.5)",
+                      "0 4px 12px rgba(66,87,214,0.3)",
+                    ],
+                  }
+            }
+            transition={reduced ? undefined : { duration: 3, repeat: Infinity, ease: "easeInOut" }}
           >
             E
           </motion.div>

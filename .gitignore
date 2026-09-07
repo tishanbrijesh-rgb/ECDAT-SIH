@@ -31,6 +31,7 @@ test-results/
 .env
 .env.*
 !.env.example
+LOGIN_CREDENTIALS.md
 *.key
 # PEM files may contain private keys; public demo certificates use .crt.
 *.pem

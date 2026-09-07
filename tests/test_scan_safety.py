@@ -15,10 +15,72 @@ from sqlalchemy.orm import sessionmaker
 from backend.db import Base
 from backend.models.scan_job import ScanJobDB
 from backend.services import scan_control
+from scanner import main as scanner_main
 from scanner.main import scan_with_metrics
 
 
 class ScanLimitTests(unittest.TestCase):
+    def test_source_profile_excludes_virtual_environment_directories_by_default(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'app.py').write_text('import hashlib\nhashlib.sha256(b"x")')
+            for name in ('.venv', 'venv', 'env', '.pytest_cache', '.mypy_cache', '.ruff_cache'):
+                dependency = root / name
+                dependency.mkdir()
+                (dependency / 'dependency.py').write_text('import hashlib\nhashlib.md5(b"x")')
+            with patch.dict(os.environ, {}, clear=False):
+                os.environ.pop('ECDAT_SCAN_PROFILE', None)
+                evidence, metrics = scan_with_metrics(directory)
+            self.assertEqual(metrics['total_files'], 1)
+            self.assertEqual(metrics['in_scope_files'], 1)
+            self.assertEqual({item['algorithm'] for items in evidence.values() for item in items},
+                             {'SHA-256'})
+
+    def test_environment_profile_includes_virtual_environment_site_packages(self):
+        with tempfile.TemporaryDirectory() as directory:
+            site_packages = Path(directory) / '.venv' / 'Lib' / 'site-packages'
+            site_packages.mkdir(parents=True)
+            (site_packages / 'dependency.py').write_text('import hashlib\nhashlib.md5(b"x")')
+            with patch.dict(os.environ, {'ECDAT_SCAN_PROFILE': 'environment'}):
+                evidence, metrics = scan_with_metrics(directory)
+            self.assertEqual(metrics['in_scope_files'], 1)
+            self.assertEqual({item['algorithm'] for items in evidence.values() for item in items},
+                             {'MD5'})
+
+    def test_unreadable_directory_fails_inventory_instead_of_overstating_coverage(self):
+        def inaccessible_walk(_root, onerror=None):
+            if onerror is not None:
+                onerror(PermissionError('private path must not be exposed'))
+            return
+            yield  # pragma: no cover - keeps this a generator
+
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(scanner_main.os, 'walk', inaccessible_walk):
+            with self.assertRaisesRegex(OSError, 'inventory repository tree') as raised:
+                scan_with_metrics(directory)
+        self.assertNotIn('private path', str(raised.exception))
+
+    def test_failure_paths_encode_api_unsafe_filename_characters(self):
+        with tempfile.TemporaryDirectory() as directory:
+            unsafe = os.path.join(directory, 'unsafe:name.py')
+            self.assertEqual(scanner_main._relative_failure_path(directory, unsafe),
+                             'unsafe%3Aname.py')
+
+    def test_aggregate_evidence_limit_fails_instead_of_returning_partial_results(self):
+        with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / 'many.py').write_text(
+                'import hashlib\nhashlib.sha256(b"x")\nhashlib.md5(b"x")\n'
+            )
+            with patch.dict(os.environ, {'ECDAT_MAX_EVIDENCE': '1'}):
+                with self.assertRaisesRegex(ValueError, 'evidence count limit'):
+                    scan_with_metrics(directory)
+
+    def test_unknown_scan_profile_fails_closed(self):
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.dict(os.environ, {'ECDAT_SCAN_PROFILE': 'typo'}):
+            with self.assertRaisesRegex(ValueError, 'Invalid ECDAT_SCAN_PROFILE'):
+                scan_with_metrics(directory)
+
     def test_oversized_supported_file_is_failed_three_times(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'large.py'

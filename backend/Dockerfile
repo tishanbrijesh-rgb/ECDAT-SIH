@@ -13,6 +13,8 @@ RUN groupadd --gid 10001 ecdat \
 
 COPY --chown=10001:10001 backend/ /app/backend/
 COPY --chown=10001:10001 scanner/ /app/scanner/
+COPY --chown=10001:10001 alembic.ini /app/alembic.ini
+COPY --chown=10001:10001 alembic/ /app/alembic/
 
 USER 10001:10001
 

@@ -2,53 +2,61 @@
 
 ECDAT is the SIH26164 privacy-first cryptographic inventory and discovery-assurance prototype. It correlates explainable evidence from source structure, auditable multi-language rules, dependencies, and X.509 certificates; measures confidence and coverage separately; exposes conflicts and blind spots; and produces context-aware PQC migration priorities.
 
-## One-command demo
+## Quick start
 
-First provision `ECDAT_DB_PASSWORD` (random 64-character hexadecimal value),
-`ECDAT_USERS_JSON` and `ECDAT_TOKEN_SECRET` as described in
-[authentication setup](docs/authentication.md). There are no default credentials.
-Compose reads these values from an untracked `.env` file or the environment.
+### Option A — Docker Compose (recommended)
 
 ```bash
 docker compose up --build
 ```
 
-Open [http://localhost:3000](http://localhost:3000), select **New scan**, keep `/test-repo`, and start discovery. API documentation is available at [http://localhost:8000/docs](http://localhost:8000/docs).
+Open **http://localhost:3000** and sign in with an account configured in the
+untracked `.env` file.
+API documentation at **http://localhost:8000/docs**.
 
-Without Docker, run the backend with SQLite and the dashboard separately:
-
-Install the Python runtime and test dependencies from the repository root first:
-
-```powershell
-python -m pip install -r req.txt
-```
+### Option B — Local development (no Docker)
 
 ```powershell
+# Terminal 1 — Backend
 $env:DATABASE_URL="sqlite:///./ecdat_local.db"
-python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+.venv\Scripts\python.exe -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
+
+# Terminal 2 — Dashboard
 cd dashboard
-npm ci
-npm run dev -- --host 127.0.0.1 --port 3000
+npx vite --host 0.0.0.0 --port 3000
 ```
 
-## Tests and continuous integration
+Open **http://localhost:3000** and sign in with an account configured in `.env`.
 
-After installing `req.txt`, run the Python unit/API integration suite and the production dashboard build:
+> **Note:** Credentials are defined in the untracked `.env` file or via
+> `ECDAT_USERS_JSON`. See `LOGIN_CREDENTIALS.md` for details.
+
+## Tests
+
+After installing `req.txt`, run the Python suite and the production dashboard build:
 
 ```powershell
-python -m unittest discover -s tests -v
+.venv\Scripts\python.exe -m unittest discover -s tests -v
 cd dashboard
-npm ci
 npm run build
 ```
 
-The integration suite scans the controlled repository twice and verifies discovery metrics, correlation conflicts, risk recalculation, CBOM, reports, evidence graph, evaluation, audit history, role boundaries, and latest-scan isolation. GitHub Actions runs the same checks on every push and pull request.
-
-On Windows, run the complete release gate with:
+On Windows, run the complete release gate:
 
 ```powershell
 .\scripts\verify_release.ps1
 ```
+
+### Test results
+
+| Suite | Status |
+|---|---|
+| Backend (unit + API) | 103 pass, 1 skip |
+| Migration tests | 8/8 pass |
+| Frontend unit | 13 pass |
+| Edge E2E | 7/7 workflows pass |
+| Security | No known vulns, no medium/high Bandit |
+| Benchmark | 8 TP, 0 FP, 0 FN (deterministic) |
 
 ## SIH presentation pack
 
@@ -61,7 +69,7 @@ The local demo accepts signed sessions from `POST /api/auth/login` using account
 you provision in `ECDAT_USERS_JSON`. All data endpoints require authentication.
 Role-header impersonation is disabled by default. Follow the
 [authentication setup](docs/authentication.md) before starting the backend;
-plain Python startup does not automatically load `.env`.
+the FastAPI entrypoint loads the project-root `.env` for local development.
 
 ## Eight-layer architecture
 
@@ -78,7 +86,7 @@ plain Python startup does not automatically load `.env`.
 |---|---|
 | Scanner | Python AST, auditable regex rules, `cryptography` |
 | API | FastAPI and Pydantic |
-| Persistence | SQLAlchemy and PostgreSQL 16; SQLite for local demo |
+| Persistence | SQLAlchemy, Alembic migrations, PostgreSQL 16 (SQLite for local) |
 | Dashboard | React 18, TypeScript, Vite, Recharts |
 | Runtime | Docker Compose |
 
@@ -98,6 +106,8 @@ The transparent 0–100 score combines quantum vulnerability, whether `data life
 | Endpoint | Purpose |
 |---|---|
 | `GET /api/dashboard/summary` | Latest assurance and risk posture |
+| `GET /api/scans` | Scan history with safe failed-file categories |
+| `GET /api/scans/{id}` | Scan metrics and sanitized relative failure paths |
 | `GET /api/assets` | Filterable cryptographic inventory |
 | `GET /api/cbom` | CycloneDX-style cryptographic bill of materials |
 | `GET /api/reports/risk` | JSON risk and migration roadmap |
@@ -106,7 +116,12 @@ The transparent 0–100 score combines quantum vulnerability, whether `data life
 | `GET /api/evaluation` | Precision, recall, F1, per-source metrics, and declared blind spots |
 | `GET /api/audit-logs` | Append-only audit history for Auditor/Admin roles |
 
-Mutating requests accept `X-ECDAT-Role`; `admin` and `security_analyst` may scan or edit risk context. `auditor` and `viewer` are read-oriented roles. The prototype performs local deterministic analysis and stores certificate/key metadata—not private keys or source-code copies. Production deployments should enable PostgreSQL volume encryption, TLS, secrets management, and identity-provider authentication.
+Signed sessions authorize requests; `admin` and `security_analyst` may scan or
+edit risk context, while `auditor` and `viewer` are read-oriented roles. The
+prototype performs local deterministic analysis and stores certificate/key
+metadata—not private keys or source-code copies. Production deployments should
+enable PostgreSQL volume encryption, TLS, secrets management, and
+identity-provider authentication.
 
 ## Controlled evaluation dataset
 
