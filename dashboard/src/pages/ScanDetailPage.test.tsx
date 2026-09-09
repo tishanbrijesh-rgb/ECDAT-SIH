@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { getScanDetail } from "../api/client";
 import ScanDetailPage from "./ScanDetailPage";
@@ -10,6 +11,24 @@ vi.mock("../api/client", () => ({
 }));
 
 describe("ScanDetailPage", () => {
+  it("clears a previous scan error when navigating to another scan", async () => {
+    vi.mocked(getScanDetail)
+      .mockRejectedValueOnce(new Error("Missing scan"))
+      .mockImplementationOnce(() => new Promise(() => undefined));
+    render(
+      <MemoryRouter initialEntries={["/scans/7"]}>
+        <Link to="/scans/8">Next scan</Link>
+        <Routes>
+          <Route path="/scans/:id" element={<ScanDetailPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent("Missing scan");
+    await userEvent.click(screen.getByRole("link", { name: "Next scan" }));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByText("Loading scan detail")).toBeInTheDocument();
+  });
+
   it("transitions from loading to the scan details", async () => {
     vi.mocked(getScanDetail).mockResolvedValue({
       id: 7,

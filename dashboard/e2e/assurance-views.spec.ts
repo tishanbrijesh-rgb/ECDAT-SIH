@@ -200,6 +200,7 @@ async function signIn(page: Page) {
   await page.getByLabel("Username").fill("admin");
   await page.getByLabel("Password").fill("valid-password");
   await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("navigation", { name: "Main navigation" })).toBeVisible();
 }
 
 test.beforeEach(async ({ page }) => mockApi(page));
@@ -251,6 +252,13 @@ test("mobile dark mode honors the 375px viewport and reduced-motion preference",
   await page.getByRole("button", { name: "Switch to dark mode" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await expect(page.getByRole("navigation", { name: "Main navigation" })).toBeVisible();
+  const navigation = page.getByRole("navigation", { name: "Main navigation" });
+  const navWidth = await navigation.evaluate((element) => element.clientWidth);
+  expect(navWidth).toBeGreaterThan(300);
+  await page.getByRole("link", { name: "CBOM", exact: true }).click();
+  await expect(page).toHaveURL(/\/cbom$/);
+  await page.getByRole("link", { name: "Overview", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Risk distribution", exact: true })).toBeVisible();
   const layout = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,
     page: document.documentElement.scrollWidth,

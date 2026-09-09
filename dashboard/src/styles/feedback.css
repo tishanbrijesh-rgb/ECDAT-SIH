@@ -9,6 +9,11 @@
 .error-boundary-card {
   max-width: 480px;
   text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 40px 32px;
+  box-shadow: var(--shadow-md);
 }
 .error-boundary-icon {
   font-size: 48px;
@@ -26,11 +31,12 @@
   text-align: left;
   font-size: 12px;
   color: var(--red);
-  background: var(--panel);
+  background: var(--bg);
   padding: 12px;
   border-radius: var(--radius-xs);
   overflow: auto;
   max-height: 160px;
+  border: 1px solid var(--line);
 }
 
 /* ── Toast notifications ───────────────────────────── */
@@ -59,6 +65,7 @@
   pointer-events: auto;
   position: relative;
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 .toast-progress {
   position: absolute;
@@ -75,10 +82,14 @@
   font-size: 14px;
   font-weight: 700;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 .toast-msg {
   flex: 1;
   line-height: 1.4;
+  position: relative;
+  z-index: 1;
 }
 .toast-close {
   background: none;
@@ -91,31 +102,38 @@
   line-height: 1;
   opacity: 0.7;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+  transition:
+    opacity 0.15s,
+    background 0.15s;
+  border-radius: 6px;
 }
 .toast-close:hover {
   opacity: 1;
+  background: rgba(255, 255, 255, 0.15);
 }
 .toast-success {
-  background: #16a34a;
+  background: rgba(45, 79, 62, 0.9);
 }
 .toast-error {
-  background: #dc2626;
+  background: rgba(181, 45, 34, 0.9);
 }
 .toast-warning {
-  background: #d97706;
+  background: rgba(154, 94, 16, 0.9);
 }
 .toast-info {
-  background: #4257d6;
+  background: rgba(74, 84, 208, 0.9);
 }
 
 @keyframes toastIn {
   from {
     opacity: 0;
-    transform: translateX(40px) scale(0.95);
+    transform: translateX(40px);
   }
   to {
     opacity: 1;
-    transform: translateX(0) scale(1);
+    transform: translateX(0);
   }
 }
 @keyframes toastOut {
@@ -131,29 +149,26 @@
 
 /* ── Loading skeletons ────────────────────────────── */
 .skeleton {
-  background: linear-gradient(90deg, var(--panel) 25%, var(--line) 50%, var(--panel) 75%);
+  background: linear-gradient(90deg, var(--bg-2) 25%, var(--panel) 50%, var(--bg-2) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
-  border-radius: var(--radius-sm);
-}
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
+  border-radius: var(--radius-xs);
 }
 .skeleton-card {
   height: 100px;
   border-radius: var(--radius-sm);
-  background: var(--panel);
+  background: var(--surface);
   border: 1px solid var(--line);
   padding: 20px;
+  box-shadow: var(--shadow-sm);
 }
 .skeleton-line {
   height: 14px;
   margin-bottom: 10px;
+  border-radius: 7px;
+  background: linear-gradient(90deg, var(--line) 25%, var(--panel) 50%, var(--line) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
 }
 .skeleton-line.short {
   width: 40%;
@@ -166,18 +181,24 @@
   height: 36px;
   border-radius: 50%;
   margin-bottom: 12px;
+  background: linear-gradient(90deg, var(--line) 25%, var(--panel) 50%, var(--line) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
 }
 .skeleton-bar {
   height: 10px;
   border-radius: 5px;
   margin-bottom: 8px;
+  background: linear-gradient(90deg, var(--line) 25%, var(--panel) 50%, var(--line) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
 }
 
 /* ── Confirm dialog ────────────────────────────────── */
 .confirm-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(28, 26, 23, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -185,7 +206,7 @@
   animation: fadeIn 0.15s ease-out;
 }
 .confirm-dialog {
-  background: var(--bg);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   padding: 24px;
@@ -205,4 +226,9 @@
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+}
+.confirm-actions .button.danger {
+  background: var(--red);
+  color: #fff;
+  border-color: transparent;
 }

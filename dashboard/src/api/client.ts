@@ -2,6 +2,16 @@
 
 const API_BASE: string = (import.meta as any).env?.VITE_API_URL || "http://localhost:8000";
 const SESSION_STORAGE_KEY = "ecdat-session";
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
 let accessToken = "";
 let role = "";
 let expiresAt = 0;
@@ -164,7 +174,7 @@ async function _post<T>(path: string, body: unknown): Promise<T> {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`POST ${path} → ${res.status}`);
+  if (!res.ok) throw new ApiError(`POST ${path} → ${res.status}`, res.status);
   return res.json() as Promise<T>;
 }
 

@@ -1,52 +1,73 @@
-/* Polished responsive design system for the ECDAT assurance console. */
+/* Editorial technical design system — ECDAT */
 
-/* ── Design tokens ─────────────────────────────────────────── */
 :root {
-  font-family: "DM Sans", system-ui, sans-serif;
-  color: #172039;
-  background: #f4f7fb;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  color: #292720;
   font-synthesis: none;
 
-  --navy: #111a3d;
-  --indigo: #4257d6;
-  --line: #dfe5ef;
-  --muted: #69758d;
-  --panel: #fff;
-  --teal: #087969;
-  --teal-light: #e6f7f4;
-  --amber: #a85a00;
-  --amber-light: #fff8ed;
-  --red: #e25361;
-  --red-light: #fff0f1;
-  --violet: #845ed7;
-  --violet-light: #f5f0ff;
-  --green: #22c55e;
+  /* ── Palette ──────────────────────────────────────────────── */
+  --ink: #1c1a17;
+  --ink-soft: #3d3830;
+  --stone: #686256;
+  --stone-light: #8a8480;
+  --rule: #cec7ba;
+  --rule-heavy: #b8b0a4;
+  --surface: #fdfcf9;
+  --surface-alt: #f5f3ed;
+  --page: #f4f1ea;
 
-  --bg: #f4f7fb;
-  --text: #172039;
+  --forest: #2d4f3e;
+  --forest-bright: #3a6b54;
+  --teal: #0a7d6e;
+  --teal-bright: #0e9a88;
+  --teal-wash: #e2f5f2;
+  --amber: #9a5e10;
+  --amber-wash: #fdf4e3;
+  --red: #b52d22;
+  --red-wash: #fceeed;
+  --indigo: #4a54d0;
+  --indigo-wash: #eef0ff;
 
-  --teal-dark: #178a77;
-  --amber-dark: #b86e1a;
-  --red-dark: #b82d3b;
-  --violet-dark: #5e3ea6;
+  --bg: #f4f1ea;
+  --bg-2: #eae6dd;
+  --panel: #fdfcf9;
+  --panel-2: #f0ede6;
+  --line: #cec7ba;
+  --line-strong: #b8b0a4;
+  --muted: #686256;
+  --muted-soft: #8a8480;
+  --text: #1c1a17;
+  --text-soft: #3d3830;
 
-  --shadow-sm: 0 2px 8px rgba(17, 26, 61, 0.06);
-  --shadow-md: 0 8px 28px rgba(37, 49, 80, 0.08);
-  --shadow-lg: 0 25px 60px rgba(0, 0, 0, 0.3);
-  --radius: 14px;
-  --radius-sm: 9px;
-  --radius-xs: 6px;
-  --transition: 0.2s ease;
+  /* ── Shadows ─ minimal, functional only ──────────────────── */
+  --shadow-sm: 0 1px 2px rgba(28, 26, 23, 0.05);
+  --shadow-md: 0 3px 8px rgba(28, 26, 23, 0.07), 0 1px 2px rgba(28, 26, 23, 0.04);
+  --shadow-lg: 0 8px 20px rgba(28, 26, 23, 0.09), 0 2px 6px rgba(28, 26, 23, 0.03);
+
+  /* ── Radii ─ intentionally varied ────────────────────────── */
+  --radius: 8px;
+  --radius-sm: 6px;
+  --radius-xs: 4px;
+  --radius-pill: 999px;
+  --transition: 120ms ease;
+  --transition-fast: 80ms ease;
 }
 
-/* ── Base reset ─────────────────────────────────────────────── */
-* {
+/* ── Reset ────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-/* Keyboard focus indicator — only on focus-visible (not mouse clicks) */
 :focus-visible {
-  outline: 2px solid var(--indigo);
+  outline: 2px solid var(--forest);
   outline-offset: 2px;
   border-radius: 3px;
 }
@@ -56,59 +77,106 @@ select:focus:not(:focus-visible) {
   outline: none;
 }
 
+html,
 body {
   margin: 0;
   min-width: 320px;
-  background: #f4f7fb;
+  background: var(--page);
+  color: var(--text);
 }
+body {
+  min-height: 100vh;
+}
+
 button,
 input,
 select {
   font: inherit;
   min-height: 44px;
 }
+
 a {
-  color: #3549bc;
+  color: var(--forest);
   text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
 }
 
 .button,
 .topbar nav a,
-.row-link,
-.toast-close {
+.row-link {
   min-height: 44px;
 }
 
-/* ── Typography ─────────────────────────────────────────────── */
+/* ── Typography ───────────────────────────────────────────────── */
 h1,
 h2,
 h3 {
-  font-family: Manrope, sans-serif;
-  color: #151e3b;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 h1 {
-  font-size: clamp(30px, 4vw, 44px);
-  letter-spacing: -0.04em;
-  line-height: 1.08;
-  margin: 5px 0 10px;
+  font-size: clamp(24px, 3.2vw, 32px);
+  font-weight: 700;
+  margin: 4px 0 6px;
+  color: var(--ink);
 }
 h2 {
-  font-size: 19px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
   margin: 0;
 }
 h3 {
-  font-size: 14px;
-  margin: 24px 0 12px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--stone);
+  font-weight: 600;
+  margin: 18px 0 6px;
 }
 .eyebrow {
-  margin: 0;
-  color: #5364c6;
+  color: var(--forest-bright);
   text-transform: uppercase;
-  letter-spacing: 0.16em;
-  font-size: 11px;
-  font-weight: 800;
+  letter-spacing: 0.14em;
+  font-size: 10px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+.eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--forest);
+  flex-shrink: 0;
 }
 .muted {
-  color: var(--muted);
+  color: var(--stone);
   font-size: 13px;
+  line-height: 1.55;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(28, 26, 23, 0.12);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(28, 26, 23, 0.22);
+  background-clip: padding-box;
 }

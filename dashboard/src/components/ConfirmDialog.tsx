@@ -117,10 +117,9 @@ export const ConfirmDialog = memo(function ConfirmDialog({
             Cancel
           </button>
           <button
-            className={danger ? "button" : "button"}
+            className={danger ? "button danger" : "button"}
             onClick={handleConfirm}
             disabled={confirming}
-            style={danger ? { background: "var(--red)" } : undefined}
           >
             {confirming ? "Working…" : confirmLabel}
           </button>

@@ -43,11 +43,8 @@ export default function ScanPage() {
   const validatePath = useCallback((raw: string): string => {
     const trimmed = raw.trim();
     if (!trimmed) return "Repository path is required.";
-    if (!trimmed.startsWith("/") && !trimmed.startsWith("./")) {
-      return "Path must be absolute (/) or relative (./).";
-    }
-    if (/[\n\r|;&$`(){}[\]\\<>]/.test(trimmed)) {
-      return "Path contains invalid characters.";
+    if (/[\u0000-\u001f\u007f]/.test(raw)) {
+      return "Path must not contain control characters.";
     }
     return "";
   }, []);
@@ -120,7 +117,7 @@ export default function ScanPage() {
     setScanId(undefined);
     setJob(undefined);
     try {
-      const result = await scanRepo(path);
+      const result = await scanRepo(path.trim());
       setScanId(result.scan_id);
     } catch (e) {
       setError(String(e));

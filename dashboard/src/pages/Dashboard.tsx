@@ -51,19 +51,29 @@ export default function Dashboard() {
   const [summary, setSummary] = useState<DashboardSummary>();
   const [evaluation, setEvaluation] = useState<Evaluation>();
   const [error, setError] = useState("");
+  const [downloadError, setDownloadError] = useState("");
   const [sending, setSending] = useState<string>("");
   const [searchParams, setSearchParams] = useSearchParams();
   const rawScanId = searchParams.get("scan_id");
   const scanId = rawScanId && /^\d+$/.test(rawScanId) ? Number(rawScanId) : undefined;
   useEffect(() => {
+    let cancelled = false;
     setSummary(undefined);
     setEvaluation(undefined);
+    setError("");
+    setDownloadError("");
     Promise.all([getDashboardSummary(scanId), getEvaluation(scanId).catch(() => undefined)])
       .then(([s, e]) => {
+        if (cancelled) return;
         setSummary(s);
         setEvaluation(e);
       })
-      .catch((e) => setError(String(e)));
+      .catch((e) => {
+        if (!cancelled) setError(String(e));
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [scanId]);
   const clearScanFilter = () => {
     const next = new URLSearchParams(searchParams);
@@ -141,12 +151,13 @@ export default function Dashboard() {
             className="button secondary"
             disabled={sending !== ""}
             onClick={() => {
+              setDownloadError("");
               setSending("risk");
               downloadReport(
                 `/api/reports/risk.txt${scanQuery}`,
                 scanId ? `ecdat-risk-report-scan-${scanId}.txt` : "ecdat-risk-report.txt",
               )
-                .catch((e) => setError(String(e)))
+                .catch((e) => setDownloadError(String(e)))
                 .finally(() => setSending(""));
             }}
           >
@@ -157,6 +168,11 @@ export default function Dashboard() {
           </Link>
         </div>
       </section>
+      {downloadError && (
+        <div className="callout error" role="alert">
+          {downloadError}
+        </div>
+      )}
       <section className="stats six">
         <Stat
           label="Assets"

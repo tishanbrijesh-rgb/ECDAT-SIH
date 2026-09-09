@@ -231,8 +231,13 @@ export default function CbomPage() {
                     const nameVal = (comp.name as string) || `Component ${i + 1}`;
                     const descVal = (comp.description as string) || "";
                     const purlVal = comp.purl as string | undefined;
+                    const confidenceVal = Number(componentProperties["ecdat:confidence"] || 0);
+                    let riskClass = "cbom-risk-low";
+                    if (confidenceVal < 0.4) riskClass = "cbom-risk-critical";
+                    else if (confidenceVal < 0.6) riskClass = "cbom-risk-high";
+                    else if (confidenceVal < 0.8) riskClass = "cbom-risk-medium";
                     return (
-                      <article className="cbom-component-card" key={i}>
+                      <article className={`cbom-component-card ${riskClass}`} key={i}>
                         <div className="cbom-comp-header">
                           <span className="cbom-comp-type">{typeVal}</span>
                           {purlVal && <code className="cbom-purl">{purlVal}</code>}

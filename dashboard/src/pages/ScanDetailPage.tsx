@@ -1,9 +1,9 @@
 // Scan detail — full job metrics, evidence summary, asset breakdown.
-import { Suspense, useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getScanDetail, downloadCsv } from "../api/client";
 import { RiskBadge } from "../components/RiskBadge";
-import { relativeTime, formatDate } from "../utils/format";
+import { formatDate } from "../utils/format";
 import type { ScanDetail } from "../types";
 
 function formatDuration(ms: number): string {
@@ -39,7 +39,12 @@ export default function ScanDetailPage() {
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
+    setDetail(null);
+    setError("");
+    if (!id || !/^\d+$/.test(id) || !Number.isSafeInteger(Number(id)) || Number(id) <= 0) {
+      setError("Invalid scan ID.");
+      return;
+    }
     let cancelled = false;
     getScanDetail(Number(id))
       .then((d) => {

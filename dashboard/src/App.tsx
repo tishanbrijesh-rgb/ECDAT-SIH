@@ -132,7 +132,7 @@ function AppInner() {
       </a>
       <header className="topbar">
         <NavLink className="brand" to="/">
-          <span className="brand-mark">E</span>
+          <img className="brand-mark" src="/ecdat-logo.svg" alt="" aria-hidden="true" />
           <span>
             ECDAT<small>Discovery Assurance</small>
           </span>
@@ -148,7 +148,11 @@ function AppInner() {
         </nav>
         <span className="privacy-chip">Local & explainable</span>
         <ThemeToggle />
-        <button onClick={() => setConfirmLogout(true)} aria-label="Sign out">
+        <button
+          className="button secondary"
+          onClick={() => setConfirmLogout(true)}
+          aria-label="Sign out"
+        >
           Sign out
         </button>
       </header>

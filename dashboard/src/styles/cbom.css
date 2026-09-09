@@ -6,11 +6,18 @@
   margin-bottom: 24px;
 }
 .cbom-meta-card {
-  background: var(--panel);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   padding: 14px 18px;
   box-shadow: var(--shadow-sm);
+  transition:
+    transform var(--transition),
+    box-shadow var(--transition);
+}
+.cbom-meta-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 .cbom-meta-label {
   display: block;
@@ -23,7 +30,9 @@
 }
 .cbom-meta-value {
   display: block;
-  font: 700 15px Manrope;
+  font:
+    700 15px system-ui,
+    sans-serif;
   color: var(--text);
 }
 .cbom-meta-value code {
@@ -32,7 +41,7 @@
     SFMono-Regular,
     Consolas,
     monospace;
-  background: var(--bg);
+  background: var(--bg-2);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -40,7 +49,9 @@
   margin-bottom: 28px;
 }
 .cbom-section h2 {
-  font: 700 18px Manrope;
+  font:
+    700 18px system-ui,
+    sans-serif;
   margin: 0 0 14px;
   color: var(--text);
 }
@@ -54,27 +65,59 @@
   gap: 16px;
 }
 .cbom-component-card {
-  background: var(--panel);
+  position: relative;
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 20px;
   box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition);
+}
+.cbom-component-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--forest);
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+.cbom-component-card:hover {
+  box-shadow: var(--shadow-md);
+}
+.cbom-component-card.cbom-risk-critical::before {
+  background: var(--red);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}
+.cbom-component-card.cbom-risk-high::before {
+  background: var(--amber);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+.cbom-component-card.cbom-risk-medium::before {
+  background: #d4a43a;
+  box-shadow: 0 0 10px rgba(212, 164, 58, 0.3);
+}
+.cbom-component-card.cbom-risk-low::before {
+  background: var(--teal);
+  box-shadow: 0 0 10px rgba(20, 184, 166, 0.3);
 }
 .cbom-comp-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+  padding-left: 4px;
 }
 .cbom-comp-type {
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--indigo);
-  background: var(--bg);
+  color: var(--forest);
+  background: rgba(54, 93, 75, 0.08);
   padding: 3px 8px;
-  border-radius: 4px;
+  border-radius: 99px;
 }
 .cbom-purl {
   font:
@@ -83,17 +126,21 @@
     Consolas,
     monospace;
   color: var(--muted);
-  background: var(--bg);
+  background: var(--bg-2);
   padding: 2px 6px;
   border-radius: 4px;
 }
 .cbom-component-card h3 {
-  font: 800 15px Manrope;
+  font:
+    700 15px system-ui,
+    sans-serif;
   margin: 0 0 6px;
+  padding-left: 4px;
   color: var(--text);
 }
 .cbom-component-card > p {
   margin: 0 0 12px;
+  padding-left: 4px;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.5;
@@ -115,22 +162,29 @@
   gap: 8px;
   align-items: center;
   margin-bottom: 4px;
+  flex-wrap: wrap;
 }
 .cbom-algorithm {
-  font: 700 12px Manrope;
-  color: var(--navy);
+  font:
+    700 12px system-ui,
+    sans-serif;
+  color: var(--text);
 }
 .cbom-category {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--muted);
+  padding: 2px 7px;
+  border-radius: 99px;
+}
+.cbom-category[data-cat] {
+  /* color assigned via component classes */
 }
 .cbom-confidence {
   font-size: 11px;
   font-weight: 800;
-  color: var(--teal-dark);
+  color: var(--teal);
   margin-left: auto;
 }
 .cbom-evidence-detail {
@@ -153,7 +207,7 @@
     SFMono-Regular,
     Consolas,
     monospace;
-  background: var(--bg);
+  background: var(--bg-2);
   padding: 2px 6px;
   border-radius: 4px;
   color: var(--muted);
@@ -175,7 +229,7 @@
   gap: 8px;
 }
 .cbom-node-card {
-  background: var(--panel);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   padding: 14px;
@@ -183,17 +237,19 @@
 }
 .cbom-node-card strong {
   display: block;
-  font: 700 13px Manrope;
+  font:
+    700 13px system-ui,
+    sans-serif;
   margin-bottom: 4px;
 }
 .cbom-node-type {
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
-  color: var(--indigo);
-  background: var(--bg);
+  color: var(--forest);
+  background: rgba(54, 93, 75, 0.08);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 99px;
 }
 .cbom-node-deps {
   margin-left: 16px;
@@ -206,7 +262,7 @@
   padding: 4px 0;
 }
 .cbom-graph-raw {
-  background: var(--panel);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   padding: 18px;
@@ -219,9 +275,9 @@
   line-height: 1.7;
 }
 .cbom-raw-json {
-  background: var(--navy);
+  background: var(--ink);
   color: #e2e8f0;
-  border-radius: var(--radius);
+  border-radius: 8px;
   padding: 20px;
   overflow-x: auto;
   font:
@@ -231,6 +287,8 @@
     monospace;
   line-height: 1.6;
   margin: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-lg);
 }
 .cbom-vuln-list,
 .cbom-service-list {
@@ -242,51 +300,67 @@
   grid-template-columns: 100px 1fr;
   gap: 10px;
   align-items: center;
-  background: var(--panel);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   padding: 14px 18px;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+.cbom-vuln-item:hover {
+  box-shadow: var(--shadow-md);
 }
 .cbom-vuln-id {
-  font: 800 12px Manrope;
-  color: var(--navy);
+  font:
+    800 12px system-ui,
+    sans-serif;
+  color: var(--text);
 }
 .cbom-vuln-severity {
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
   padding: 3px 8px;
-  border-radius: 4px;
+  border-radius: 99px;
   justify-self: start;
+  border: 1px solid transparent;
 }
 .sev-critical {
-  background: var(--red-light);
-  color: var(--red-dark);
+  background: var(--red-wash);
+  color: var(--red);
+  border-color: rgba(239, 68, 68, 0.2);
 }
 .sev-high {
-  background: #fff0e6;
+  background: #fef3e6;
   color: #c2410c;
+  border-color: rgba(249, 115, 22, 0.2);
 }
 .sev-medium {
-  background: var(--amber-light);
-  color: var(--amber-dark);
+  background: var(--amber-wash);
+  color: var(--amber);
+  border-color: rgba(234, 179, 8, 0.2);
 }
 .sev-low {
-  background: var(--teal-light);
-  color: var(--teal-dark);
+  background: var(--teal-wash);
+  color: var(--teal);
+  border-color: rgba(20, 184, 166, 0.2);
 }
 .sev-unknown {
   background: #f1f5f9;
   color: #64748b;
+  border-color: rgba(100, 116, 139, 0.15);
 }
 .cbom-service-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: var(--panel);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   padding: 12px 18px;
+  box-shadow: var(--shadow-sm);
 }
 .cbom-service-item span {
   color: var(--muted);

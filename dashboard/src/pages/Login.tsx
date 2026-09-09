@@ -1,9 +1,7 @@
-// Animated login page with framer-motion entrance, floating labels, and brand animation.
+// Login page with clean framer-motion entrance and floating labels.
 import { useEffect, useId, useState, type FormEvent } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { login } from "../api/client";
-
-const ORB_COUNT = 2;
+import { motion, AnimatePresence } from "framer-motion";
+import { ApiError, login } from "../api/client";
 
 export default function Login({
   onSuccess,
@@ -16,7 +14,6 @@ export default function Login({
   const [password, setPassword] = useState("");
   const [error, setError] = useState(message);
   const [busy, setBusy] = useState(false);
-  const reduced = useReducedMotion();
 
   useEffect(() => setError(message), [message]);
 
@@ -27,8 +24,14 @@ export default function Login({
     try {
       await login(username, password);
       onSuccess();
-    } catch {
-      setError("Invalid username or password.");
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 401
+          ? "Invalid username or password."
+          : err instanceof ApiError && err.status === 429
+            ? "Too many sign-in attempts. Please try again later."
+            : "Unable to sign in. Check your connection and try again.",
+      );
     } finally {
       setBusy(false);
     }
@@ -36,93 +39,33 @@ export default function Login({
 
   return (
     <div className="login-shell">
-      {/* Animated background orbs */}
-      {Array.from({ length: ORB_COUNT }).map((_, i) => (
-        <motion.div
-          key={i}
-          className={`login-orb login-orb--${i + 1}`}
-          animate={
-            reduced
-              ? undefined
-              : {
-                  x: [0, 30 + i * 15, -20 + i * 10, 0],
-                  y: [0, -25 - i * 12, 15 + i * 8, 0],
-                  scale: [1, 1.15 + i * 0.05, 0.9, 1],
-                }
-          }
-          transition={
-            reduced
-              ? undefined
-              : {
-                  duration: 8 + i * 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }
-          }
-        />
-      ))}
-
       <motion.div
         className="login-card"
         aria-labelledby="login-heading"
-        initial={{ opacity: 0, y: 40, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
       >
-        {/* Brand */}
-        <motion.div
-          className="login-brand"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-        >
-          <motion.div
-            className="brand-mark"
-            aria-hidden="true"
-            animate={
-              reduced
-                ? {}
-                : {
-                    boxShadow: [
-                      "0 4px 12px rgba(66,87,214,0.3)",
-                      "0 4px 20px rgba(66,87,214,0.5)",
-                      "0 4px 12px rgba(66,87,214,0.3)",
-                    ],
-                  }
-            }
-            transition={reduced ? undefined : { duration: 3, repeat: Infinity, ease: "easeInOut" }}
-          >
-            E
-          </motion.div>
+        <div className="login-brand">
+          <img className="brand-mark" src="/ecdat-logo.svg" alt="" aria-hidden="true" />
           <div>
             <div className="brand-text">ECDAT</div>
             <div className="brand-sub">Discovery Assurance</div>
           </div>
-        </motion.div>
+        </div>
 
-        <motion.h1
-          id="login-heading"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-        >
-          Sign in
-        </motion.h1>
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}>
-          Authenticated access to the cryptographic inventory and discovery-assurance console.
-        </motion.p>
+        <h1 id="login-heading">Sign in</h1>
+        <p>Authenticated access to the cryptographic inventory and discovery-assurance console.</p>
 
-        {/* Error */}
         <AnimatePresence>
           {error && (
             <motion.div
               className="login-error"
               id="login-error"
               role="alert"
-              initial={{ opacity: 0, y: -8, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -8, scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
             >
               {error}
             </motion.div>
@@ -130,65 +73,41 @@ export default function Login({
         </AnimatePresence>
 
         <form onSubmit={submit} aria-busy={busy}>
-          <motion.div
-            className="field"
-            initial={{ opacity: 0, x: -12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <FloatingLabel
-              label="Username"
-              value={username}
-              onChange={setUsername}
-              autoComplete="username"
-              autoFocus
-              invalid={Boolean(error)}
-              describedBy={error ? "login-error" : undefined}
-            />
-          </motion.div>
+          <FloatingLabel
+            label="Username"
+            value={username}
+            onChange={setUsername}
+            autoComplete="username"
+            autoFocus
+            invalid={Boolean(error)}
+            describedBy={error ? "login-error" : undefined}
+          />
 
-          <motion.div
-            className="field"
-            initial={{ opacity: 0, x: -12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.45 }}
-          >
-            <FloatingLabel
-              label="Password"
-              value={password}
-              onChange={setPassword}
-              type="password"
-              autoComplete="current-password"
-              invalid={Boolean(error)}
-              describedBy={error ? "login-error" : undefined}
-            />
-          </motion.div>
+          <FloatingLabel
+            label="Password"
+            value={password}
+            onChange={setPassword}
+            type="password"
+            autoComplete="current-password"
+            invalid={Boolean(error)}
+            describedBy={error ? "login-error" : undefined}
+          />
 
-          <motion.button
+          <button
             type="submit"
             className="button wide login-submit"
             disabled={busy || !username || !password}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            whileHover={{ scale: busy ? 1 : 1.02 }}
-            whileTap={{ scale: busy ? 1 : 0.98 }}
           >
             {busy && <span className="spinner login-spinner" aria-hidden="true" />}
             {busy ? "Signing in…" : "Sign in"}
-          </motion.button>
+          </button>
         </form>
 
-        <motion.div
-          className="login-hint"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-        >
+        <div className="login-hint">
           <strong>Administrator-provisioned access</strong>
           <br />
           Use your configured account. There are no default passwords.
-        </motion.div>
+        </div>
       </motion.div>
 
       <div className="login-footer">
@@ -201,7 +120,6 @@ export default function Login({
   );
 }
 
-/* ── Floating label input ─────────────────────────────── */
 function FloatingLabel({
   label,
   value,

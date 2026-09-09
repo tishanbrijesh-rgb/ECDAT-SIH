@@ -37,7 +37,7 @@
 }
 .progress-track i.done {
   width: 100%;
-  background: var(--green);
+  background: var(--teal);
   animation: none;
 }
 @keyframes progressPulse {
@@ -60,23 +60,110 @@
   font-size: 16px;
   color: var(--text);
   transition:
-    background 0.15s,
-    border-color 0.15s;
+    background var(--transition),
+    border-color var(--transition),
+    box-shadow var(--transition);
+  box-shadow: var(--shadow-sm);
 }
 .theme-toggle:hover {
   background: var(--panel);
   border-color: var(--indigo);
+  box-shadow: var(--shadow-sm);
 }
 
+/* ── Animations & Transitions (Area 11) ───────────── */
 @keyframes fadeIn {
   from {
     opacity: 0;
+    transform: translateY(4px);
   }
   to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-status {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes glowPulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
     opacity: 1;
   }
 }
 
+/* Page entry */
+main {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* ── Focus transitions ────────────────────────────── */
+button,
+input,
+select,
+.row-link,
+.evidence-toggle,
+.theme-toggle {
+  transition:
+    background var(--transition),
+    border-color var(--transition),
+    box-shadow var(--transition);
+}
+
+/* ── Reduced motion ────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -86,5 +173,6 @@
     transition-delay: 0s !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
   }
 }

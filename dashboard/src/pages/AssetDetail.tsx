@@ -8,6 +8,8 @@ import { RiskBadge } from "../components/RiskBadge";
 import Breadcrumb from "../components/Breadcrumb";
 import { relativeTime, formatDate } from "../utils/format";
 import { useDirtyGuard } from "../utils/hooks";
+import Select from "../components/Select";
+import NumberField from "../components/NumberField";
 import type { CryptoAsset } from "../types";
 
 export default function AssetDetail() {
@@ -250,56 +252,5 @@ export default function AssetDetail() {
         </article>
       </section>
     </>
-  );
-}
-function Select({
-  label,
-  value,
-  options,
-  onChange,
-  id,
-}: {
-  label: string;
-  value: string;
-  options: string[];
-  onChange: (v: string) => void;
-  id: string;
-}) {
-  return (
-    <label htmlFor={id}>
-      {label}
-      <select id={id} value={value} onChange={(e) => onChange(e.target.value)}>
-        {options.map((o) => (
-          <option value={o} key={o}>
-            {o[0].toUpperCase() + o.slice(1)}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-function NumberField({
-  label,
-  value,
-  onChange,
-  id,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  id: string;
-}) {
-  return (
-    <label htmlFor={id}>
-      {label}
-      <input
-        id={id}
-        type="number"
-        min="0"
-        max="999"
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-      />
-    </label>
   );
 }
