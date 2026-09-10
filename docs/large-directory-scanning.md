@@ -1,5 +1,17 @@
 # Large-directory scanning
 
+Reviewed: 2026-09-10
+
+```mermaid
+flowchart LR
+    Root[Allowlisted root] --> Inventory[Bounded inventory]
+    Inventory --> Budget{Within budgets?}
+    Budget -->|yes| Collect[Collectors]
+    Budget -->|no| Failure[Sanitized failure]
+    Collect --> Coverage[Measured coverage]
+    Failure --> Coverage
+```
+
 The local Windows backend can scan `C:\Python314`. The backend process must be
 able to read that directory, and `ECDAT_ALLOWED_SCAN_ROOTS`, when configured,
 must permit it. A host Windows path is not a path inside a Docker container:

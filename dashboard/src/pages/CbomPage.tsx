@@ -1,9 +1,19 @@
 // CBOM (Cryptographic Bill of Materials) viewer.
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import { motion } from "framer-motion";
 import { getCbom, getEvidenceGraph, getRiskReport } from "../api/client";
 import { formatDate } from "../utils/format";
 import type { CbomEntry } from "../types";
+
+// ── Stagger variants ───────────────────────────────────────────
+const staggerContainer = {
+  animate: { transition: { staggerChildren: 0.05, delayChildren: 0.05 } },
+};
+const staggerItem = {
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: [0.25, 0.1, 0.25, 1] } },
+};
 
 const EMPTY_CBOM: CbomEntry = {
   bom_format: "",
@@ -107,7 +117,6 @@ export default function CbomPage() {
     );
 
   const vulnerabilities = cbom.vulnerabilities || [];
-  const dependencies = cbom.dependencies || [];
   const services = cbom.services || [];
   const visibleComponents = components.slice(0, 250);
 
@@ -171,26 +180,31 @@ export default function CbomPage() {
         </div>
       ) : (
         <>
-          <section className="cbom-meta">
-            <div className="cbom-meta-card">
+          <motion.section
+            className="cbom-meta"
+            variants={staggerContainer}
+            initial="initial"
+            animate="animate"
+          >
+            <motion.div variants={staggerItem} className="cbom-meta-card">
               <span className="cbom-meta-label">BOM format</span>
               <span className="cbom-meta-value">{bomFormat}</span>
-            </div>
-            <div className="cbom-meta-card">
+            </motion.div>
+            <motion.div variants={staggerItem} className="cbom-meta-card">
               <span className="cbom-meta-label">Spec version</span>
               <span className="cbom-meta-value">{specVersion}</span>
-            </div>
-            <div className="cbom-meta-card">
+            </motion.div>
+            <motion.div variants={staggerItem} className="cbom-meta-card">
               <span className="cbom-meta-label">Serial number</span>
               <span className="cbom-meta-value">{serial ? <code>{serial}</code> : "—"}</span>
-            </div>
+            </motion.div>
             {timestamp && (
-              <div className="cbom-meta-card">
+              <motion.div variants={staggerItem} className="cbom-meta-card">
                 <span className="cbom-meta-label">Generated</span>
                 <span className="cbom-meta-value">{formatDate(timestamp)}</span>
-              </div>
+              </motion.div>
             )}
-          </section>
+          </motion.section>
 
           {view === "components" && (
             <section className="cbom-section">
@@ -202,11 +216,22 @@ export default function CbomPage() {
                 </div>
               )}
               {components.length === 0 ? (
-                <div className="empty-hero">
-                  <p>No cryptographic components detected in this scan.</p>
+                <div className="empty-state">
+                  <span className="empty-state-icon">&#9632;</span>
+                  <p className="empty-state-eyebrow">CBOM</p>
+                  <h1>No components found</h1>
+                  <p>
+                    This scan did not produce any cryptographic components. Run a full discovery
+                    scan with dependency analysis enabled.
+                  </p>
                 </div>
               ) : (
-                <div className="cbom-component-grid">
+                <motion.div
+                  className="cbom-component-grid"
+                  variants={staggerContainer}
+                  initial="initial"
+                  animate="animate"
+                >
                   {visibleComponents.map((comp, i) => {
                     const componentProperties = readProperties(comp.properties);
                     const cryptoProperties = comp.cryptoProperties as JsonRecord | undefined;
@@ -237,7 +262,11 @@ export default function CbomPage() {
                     else if (confidenceVal < 0.6) riskClass = "cbom-risk-high";
                     else if (confidenceVal < 0.8) riskClass = "cbom-risk-medium";
                     return (
-                      <article className={`cbom-component-card ${riskClass}`} key={i}>
+                      <motion.article
+                        className={`cbom-component-card ${riskClass}`}
+                        key={i}
+                        variants={staggerItem}
+                      >
                         <div className="cbom-comp-header">
                           <span className="cbom-comp-type">{typeVal}</span>
                           {purlVal && <code className="cbom-purl">{purlVal}</code>}
@@ -286,10 +315,10 @@ export default function CbomPage() {
                             ))}
                           </div>
                         )}
-                      </article>
+                      </motion.article>
                     );
                   })}
-                </div>
+                </motion.div>
               )}
             </section>
           )}
@@ -300,8 +329,14 @@ export default function CbomPage() {
               {graph && Object.keys(graph).length > 0 ? (
                 <div className="cbom-graph">{renderGraph(graph)}</div>
               ) : (
-                <div className="empty-hero">
-                  <p>No dependency graph data available for this scan.</p>
+                <div className="empty-state empty-state-variant">
+                  <span className="empty-state-icon">&#9656;&#9632;</span>
+                  <p className="empty-state-eyebrow">Dependency graph</p>
+                  <h1>No graph data</h1>
+                  <p>
+                    The dependency graph requires a scan with SBOM or manifest data. Re-run the scan
+                    with dependency analysis enabled.
+                  </p>
                 </div>
               )}
             </section>

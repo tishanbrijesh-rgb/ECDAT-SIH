@@ -2,6 +2,19 @@
 
 ECDAT is the SIH26164 privacy-first cryptographic inventory and discovery-assurance prototype. It correlates explainable evidence from source structure, auditable multi-language rules, dependencies, and X.509 certificates; measures confidence and coverage separately; exposes conflicts and blind spots; and produces context-aware PQC migration priorities.
 
+```mermaid
+flowchart LR
+    Analyst[Security analyst] --> UI[React dashboard]
+    UI --> API[FastAPI control plane]
+    API --> Worker[Supervised scanner]
+    Worker --> Evidence[Normalized evidence]
+    Evidence --> Risk[Correlation and risk]
+    Risk --> DB[(PostgreSQL / SQLite)]
+    DB --> UI
+```
+
+Documentation navigation: [docs/INDEX.md](docs/INDEX.md).
+
 ## Quick start
 
 ### Option A — Docker Compose (recommended)
@@ -27,6 +40,11 @@ npx vite --host 0.0.0.0 --port 3000
 ```
 
 Open **http://localhost:3000** and sign in with an account configured in `.env`.
+
+The production dashboard serves API requests through the same origin under
+`/api`. The bundled Nginx configuration forwards those requests to the backend
+container, so a deployed browser does not depend on `localhost:8000`. Keep port
+3000 behind a TLS-terminating reverse proxy for any shared or public deployment.
 
 > **Note:** Credentials are defined in the untracked `.env` file or via
 > `ECDAT_USERS_JSON`. See `LOGIN_CREDENTIALS.md` for details.
@@ -82,10 +100,11 @@ On Windows, run the complete release gate:
 
 | Suite | Status |
 |---|---|
-| Backend (unit + API) | 103 pass, 1 skip |
+| Backend (unit + API) | 118 pass, 1 skip; 84 subtests |
 | Migration tests | 8/8 pass |
-| Frontend unit | 13 pass |
-| Edge E2E | 7/7 workflows pass |
+| Backend coverage | 84.95% |
+| Frontend unit | 22 pass |
+| Chromium E2E | 7/7 workflows pass |
 | Security | No known vulns, no medium/high Bandit |
 | Benchmark | 8 TP, 0 FP, 0 FN (deterministic) |
 
@@ -139,6 +158,7 @@ The transparent 0–100 score combines quantum vulnerability, whether `data life
 | `GET /api/dashboard/summary` | Latest assurance and risk posture |
 | `GET /api/scans` | Scan history with safe failed-file categories |
 | `GET /api/scans/{id}` | Scan metrics and sanitized relative failure paths |
+| `GET /api/scans/{id}/events` | Authenticated server-sent progress events |
 | `GET /api/assets` | Filterable cryptographic inventory |
 | `GET /api/cbom` | CycloneDX-style cryptographic bill of materials |
 | `GET /api/reports/risk` | JSON risk and migration roadmap |

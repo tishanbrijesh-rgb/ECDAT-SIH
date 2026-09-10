@@ -1,5 +1,7 @@
 # ECDAT improvement plan — 2026-09-07
 
+> Historical plan. See [IMPLEMENTATION.md](IMPLEMENTATION.md) for current work-package status.
+
 ## Objective
 
 Complete Docker/PostgreSQL verification, improve large-scan failure visibility,

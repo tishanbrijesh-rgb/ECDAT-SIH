@@ -180,3 +180,197 @@ h3 {
   background: rgba(28, 26, 23, 0.22);
   background-clip: padding-box;
 }
+
+/* ── Tier 2: Spacing scale ──────────────────────────────────── */
+:root {
+  --gap-xs: 4px;
+  --gap-sm: 8px;
+  --gap-md: 14px;
+  --gap-lg: 24px;
+  --gap-xl: 40px;
+}
+
+/* ── Tier 2: Micro-interactions ─────────────────────────────── */
+.button {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 120ms ease,
+    box-shadow 150ms ease,
+    background 120ms ease,
+    border-color 120ms ease;
+}
+.button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.button:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 60ms;
+}
+
+/* Focus ring — consistent across all interactive elements */
+.button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+a:focus-visible,
+.row-link:focus-visible,
+.evidence-toggle:focus-visible,
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--forest);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Ripple effect via pseudo-element on buttons */
+.button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at var(--ripple-x, 50%) var(--ripple-y, 50%),
+    rgba(255, 255, 255, 0.25) 0%,
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 300ms ease;
+  pointer-events: none;
+}
+.button:active::after {
+  opacity: 1;
+  transition: opacity 0ms;
+}
+
+/* Stat card lift on hover */
+.stat {
+  transition:
+    transform 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.stat:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Panel subtle lift */
+.panel {
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease;
+}
+.panel:hover {
+  box-shadow:
+    var(--shadow-md),
+    0 0 0 1px var(--line);
+}
+
+/* Table row interaction */
+tbody tr {
+  transition:
+    background 80ms ease,
+    border-color 150ms ease;
+}
+tbody tr:hover {
+  transform: translateX(2px);
+}
+
+/* ── Tier 2: Typography refinement ──────────────────────────── */
+h1 {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+h2 {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+h3 {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Body text rhythm */
+body {
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Paragraph spacing */
+p {
+  line-height: 1.6;
+  margin: 0 0 0.8em;
+}
+p:last-child {
+  margin-bottom: 0;
+}
+
+/* Eyebrow — tighter tracking */
+.eyebrow {
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+
+/* Small text — improved readability */
+small,
+.muted {
+  line-height: 1.45;
+}
+
+/* Code blocks */
+code,
+pre {
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  line-height: 1.5;
+}
+
+/* ── Tier 2: Color depth ────────────────────────────────────── */
+.panel {
+  background: linear-gradient(180deg, var(--surface) 0%, var(--bg-2) 100%);
+}
+
+/* Stat glass effect */
+.stat {
+  backdrop-filter: blur(4px);
+}
+
+/* Accent glow on primary buttons */
+.button {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.button:hover:not(:disabled) {
+  box-shadow:
+    var(--shadow-md),
+    0 0 12px rgba(54, 93, 75, 0.12);
+}
+
+/* Scan-filter banner accent */
+.scan-filter-banner {
+  background: linear-gradient(90deg, var(--indigo-wash) 0%, var(--bg-2) 100%);
+  border: 1px solid rgba(74, 84, 208, 0.15);
+}
+
+/* Callout left accent bar */
+.callout {
+  position: relative;
+}
+.callout::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 3px 0 0 3px;
+}
+.callout-error::before {
+  background: var(--red);
+}
+.callout-amber::before {
+  background: var(--amber);
+}
+.callout-success::before {
+  background: var(--teal);
+}

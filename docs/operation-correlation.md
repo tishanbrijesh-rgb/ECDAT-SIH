@@ -1,5 +1,16 @@
 # Operation-aware correlation (operation-v2)
 
+Reviewed: 2026-09-10
+
+```mermaid
+flowchart LR
+    Evidence --> Component
+    Component --> Operation
+    Operation --> Algorithm
+    Algorithm --> Usage
+    Usage --> LogicalAsset[Logical asset ID]
+```
+
 New scans group evidence by component, algorithm, explicit usage, normalized file
 location and operation anchor. Distinct operations and usages no longer collapse
 into one component/algorithm finding. Unknown or unsupported usage remains unknown;

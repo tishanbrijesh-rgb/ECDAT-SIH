@@ -110,6 +110,34 @@
 .scan-failure-list li:hover {
   background: var(--surface-alt);
 }
+
+/* ── Tier 2: Scan detail micro-interactions ───────────────────── */
+.scan-fact {
+  transition: background 100ms ease;
+  border-radius: var(--radius-xs);
+  padding: 6px 8px;
+  margin: -6px -8px;
+}
+.scan-fact:hover {
+  background: var(--bg-2);
+}
+
+.scan-risk-row {
+  transition: transform 100ms ease;
+}
+.scan-risk-row:hover {
+  transform: translateX(3px);
+}
+
+.scan-failure-list li {
+  transition:
+    background 80ms ease,
+    transform 80ms ease;
+}
+.scan-failure-list li:hover {
+  transform: translateX(2px);
+}
+
 @media (max-width: 480px) {
   .scan-failure-list li {
     align-items: flex-start;

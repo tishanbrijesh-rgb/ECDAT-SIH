@@ -1,8 +1,31 @@
 // Portfolio posture, assurance measurements, and research evaluation.
 import { lazy, Suspense, useEffect, useState, useRef, useMemo, memo, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { motion, type Variants } from "framer-motion";
 import { downloadReport, getDashboardSummary, getEvaluation, canWrite } from "../api/client";
 import type { DashboardSummary, Evaluation } from "../types";
+
+// ── Stagger animation variants ──────────────────────────────────
+const staggerContainer = {
+  animate: {
+    transition: { staggerChildren: 0.06, delayChildren: 0.05 },
+  },
+} satisfies Variants;
+
+const listStagger = {
+  animate: {
+    transition: { staggerChildren: 0.04 },
+  },
+} satisfies Variants;
+
+const staggerItem = {
+  initial: { opacity: 0, y: 14 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] },
+  },
+} satisfies Variants;
 
 const RiskDistributionChart = lazy(() => import("../components/RiskDistributionChart"));
 
@@ -173,46 +196,68 @@ export default function Dashboard() {
           {downloadError}
         </div>
       )}
-      <section className="stats six">
-        <Stat
-          label="Assets"
-          value={<AnimatedNumber value={summary.total_assets} />}
-          note="correlated findings"
-          tone="blue"
-        />
-        <Stat
-          label="High risk"
-          value={<AnimatedNumber value={summary.high_risk_count} />}
-          note="critical + high"
-          tone="red"
-        />
-        <Stat
-          label="Quantum exposed"
-          value={<AnimatedNumber value={summary.quantum_vulnerable_count} />}
-          note="public-key assets"
-          tone="amber"
-        />
-        <Stat
-          label="Confidence"
-          value={`${confidencePct}%`}
-          note="average evidence score"
-          tone={confTone}
-        />
-        <Stat
-          label="Coverage"
-          value={`${summary.coverage_pct}%`}
-          note="supported files scanned"
-          tone="teal"
-        />
-        <Stat
-          label="Conflicts"
-          value={<AnimatedNumber value={summary.conflict_count} />}
-          note="operation-level contradictions"
-          tone="violet"
-        />
-      </section>
-      <section className="dashboard-grid">
-        <article className="panel span-2">
+      <motion.section
+        className="stats six"
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+      >
+        <motion.div variants={staggerItem}>
+          <Stat
+            label="Assets"
+            value={<AnimatedNumber value={summary.total_assets} />}
+            note="correlated findings"
+            tone="blue"
+          />
+        </motion.div>
+        <motion.div variants={staggerItem}>
+          <Stat
+            label="High risk"
+            value={<AnimatedNumber value={summary.high_risk_count} />}
+            note="critical + high"
+            tone="red"
+          />
+        </motion.div>
+        <motion.div variants={staggerItem}>
+          <Stat
+            label="Quantum exposed"
+            value={<AnimatedNumber value={summary.quantum_vulnerable_count} />}
+            note="public-key assets"
+            tone="amber"
+          />
+        </motion.div>
+        <motion.div variants={staggerItem}>
+          <Stat
+            label="Confidence"
+            value={`${confidencePct}%`}
+            note="average evidence score"
+            tone={confTone}
+          />
+        </motion.div>
+        <motion.div variants={staggerItem}>
+          <Stat
+            label="Coverage"
+            value={`${summary.coverage_pct}%`}
+            note="supported files scanned"
+            tone="teal"
+          />
+        </motion.div>
+        <motion.div variants={staggerItem}>
+          <Stat
+            label="Conflicts"
+            value={<AnimatedNumber value={summary.conflict_count} />}
+            note="operation-level contradictions"
+            tone="violet"
+          />
+        </motion.div>
+      </motion.section>
+      <motion.section
+        className="dashboard-grid"
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+      >
+        <motion.div variants={staggerItem} className="panel span-2">
           <PanelTitle
             title="Risk distribution"
             sub="Migration urgency across the latest inventory"
@@ -220,25 +265,30 @@ export default function Dashboard() {
           <Suspense fallback={<div className="skeleton" style={{ height: 270 }} />}>
             <RiskDistributionChart data={risk} />
           </Suspense>
-        </article>
-        <article className="panel">
+        </motion.div>
+        <motion.div variants={staggerItem} className="panel">
           <PanelTitle title="Evidence collectors" sub="Independent records supporting findings" />
-          <div className="collector-list">
+          <motion.div
+            className="collector-list"
+            variants={listStagger}
+            initial="initial"
+            animate="animate"
+          >
             {collectors.length === 0 && (
-              <p className="muted" style={{ padding: "10px 0" }}>
+              <motion.p variants={staggerItem} className="muted" style={{ padding: "10px 0" }}>
                 No collector data available.
-              </p>
+              </motion.p>
             )}
             {collectors.map((c) => (
-              <div key={c.label}>
+              <motion.div key={c.label} variants={staggerItem}>
                 <span>{c.label}</span>
                 <strong>{c.count}</strong>
                 <i style={{ width: `${Math.min(100, c.count * 3)}%` }} />
-              </div>
+              </motion.div>
             ))}
-          </div>
-        </article>
-        <article className="panel">
+          </motion.div>
+        </motion.div>
+        <motion.div variants={staggerItem} className="panel">
           <PanelTitle
             title="Research evaluation"
             sub="Controlled component/algorithm pairs—not operation-level or real-world accuracy"
@@ -255,22 +305,27 @@ export default function Dashboard() {
               Run the bundled test repository to calculate precision and recall.
             </p>
           )}
-        </article>
-        <article className="panel span-2 blind">
+        </motion.div>
+        <motion.div variants={staggerItem} className="panel span-2 blind">
           <PanelTitle
             title="Visibility gaps"
             sub="Explicit uncertainty—not a false claim of completeness"
           />
-          <div className="gap-list">
+          <motion.div
+            className="gap-list"
+            variants={listStagger}
+            initial="initial"
+            animate="animate"
+          >
             {summary.blind_spots.map((gap, i) => (
-              <div key={gap}>
+              <motion.div key={gap} variants={staggerItem}>
                 <span>{i + 1}</span>
                 <p>{gap}</p>
-              </div>
+              </motion.div>
             ))}
-          </div>
-        </article>
-      </section>
+          </motion.div>
+        </motion.div>
+      </motion.section>
     </>
   );
 }

@@ -9,6 +9,15 @@
 
 ## Trust boundaries
 
+```mermaid
+flowchart LR
+    Browser[Browser] -->|Bearer token| API[API boundary]
+    API -->|validated root| Repo[Repository boundary]
+    API -->|SQLAlchemy| DB[(Database boundary)]
+    API -->|supervised process| Scanner[Scanner boundary]
+    Scanner -. never executes .-> Source[Untrusted source files]
+```
+
 1. Browser to API
 2. API to database
 3. API to repository filesystem
@@ -26,6 +35,9 @@
 | Scan overstatement | Measured coverage plus explicit blind spots |
 | Dependency compromise | Locked frontend dependencies, automated audit and CI |
 | Accidental secret commit | `.gitignore`, generated-data exclusions and clean release checks |
+| Brute force / scan abuse | Endpoint-aware in-process rate limits with `429` and `Retry-After` |
+| Duplicate worker claim | Database-backed expiring scan lease plus process-local admission |
+| Request tracing | Generated or propagated `X-Request-ID` in structured JSON logs |
 
 ## Accepted SIH prototype limitations
 
@@ -33,4 +45,5 @@
 - Scan execution uses a supervised child process, but not a hardened OS sandbox.
 - Source parsers do not execute scanned repository code.
 - Binary, runtime, cloud KMS, network and HSM discovery remain declared blind spots.
-- A production deployment must add SSO, TLS, secret management, rate limits, worker sandboxing and penetration testing.
+- Current rate limits are process-local; multiple replicas require a shared limiter.
+- A production deployment must add SSO, TLS, secret management, worker sandboxing and penetration testing.

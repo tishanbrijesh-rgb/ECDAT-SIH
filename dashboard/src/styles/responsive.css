@@ -2,9 +2,11 @@
 @media (max-width: 1050px) {
   .stats.six {
     grid-template-columns: repeat(3, 1fr);
+    gap: var(--gap-sm);
   }
   .dashboard-grid {
     grid-template-columns: 1fr 1fr;
+    gap: var(--gap-sm);
   }
   .dashboard-grid .span-2 {
     grid-column: span 2;
@@ -42,6 +44,7 @@
   .hero-actions {
     width: 100%;
     flex-wrap: wrap;
+    gap: var(--gap-sm);
   }
   .hero-actions .button {
     flex: 1;
@@ -64,6 +67,7 @@
   .detail-grid,
   .scan-layout {
     grid-template-columns: 1fr;
+    gap: var(--gap-sm);
   }
   .dashboard-grid .span-2,
   .detail-grid .span-2 {

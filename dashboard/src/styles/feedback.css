@@ -5,27 +5,51 @@
   justify-content: center;
   min-height: 100vh;
   padding: 40px 20px;
+  background: var(--page);
 }
 .error-boundary-card {
   max-width: 480px;
+  width: 100%;
   text-align: center;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   padding: 40px 32px;
   box-shadow: var(--shadow-md);
+  animation: scaleIn 0.25s ease-out;
 }
 .error-boundary-icon {
   font-size: 48px;
   display: block;
   margin-bottom: 12px;
+  animation: pulse 2.5s ease-in-out infinite;
 }
 .error-boundary h2 {
   margin: 0 0 8px;
+  font-weight: 700;
+  color: var(--text);
 }
 .error-boundary p {
   color: var(--muted);
   margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.error-boundary details {
+  text-align: left;
+  margin-bottom: 20px;
+}
+.error-boundary summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--stone);
+  margin-bottom: 8px;
+  padding: 6px 0;
+  transition: color 100ms;
+}
+.error-boundary summary:hover {
+  color: var(--text-soft);
 }
 .error-boundary pre {
   text-align: left;
@@ -34,9 +58,11 @@
   background: var(--bg);
   padding: 12px;
   border-radius: var(--radius-xs);
+  overflow-x: auto;
+  line-height: 1.5;
+  border: 1px solid var(--line);
   overflow: auto;
   max-height: 160px;
-  border: 1px solid var(--line);
 }
 
 /* ── Toast notifications ───────────────────────────── */

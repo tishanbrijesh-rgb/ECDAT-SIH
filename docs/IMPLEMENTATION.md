@@ -1,5 +1,19 @@
 # ECDAT-SIH Implementation Plan
 
+Updated: 2026-09-10
+
+```mermaid
+flowchart LR
+    CI[IMP-001 CI parity] --> Gates[IMP-002 quality gates]
+    Gates --> Logs[IMP-003 request tracing]
+    Logs --> Limits[IMP-004 rate limits]
+    Logs --> Recovery[IMP-005 stale recovery]
+    Recovery --> Queue[IMP-007 leases + SSE]
+    Gates --> Discovery[IMP-006 discovery expansion]
+```
+
+Status: IMP-001 through IMP-005 are implemented and locally verified. IMP-006 is partial. IMP-007 has database leases and authenticated SSE, while a durable external queue and reconnect cursor remain deferred.
+
 This file converts the improvement roadmap into executable work packages. Each package should be delivered as a focused commit or pull request and must leave the repository deployable.
 
 ## Protected baseline

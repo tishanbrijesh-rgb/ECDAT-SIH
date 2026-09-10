@@ -1,5 +1,7 @@
 # Detection and correlation regressions — 2026-09-04
 
+> Historical regression record. See [operation-correlation.md](operation-correlation.md) for current behavior.
+
 This follow-up supersedes the demo counts in the earlier verification report.
 It does not establish real-world detection accuracy or production readiness.
 

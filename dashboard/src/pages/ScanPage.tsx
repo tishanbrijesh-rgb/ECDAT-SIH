@@ -1,6 +1,5 @@
 // Repository scan launcher with job progress, coverage, and history.
-import { useEffect, useState, useCallback, useMemo } from "react";
-import type { FormEvent, ChangeEvent } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getScan, getScans, scanRepo, canWrite, cancelScan } from "../api/client";
 import { ConfirmDialog } from "../components/ConfirmDialog";
@@ -321,7 +320,12 @@ export default function ScanPage() {
               {!history.length && !error && (
                 <tr>
                   <td colSpan={8} className="empty-table-msg">
-                    No scan history yet.
+                    <span className="empty-data-icon">&#9656;&#9632;</span>
+                    <strong>No scan history yet</strong>
+                    <span>
+                      Run a discovery scan from the panel above to build your cryptographic
+                      inventory.
+                    </span>
                   </td>
                 </tr>
               )}

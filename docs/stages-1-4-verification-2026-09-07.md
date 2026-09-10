@@ -1,5 +1,7 @@
 # ECDAT stages 1–5 (including Phase 3) completion report — 2026-09-07
 
+> Historical snapshot. The current verification is [verification-2026-09-10.md](verification-2026-09-10.md).
+
 ## Verdict
 
 Stages 1–5 are implemented and verified. Phase 3 database migrations (Alembic,

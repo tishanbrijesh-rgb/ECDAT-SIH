@@ -1,11 +1,21 @@
 // Searchable, filterable, paginated cryptographic inventory.
 // Filter state is synced to URL search params for shareability.
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { motion } from "framer-motion";
 import { getAssets, canWrite } from "../api/client";
 import { RiskBadge } from "../components/RiskBadge";
 import { highlightText } from "../utils/format";
 import type { CryptoAsset } from "../types";
+
+// ── Stagger variants ───────────────────────────────────────────
+const staggerContainer = {
+  animate: { transition: { staggerChildren: 0.04 } },
+};
+const staggerItem = {
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: [0.25, 0.1, 0.25, 1] } },
+};
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
 const RISK_LABELS = ["CRITICAL", "HIGH", "MEDIUM", "LOW"] as const;
@@ -116,8 +126,6 @@ export default function AssetsPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const hasFilters = risk !== "ALL" || quantum || query;
-  const shouldHighlight = query.trim().length > 0;
-
   const goToPage = useCallback(
     (p: number) => {
       syncParams({ page: String(Math.max(0, p)) });
@@ -204,7 +212,7 @@ export default function AssetsPage() {
               <th scope="col" />
             </tr>
           </thead>
-          <tbody>
+          <motion.tbody variants={staggerContainer} initial="initial" animate="animate">
             {loading
               ? Array.from({ length: pageSize }).map((_, i) => (
                   <tr key={`sk-${i}`} aria-rowindex={page * pageSize + i + 2}>
@@ -219,7 +227,11 @@ export default function AssetsPage() {
                   </tr>
                 ))
               : assets.map((a, rowIndex) => (
-                  <tr key={a.id} aria-rowindex={page * pageSize + rowIndex + 2}>
+                  <motion.tr
+                    key={a.id}
+                    variants={staggerItem}
+                    aria-rowindex={page * pageSize + rowIndex + 2}
+                  >
                     <td aria-colindex={1} data-label="Asset">
                       <strong
                         dangerouslySetInnerHTML={{
@@ -263,18 +275,24 @@ export default function AssetsPage() {
                         Inspect &rarr;
                       </Link>
                     </td>
-                  </tr>
+                  </motion.tr>
                 ))}
             {!loading && !assets.length && (
               <tr>
-                <td colSpan={6} className="empty-table-msg" aria-live="polite">
-                  {hasFilters
-                    ? "No assets match these filters."
-                    : "No assets found. Run a scan to begin."}
+                <td colSpan={6} className="empty-table-msg">
+                  <span className="empty-data-icon">&#9632;</span>
+                  <strong>
+                    {hasFilters ? "No assets match these filters" : "No assets found"}
+                  </strong>
+                  <span>
+                    {hasFilters
+                      ? "Try adjusting your search or risk filter to see results."
+                      : "Run a discovery scan to build your cryptographic inventory."}
+                  </span>
                 </td>
               </tr>
             )}
-          </tbody>
+          </motion.tbody>
         </table>
       </div>
       {!loading && total > 0 && (

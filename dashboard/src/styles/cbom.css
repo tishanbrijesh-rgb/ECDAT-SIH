@@ -366,3 +366,47 @@
   color: var(--muted);
   font-size: 12px;
 }
+
+/* ── Tier 2: CBOM micro-interactions & color depth ────────────── */
+.cbom-component-card {
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease;
+}
+.cbom-component-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.cbom-meta-card {
+  transition:
+    transform 100ms ease,
+    box-shadow 100ms ease;
+}
+.cbom-meta-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.cbom-node-card {
+  transition:
+    box-shadow 120ms ease,
+    border-color 120ms ease;
+}
+.cbom-node-card:hover {
+  box-shadow:
+    0 0 0 1px var(--forest),
+    0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.cbom-vuln-item,
+.cbom-service-item {
+  transition:
+    transform 100ms ease,
+    box-shadow 100ms ease;
+}
+.cbom-vuln-item:hover,
+.cbom-service-item:hover {
+  transform: translateX(2px);
+  box-shadow: var(--shadow-sm);
+}

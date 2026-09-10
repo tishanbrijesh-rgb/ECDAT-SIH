@@ -1,5 +1,10 @@
 # Five-minute SIH demonstration
 
+```mermaid
+flowchart LR
+    Login --> Scan --> Assurance --> Risk --> CBOM --> Export
+```
+
 ## 0:00–0:40 — Problem
 
 Organizations cannot migrate to post-quantum cryptography until they know where cryptography exists, how reliable each observation is and which assets must move first.

@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { getScanDetail } from "../api/client";
 import ScanDetailPage from "./ScanDetailPage";
+import type { ScanDetail } from "../types";
 
 vi.mock("../api/client", () => ({
   downloadCsv: vi.fn(),
@@ -82,7 +83,7 @@ describe("ScanDetailPage", () => {
       failures: [{ path: "certs/broken.pem", reason: "certificate_error" }],
       assets: [],
       assets_total: 0,
-    } as any);
+    } as ScanDetail);
 
     render(
       <MemoryRouter initialEntries={["/scans/8"]}>

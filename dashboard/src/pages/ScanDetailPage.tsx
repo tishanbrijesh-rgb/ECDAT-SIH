@@ -1,15 +1,20 @@
 // Scan detail — full job metrics, evidence summary, asset breakdown.
 import { useState, useEffect, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
-import {
-  getScanDetail,
-  downloadCsv,
-  subscribeScanEvents,
-  type ScanProgressEvent,
-} from "../api/client";
+import { motion } from "framer-motion";
+import { getScanDetail, downloadCsv, subscribeScanEvents } from "../api/client";
 import { RiskBadge } from "../components/RiskBadge";
 import { formatDate } from "../utils/format";
 import type { ScanDetail } from "../types";
+
+// ── Stagger variants ───────────────────────────────────────────
+const staggerContainer = {
+  animate: { transition: { staggerChildren: 0.05, delayChildren: 0.05 } },
+};
+const staggerItem = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] } },
+};
 
 function formatDuration(ms: number): string {
   if (ms < 1000) return `${ms} ms`;
@@ -197,25 +202,56 @@ export default function ScanDetailPage() {
         </div>
       </section>
 
-      <section className="stats six">
-        <Stat label="Assets found" value={detail.assets_found} tone="blue" />
-        <Stat label="Scanned" value={detail.scanned_files} tone="teal" />
-        <Stat label="Coverage" value={`${detail.coverage_pct}%`} tone="teal" />
-        <Stat
-          label="Confidence"
-          value={`${detail.avg_confidence ? Math.round(detail.avg_confidence * 100) : 0}%`}
-          tone={detail.avg_confidence != null && detail.avg_confidence >= 0.8 ? "teal" : "amber"}
-        />
-        <Stat label="Conflicts" value={detail.assets.filter((a) => a.conflict).length} tone="red" />
-        <Stat
-          label="Quantum exposed"
-          value={detail.assets.filter((a) => a.quantum_vulnerable).length}
-          tone="amber"
-        />
-      </section>
+      <motion.section
+        className="stats six"
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+      >
+        <motion.div variants={staggerItem}>
+          <Stat label="Assets found" value={detail.assets_found} tone="blue" />
+        </motion.div>
+        <motion.div variants={staggerItem}>
+          <Stat label="Scanned" value={detail.scanned_files} tone="teal" />
+        </motion.div>
+        <motion.div variants={staggerItem}>
+          <Stat label="Coverage" value={`${detail.coverage_pct}%`} tone="teal" />
+        </motion.div>
+        <motion.div variants={staggerItem}>
+          <Stat
+            label="Confidence"
+            value={`${detail.avg_confidence ? Math.round(detail.avg_confidence * 100) : 0}%`}
+            tone={detail.avg_confidence != null && detail.avg_confidence >= 0.8 ? "teal" : "amber"}
+          />
+        </motion.div>
+        <motion.div variants={staggerItem}>
+          <Stat
+            label="Conflicts"
+            value={detail.assets.filter((a) => a.conflict).length}
+            tone="red"
+          />
+        </motion.div>
+        <motion.div variants={staggerItem}>
+          <Stat
+            label="Quantum exposed"
+            value={detail.assets.filter((a) => a.quantum_vulnerable).length}
+            tone="amber"
+          />
+        </motion.div>
+      </motion.section>
 
-      <section className="dashboard-grid">
-        <article className="panel">
+      <motion.section
+        className="dashboard-grid"
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+      >
+        <motion.article
+          className="panel"
+          variants={staggerItem}
+          initial="initial"
+          animate="animate"
+        >
           <div className="panel-title">
             <h2>Job metrics</h2>
             <p>Scan execution details</p>
@@ -231,9 +267,14 @@ export default function ScanDetailPage() {
             {detail.started_at && <Fact label="Started" value={formatDate(detail.started_at)} />}
             {detail.finished_at && <Fact label="Finished" value={formatDate(detail.finished_at)} />}
           </div>
-        </article>
+        </motion.article>
 
-        <article className="panel">
+        <motion.article
+          className="panel"
+          variants={staggerItem}
+          initial="initial"
+          animate="animate"
+        >
           <div className="panel-title">
             <h2>Risk breakdown</h2>
             <p>Assets by priority level</p>
@@ -244,16 +285,26 @@ export default function ScanDetailPage() {
               <span className="scan-risk-count">{riskCounts[label] || 0}</span>
             </div>
           ))}
-        </article>
+        </motion.article>
 
-        <article className="panel">
+        <motion.article
+          className="panel"
+          variants={staggerItem}
+          initial="initial"
+          animate="animate"
+        >
           <div className="panel-title">
             <h2>Collector output</h2>
             <p>Independent evidence records</p>
           </div>
-          <div className="collector-list">
+          <motion.div
+            className="collector-list"
+            variants={staggerContainer}
+            initial="initial"
+            animate="animate"
+          >
             {Object.entries(detail.collector_stats).map(([label, count]) => (
-              <div key={label}>
+              <motion.div key={label} variants={staggerItem}>
                 <span>{label.toUpperCase()}</span>
                 <strong>{count}</strong>
                 <i
@@ -261,12 +312,17 @@ export default function ScanDetailPage() {
                     width: `${Math.min(100, (count / Math.max(1, detail.scanned_files)) * 100)}%`,
                   }}
                 />
-              </div>
+              </motion.div>
             ))}
-          </div>
-        </article>
+          </motion.div>
+        </motion.article>
 
-        <article className="panel span-2">
+        <motion.article
+          className="panel span-2"
+          variants={staggerItem}
+          initial="initial"
+          animate="animate"
+        >
           <div className="panel-title">
             <h2>
               Assets ({detail.assets.length}
@@ -296,9 +352,9 @@ export default function ScanDetailPage() {
                     <th scope="col" />
                   </tr>
                 </thead>
-                <tbody>
+                <motion.tbody variants={staggerContainer} initial="initial" animate="animate">
                   {detail.assets.map((a) => (
-                    <tr key={a.id}>
+                    <motion.tr key={a.id} variants={staggerItem}>
                       <td>
                         <strong>
                           {a.algorithm}
@@ -332,50 +388,70 @@ export default function ScanDetailPage() {
                           Inspect &rarr;
                         </Link>
                       </td>
-                    </tr>
+                    </motion.tr>
                   ))}
-                </tbody>
+                </motion.tbody>
               </table>
             </div>
           )}
-        </article>
+        </motion.article>
 
         {detail.failures && detail.failures.length > 0 && (
-          <article className="panel span-2 scan-failures">
+          <motion.article
+            className="panel span-2 scan-failures"
+            variants={staggerItem}
+            initial="initial"
+            animate="animate"
+          >
             <div className="panel-title">
               <h2>Failed files</h2>
               <p>Safe relative paths and controlled failure categories</p>
             </div>
-            <ul className="scan-failure-list">
+            <motion.ul
+              className="scan-failure-list"
+              variants={staggerContainer}
+              initial="initial"
+              animate="animate"
+            >
               {detail.failures.map((failure) => (
-                <li key={`${failure.path}:${failure.reason}`}>
+                <motion.li key={`${failure.path}:${failure.reason}`} variants={staggerItem}>
                   <span className="path">{failure.path}</span>
                   <span className="status status-failed">
                     {FAILURE_LABELS[failure.reason] || "Processing error"}
                   </span>
-                </li>
+                </motion.li>
               ))}
-            </ul>
-          </article>
+            </motion.ul>
+          </motion.article>
         )}
 
         {detail.blind_spots.length > 0 && (
-          <article className="panel span-2 blind">
+          <motion.article
+            className="panel span-2 blind"
+            variants={staggerItem}
+            initial="initial"
+            animate="animate"
+          >
             <div className="panel-title">
               <h2>Blind spots</h2>
               <p>Areas outside this scan's measured scope</p>
             </div>
-            <div className="gap-list">
+            <motion.div
+              className="gap-list"
+              variants={staggerContainer}
+              initial="initial"
+              animate="animate"
+            >
               {detail.blind_spots.map((gap, i) => (
-                <div key={gap}>
+                <motion.div key={gap} variants={staggerItem}>
                   <span>{i + 1}</span>
                   <p>{gap}</p>
-                </div>
+                </motion.div>
               ))}
-            </div>
-          </article>
+            </motion.div>
+          </motion.article>
         )}
-      </section>
+      </motion.section>
     </>
   );
 }

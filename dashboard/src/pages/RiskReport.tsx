@@ -1,21 +1,20 @@
 // Structured risk report viewer — migration priorities, distribution, blind spots.
 import { lazy, Suspense, useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { motion } from "framer-motion";
 import { getRiskReport, getEvaluation } from "../api/client";
 import type { RiskLabel } from "../types";
 
-const RiskDistributionChart = lazy(() => import("../components/RiskDistributionChart"));
-
-type PriorityEntry = {
-  asset_id: number;
-  algorithm: string;
-  location: string;
-  score: number;
-  label: RiskLabel;
-  reasons: string[];
-  recommendation: string;
-  hybrid: boolean;
+// ── Stagger variants ───────────────────────────────────────────
+const staggerContainer = {
+  animate: { transition: { staggerChildren: 0.04, delayChildren: 0.05 } },
 };
+const staggerItem = {
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: [0.25, 0.1, 0.25, 1] } },
+};
+
+const RiskDistributionChart = lazy(() => import("../components/RiskDistributionChart"));
 
 const LABEL_ORDER: RiskLabel[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
 
@@ -83,15 +82,20 @@ export default function RiskReportPage() {
         </div>
       </section>
 
-      <section className="dashboard-grid">
-        <article className="panel span-2">
+      <motion.section
+        className="dashboard-grid"
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+      >
+        <motion.article variants={staggerItem} className="panel span-2">
           <PanelTitle title="Risk distribution" sub="Assets sorted by migration urgency" />
           <Suspense fallback={<div className="skeleton" style={{ height: 250 }} />}>
             <RiskDistributionChart data={distribution} />
           </Suspense>
-        </article>
+        </motion.article>
 
-        <article className="panel">
+        <motion.article variants={staggerItem} className="panel">
           <div className="panel-title">
             <h2>Evaluation</h2>
             {evaluation?.available && (
@@ -123,9 +127,9 @@ export default function RiskReportPage() {
           ) : (
             <p className="muted">Run a scan to calculate precision and recall.</p>
           )}
-        </article>
+        </motion.article>
 
-        <article className="panel span-2">
+        <motion.article variants={staggerItem} className="panel span-2">
           <div className="panel-title">
             <h2>Migration priorities</h2>
             <p>
@@ -146,9 +150,9 @@ export default function RiskReportPage() {
                   <th scope="col">Recommendation</th>
                 </tr>
               </thead>
-              <tbody>
+              <motion.tbody variants={staggerContainer} initial="initial" animate="animate">
                 {visiblePriorities.map((p) => (
-                  <tr key={p.asset_id}>
+                  <motion.tr key={p.asset_id} variants={staggerItem}>
                     <td>
                       <strong>{p.algorithm}</strong>
                       <small>Asset #{p.asset_id}</small>
@@ -164,37 +168,47 @@ export default function RiskReportPage() {
                     </td>
                     <td>{p.hybrid ? "Yes" : "No"}</td>
                     <td>{p.recommendation}</td>
-                  </tr>
+                  </motion.tr>
                 ))}
                 {!sorted.length && (
                   <tr>
                     <td colSpan={6} className="empty-table-msg">
-                      No migration priorities in this report.
+                      <span className="empty-data-icon">&#9632;</span>
+                      <strong>No migration priorities in this report</strong>
+                      <span>
+                        This report will surface migration priorities once assets with cryptographic
+                        exposure are detected.
+                      </span>
                     </td>
                   </tr>
                 )}
-              </tbody>
+              </motion.tbody>
             </table>
           </div>
-        </article>
+        </motion.article>
 
         {report.blind_spots?.length > 0 && (
-          <article className="panel span-2 blind">
+          <motion.article variants={staggerItem} className="panel span-2 blind">
             <div className="panel-title">
               <h2>Visibility gaps</h2>
               <p>Surfaces outside this scan's measured scope</p>
             </div>
-            <div className="gap-list">
+            <motion.div
+              className="gap-list"
+              variants={staggerContainer}
+              initial="initial"
+              animate="animate"
+            >
               {report.blind_spots.map((gap, i) => (
-                <div key={gap}>
+                <motion.div key={gap} variants={staggerItem}>
                   <span>{i + 1}</span>
                   <p>{gap}</p>
-                </div>
+                </motion.div>
               ))}
-            </div>
-          </article>
+            </motion.div>
+          </motion.article>
         )}
-      </section>
+      </motion.section>
     </>
   );
 }

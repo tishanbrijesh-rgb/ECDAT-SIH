@@ -1,6 +1,14 @@
 // src/api/client.ts — thin HTTP client for ECDAT backend API
 
-const API_BASE: string = (import.meta as any).env?.VITE_API_URL || "http://localhost:8000";
+const viteEnv = (
+  import.meta as ImportMeta & {
+    env?: { DEV?: boolean; VITE_API_URL?: string };
+  }
+).env;
+// Default to same-origin API traffic. Vite proxies it during development and
+// the production Nginx image proxies it to the backend container. Deployments
+// can still provide an explicit absolute URL when the API uses another origin.
+const API_BASE: string = (viteEnv?.VITE_API_URL || "").replace(/\/$/, "");
 const SESSION_STORAGE_KEY = "ecdat-session";
 
 export class ApiError extends Error {

@@ -1,5 +1,15 @@
 # ECDAT-SIH Improvement Roadmap
 
+> Reviewed 2026-09-10. For implementation status and current verification, see [IMPLEMENTATION.md](IMPLEMENTATION.md) and [verification-2026-09-10.md](verification-2026-09-10.md).
+
+```mermaid
+flowchart TD
+    Reliability --> Security
+    Security --> Discovery
+    Discovery --> Scale
+    Scale --> Production
+```
+
 **Updated:** 2026-09-09
 
 **Branch:** `fix/sha1-recommendation`

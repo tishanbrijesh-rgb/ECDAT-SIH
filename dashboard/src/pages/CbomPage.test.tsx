@@ -26,8 +26,11 @@ describe("CbomPage", () => {
     );
 
     expect(screen.getByText("Building CBOM")).toBeInTheDocument();
+    expect(await screen.findByText("No components found")).toBeInTheDocument();
     expect(
-      await screen.findByText("No cryptographic components detected in this scan."),
+      screen.getByText(
+        "This scan did not produce any cryptographic components. Run a full discovery scan with dependency analysis enabled.",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -45,9 +48,7 @@ describe("CbomPage", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Unable to load the CBOM");
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
-    expect(
-      await screen.findByText("No cryptographic components detected in this scan."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("No components found")).toBeInTheDocument();
     expect(getCbom).toHaveBeenCalledTimes(2);
   });
 });

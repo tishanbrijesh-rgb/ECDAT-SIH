@@ -52,7 +52,9 @@
 
 /* ── Dark mode toggle button ──────────────────────── */
 .theme-toggle {
-  background: none;
+  display: inline-grid;
+  place-items: center;
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-xs);
   padding: 6px 10px;
@@ -65,9 +67,19 @@
     box-shadow var(--transition);
   box-shadow: var(--shadow-sm);
 }
+.theme-toggle svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .theme-toggle:hover {
-  background: var(--panel);
-  border-color: var(--indigo);
+  background: var(--bg-2);
+  border-color: var(--forest);
   box-shadow: var(--shadow-sm);
 }
 
@@ -160,7 +172,8 @@ select,
   transition:
     background var(--transition),
     border-color var(--transition),
-    box-shadow var(--transition);
+    box-shadow var(--transition),
+    transform 120ms ease;
 }
 
 /* ── Reduced motion ────────────────────────────────── */

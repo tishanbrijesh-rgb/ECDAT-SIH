@@ -39,6 +39,30 @@ export default function Login({
 
   return (
     <div className="login-shell">
+      <aside className="login-context" aria-label="ECDAT capabilities">
+        <div className="login-context-copy">
+          <p className="eyebrow">Evidence before assumptions</p>
+          <h2>Know where cryptography lives before it becomes urgent.</h2>
+          <p>
+            Correlate source, dependency, certificate, and rule evidence into an inventory your
+            security team can defend.
+          </p>
+        </div>
+        <dl className="login-signals">
+          <div>
+            <dt>4</dt>
+            <dd>independent collectors</dd>
+          </div>
+          <div>
+            <dt>Local</dt>
+            <dd>repository analysis</dd>
+          </div>
+          <div>
+            <dt>CBOM</dt>
+            <dd>export-ready evidence</dd>
+          </div>
+        </dl>
+      </aside>
       <motion.div
         className="login-card"
         aria-labelledby="login-heading"
@@ -111,10 +135,7 @@ export default function Login({
       </motion.div>
 
       <div className="login-footer">
-        <span className="shield" aria-hidden="true">
-          &#128737;
-        </span>{" "}
-        ECDAT &middot; SIH26164 &middot; Local &amp; explainable
+        ECDAT &middot; SIH26164 &middot; Authenticated local access
       </div>
     </div>
   );

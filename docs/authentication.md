@@ -5,6 +5,17 @@ login remain public. Reads are available to authenticated roles; modifications
 require admin/security_analyst; audit logs require admin/auditor. Project-level
 authorization and tenant isolation are not implemented.
 
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant A as FastAPI
+    participant C as Protected API
+    B->>A: POST /api/auth/login
+    A-->>B: signed bearer token + expiry
+    B->>C: Authorization: Bearer token
+    C-->>B: role-scoped response + X-Request-ID
+```
+
 Before login, provision these through the server environment or an untracked `.env`.
 The FastAPI entrypoint loads the project-root `.env` for local development, and
 Docker Compose reads it for interpolation:
@@ -49,7 +60,7 @@ Input fixes: typed scan paths return 422 instead of crashing; non-ASCII password
 are compared as UTF-8 bytes; malformed key sizes are retained as conflicts with an
 unset key-size field. No dependency versions were changed.
 
-Remaining production blockers include TLS deployment, login throttling, server-side
-revocation, robust scan isolation/resource limits, full secret detection, and an
+Login and scan submission now have in-process throttling. Remaining production blockers include TLS deployment, shared multi-replica throttling, server-side
+revocation, hardened scan isolation, full secret detection, and an
 independent security review. PostgreSQL's development Compose credentials/network
 exposure also require separate hardening. This patch is not production certification.

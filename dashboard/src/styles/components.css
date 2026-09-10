@@ -270,6 +270,28 @@
     width: 85%;
   }
 }
+
+/* Shimmer overlay on the progress bar */
+.progress-track {
+  position: relative;
+}
+.progress-track::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+  border-radius: 99px;
+  animation: shimmer-sweep 2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes shimmer-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
 .scan-progress > div:nth-child(2) {
   display: flex;
   justify-content: space-between;
@@ -329,6 +351,29 @@ mark {
   padding: 1px 3px;
   border-radius: 2px;
   font-weight: inherit;
+}
+
+/* ── Tier 2: Risk badge micro-interaction ────────────────────── */
+.risk-badge {
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+  cursor: default;
+}
+.risk-badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.08);
+}
+
+/* ── Tier 2: Evidence toggle micro-interaction ────────────────── */
+.evidence-toggle {
+  transition:
+    background 100ms ease,
+    border-color 100ms ease,
+    transform 100ms ease;
+}
+.evidence-toggle:hover {
+  transform: translateY(-1px);
 }
 
 /* ── Animations ───────────────────────────────────────────────── */

@@ -18,7 +18,9 @@ export default [
         },
         rules: {
             ...tsPlugin.configs.recommended.rules,
-            "no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+            // The base rule does not understand TypeScript type positions and
+            // duplicates every useful diagnostic from the TS-aware rule.
+            "no-unused-vars": "off",
             "@typescript-eslint/no-explicit-any": "warn",
             "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
         },

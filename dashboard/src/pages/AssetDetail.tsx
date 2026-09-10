@@ -1,12 +1,11 @@
 // Detailed evidence, Mosca inputs, and use-case-aware migration guidance.
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { getAsset, updateAsset, canWrite } from "../api/client";
 import { ConfidenceBar } from "../components/ConfidenceBar";
 import { EvidenceChain } from "../components/EvidenceChain";
 import { RiskBadge } from "../components/RiskBadge";
 import Breadcrumb from "../components/Breadcrumb";
-import { relativeTime, formatDate } from "../utils/format";
 import { useDirtyGuard } from "../utils/hooks";
 import Select from "../components/Select";
 import NumberField from "../components/NumberField";

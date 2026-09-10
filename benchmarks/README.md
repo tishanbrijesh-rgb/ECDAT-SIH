@@ -1,5 +1,15 @@
 # External operation benchmarks
 
+Reviewed: 2026-09-10
+
+```mermaid
+flowchart LR
+    Corpus[Frozen external corpus] --> Labels[Independent labels]
+    Labels --> Scanner[ECDAT scan]
+    Scanner --> Compare[Deterministic comparison]
+    Compare --> Metrics[TP · FP · FN]
+```
+
 Run from the ECDAT-SIH root after installing `req.txt`:
 
 ```powershell

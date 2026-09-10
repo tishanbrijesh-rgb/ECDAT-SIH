@@ -1,5 +1,7 @@
 # Claude handoff prompt for ECDAT
 
+Updated: 2026-09-10
+
 Copy everything below into Claude while its working directory is the ECDAT
 repository.
 
@@ -21,8 +23,8 @@ Before editing anything:
 
 1. Read `MEMORY.md` completely.
 2. Read `ecdat-sih-project-knowledge.md` completely.
-3. Read `docs/stages-1-4-verification-2026-09-07.md`.
-4. Read `docs/improvement-plan-2026-09-07.md`.
+3. Read `docs/verification-2026-09-10.md`.
+4. Read `docs/IMPLEMENTATION.md`.
 5. Run `git status --short`, `git diff --stat`, `git diff --check` and inspect the
    complete current diff.
 6. Summarize what is already implemented, which changes belong to the user, and
@@ -33,10 +35,10 @@ Current verified state:
 - Stages 1–5 (Phase 3 migrations) are complete.
 - Docker/PostgreSQL passed two disposable verifier invocations with 3/3 rounds
   each, including persistence across backend restarts and cleanup.
-- Backend suite: 117 tests pass, 1 skip, and 84 subtests pass; migration tests now restore
+- Backend suite: 118 tests pass, 1 skip, and 84 subtests pass; migration tests restore
   `DATABASE_URL`, fixing the former cross-test scan-worker failure.
-- Frontend: 15 unit tests pass; TypeScript, Prettier and Vite build pass.
-- Microsoft Edge E2E: 7/7 workflows pass repeatedly.
+- Frontend: 22 unit tests pass; TypeScript, Prettier and Vite build pass.
+- Chromium E2E: 7/7 workflows pass.
 - Alembic migrations: 8/8 pass (upgrade, downgrade, data preservation, graph).
 - `pip-audit` and `npm audit` report no known vulnerabilities.
 - Bandit reports no medium/high findings.
@@ -57,6 +59,8 @@ Current verified state:
   by Pydantic validators for backward compatibility.
 - Production uses migration-managed schema; `ECDAT_AUTO_CREATE_TABLES=false` in
   `docker-compose.yml`. Local/test mode allows implicit creation via env var.
+- Migration 0004 adds database-backed scan leases. Structured request-ID logging,
+  endpoint rate limits, stale recovery and authenticated SSE progress are present.
 
 Critical constraints:
 
@@ -105,7 +109,7 @@ Docker Desktop is installed per-user. If `docker` is not on Claude's terminal
 
 `C:\Users\Tishan Kumar B\AppData\Local\Programs\DockerDesktop\resources\bin\docker.exe`
 
-Begin by reading the required files and inspecting the repository. Do not begin
-Phase 3 until I approve your plan.
+Begin by reading the required files and inspecting the repository. Do not start
+a new production milestone until I approve your plan.
 
 ---

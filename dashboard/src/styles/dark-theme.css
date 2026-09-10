@@ -51,11 +51,29 @@
   color: var(--stone);
 }
 [data-theme="dark"] .topbar nav a:hover,
+/* Nav active indicator glow */
 [data-theme="dark"] .topbar nav a.active {
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text);
+}
+[data-theme="dark"] .topbar nav a.active::after {
+  background: var(--teal-bright);
+  box-shadow: 0 0 8px rgba(20, 184, 166, 0.25);
 }
 [data-theme="dark"] .topbar .brand small {
   color: var(--stone-light);
+}
+[data-theme="dark"] .topbar .brand {
+  color: var(--text);
+}
+[data-theme="dark"] .theme-toggle {
+  background: var(--surface-alt);
+  border-color: var(--rule);
+  color: var(--text);
+}
+[data-theme="dark"] .theme-toggle:hover {
+  background: var(--panel-2);
+  border-color: var(--teal);
 }
 
 /* Panels */
@@ -110,6 +128,9 @@
 }
 [data-theme="dark"] .table-wrap th {
   color: var(--stone);
+  box-shadow:
+    0 1px 0 var(--rule),
+    0 2px 4px rgba(0, 0, 0, 0.15);
 }
 [data-theme="dark"] .table-wrap td {
   border-bottom-color: var(--rule);
@@ -366,6 +387,23 @@
 [data-theme="dark"] .empty-hero .eyebrow {
   color: var(--forest);
 }
+/* ── Tier 3: Empty states dark ─────────────────────────────────── */
+[data-theme="dark"] .empty-table-msg strong {
+  color: var(--text-soft);
+}
+[data-theme="dark"] .empty-table-msg span {
+  color: var(--stone-light);
+}
+[data-theme="dark"] .empty-state h1 {
+  color: var(--text);
+}
+[data-theme="dark"] .empty-state p {
+  color: var(--stone);
+}
+[data-theme="dark"] .empty-state .button {
+  background: var(--forest);
+  color: #fff;
+}
 [data-theme="dark"] .state {
   color: var(--stone);
 }
@@ -450,4 +488,42 @@
   50% {
     opacity: 0.5;
   }
+}
+
+/* ── Tier 2: Dark mode — muted contrast lift ─────────────────── */
+[data-theme="dark"] .muted {
+  color: #8a9bb0;
+}
+[data-theme="dark"] small {
+  color: #8a9bb0;
+}
+[data-theme="dark"] .eyebrow {
+  color: #5ee6d4;
+}
+
+/* ── Tier 2: Dark mode — panel gradient depth ─────────────────── */
+[data-theme="dark"] .panel {
+  background: linear-gradient(180deg, #1a2332 0%, #141c2b 100%);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+/* ── Tier 2: Dark mode — button glow ─────────────────────────── */
+[data-theme="dark"] .button:hover:not(:disabled) {
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.25),
+    0 0 14px rgba(94, 230, 212, 0.08);
+}
+
+/* ── Tier 2: Dark mode — callout contrast ────────────────────── */
+[data-theme="dark"] .callout-error {
+  background: rgba(181, 45, 34, 0.15);
+  color: #f0a5a0;
+}
+[data-theme="dark"] .callout-amber {
+  background: rgba(154, 94, 16, 0.15);
+  color: #e8c48a;
+}
+[data-theme="dark"] .callout-success {
+  background: rgba(10, 125, 110, 0.15);
+  color: #5ee6d4;
 }

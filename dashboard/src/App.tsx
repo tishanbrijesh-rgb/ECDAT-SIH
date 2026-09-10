@@ -8,13 +8,40 @@ import {
   restoreSession,
   SESSION_EXPIRED,
 } from "./api/client";
-import { NavLink, Route, Routes, useSearchParams } from "react-router-dom";
-import { MotionConfig } from "framer-motion";
+import { NavLink, Route, Routes, useSearchParams, useLocation } from "react-router-dom";
+import { MotionConfig, AnimatePresence, motion } from "framer-motion";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastProvider, useToast } from "./components/Toast";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+
+// ── Page transition configuration ──────────────────────────────
+const pageVariants = {
+  initial: { opacity: 0, y: 12, scale: 0.995 },
+  animate: { opacity: 1, y: 0, scale: 1 },
+  exit: { opacity: 0, y: -8, scale: 0.995 },
+};
+
+const pageTransition = {
+  duration: 0.22,
+  ease: [0.25, 0.1, 0.25, 1],
+};
+
+function PageTransition({ children, routeKey }: { children: React.ReactNode; routeKey: string }) {
+  return (
+    <motion.div
+      key={routeKey}
+      variants={pageVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      transition={pageTransition}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const AssetDetail = lazy(() => import("./pages/AssetDetail"));
@@ -24,12 +51,35 @@ const RiskReportPage = lazy(() => import("./pages/RiskReport"));
 const CbomPage = lazy(() => import("./pages/CbomPage"));
 const ScanDetailPage = lazy(() => import("./pages/ScanDetailPage"));
 
-function ThemeToggle() {
-  const [theme, setTheme] = useState(() =>
-    typeof window !== "undefined"
-      ? document.documentElement.getAttribute("data-theme") || "light"
-      : "light",
+type Theme = "light" | "dark";
+
+function preferredTheme(): Theme {
+  const applied = document.documentElement.getAttribute("data-theme");
+  if (applied === "light" || applied === "dark") return applied;
+  const saved = localStorage.getItem("ecdat-theme");
+  if (saved === "light" || saved === "dark") return saved;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function ThemeIcon({ theme }: { theme: Theme }) {
+  return theme === "dark" ? (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41" />
+    </svg>
+  ) : (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M20.5 15.3A8.5 8.5 0 1 1 8.7 3.5a7 7 0 0 0 11.8 11.8Z" />
+    </svg>
   );
+}
+
+function ThemeToggle() {
+  const [theme, setTheme] = useState<Theme>(preferredTheme);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
   const toggle = useCallback(() => {
     setTheme((prev) => {
@@ -47,7 +97,7 @@ function ThemeToggle() {
       title={theme === "dark" ? "Light mode" : "Dark mode"}
       aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
     >
-      <span aria-hidden="true">{theme === "dark" ? "☀" : "☽"}</span>
+      <ThemeIcon theme={theme} />
     </button>
   );
 }
@@ -63,6 +113,7 @@ function AppInner() {
   const [navParams] = useSearchParams();
   const rawNavScanId = navParams.get("scan_id");
   const scanQuery = rawNavScanId && /^\d+$/.test(rawNavScanId) ? `?scan_id=${rawNavScanId}` : "";
+  const location = useLocation();
 
   // Focus main content after sign-in so screen readers announce the page.
   useEffect(() => {
@@ -92,18 +143,6 @@ function AppInner() {
       active = false;
     };
   }, [authState]);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("ecdat-theme");
-    if (saved) {
-      document.documentElement.setAttribute("data-theme", saved);
-    } else if (
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches
-    ) {
-      document.documentElement.setAttribute("data-theme", "dark");
-    }
-  }, []);
 
   if (authState === "checking") {
     return (
@@ -166,16 +205,74 @@ function AppInner() {
           }
         >
           <ErrorBoundary>
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/assets" element={<AssetsPage />} />
-              <Route path="/assets/:id" element={<AssetDetail />} />
-              <Route path="/scan" element={<ScanPage />} />
-              <Route path="/reports" element={<RiskReportPage />} />
-              <Route path="/cbom" element={<CbomPage />} />
-              <Route path="/scans/:id" element={<ScanDetailPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <AnimatePresence mode="wait">
+              <Routes location={location} key={location.pathname + location.search}>
+                <Route
+                  path="/"
+                  element={
+                    <PageTransition routeKey="dashboard">
+                      <Dashboard />
+                    </PageTransition>
+                  }
+                />
+                <Route
+                  path="/assets"
+                  element={
+                    <PageTransition routeKey="assets">
+                      <AssetsPage />
+                    </PageTransition>
+                  }
+                />
+                <Route
+                  path="/assets/:id"
+                  element={
+                    <PageTransition routeKey="asset-detail">
+                      <AssetDetail />
+                    </PageTransition>
+                  }
+                />
+                <Route
+                  path="/scan"
+                  element={
+                    <PageTransition routeKey="scan">
+                      <ScanPage />
+                    </PageTransition>
+                  }
+                />
+                <Route
+                  path="/reports"
+                  element={
+                    <PageTransition routeKey="reports">
+                      <RiskReportPage />
+                    </PageTransition>
+                  }
+                />
+                <Route
+                  path="/cbom"
+                  element={
+                    <PageTransition routeKey="cbom">
+                      <CbomPage />
+                    </PageTransition>
+                  }
+                />
+                <Route
+                  path="/scans/:id"
+                  element={
+                    <PageTransition routeKey="scan-detail">
+                      <ScanDetailPage />
+                    </PageTransition>
+                  }
+                />
+                <Route
+                  path="*"
+                  element={
+                    <PageTransition routeKey="not-found">
+                      <NotFound />
+                    </PageTransition>
+                  }
+                />
+              </Routes>
+            </AnimatePresence>
           </ErrorBoundary>
         </Suspense>
       </main>

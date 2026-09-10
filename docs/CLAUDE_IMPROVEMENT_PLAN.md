@@ -1,5 +1,14 @@
 # ECDAT-SIH Improvement Plan
 
+> Status update (2026-09-10): CI, coverage, lint, request tracing, rate limits, stale recovery, lockfile dependency parsing, resource budgets, database leases and authenticated progress events are implemented. Certificate enrichment, API v1 aliases, editable business context, a durable external queue and full reconnect semantics remain open.
+
+```mermaid
+flowchart LR
+    P0[P0 foundations] --> P1[P1 operations]
+    P1 --> P2[P2 discovery depth]
+    P2 --> P3[P3 production scale]
+```
+
 **Date:** 2026-09-09
 **Branch:** `fix/sha1-recommendation`
 **Protected baseline:** `877f100d52e35f8af99450502425a7ba7689fe43`

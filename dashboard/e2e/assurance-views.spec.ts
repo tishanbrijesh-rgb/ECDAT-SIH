@@ -7,7 +7,7 @@ const session = {
 };
 
 async function mockApi(page: Page) {
-  await page.route("http://localhost:8000/api/**", async (route) => {
+  await page.route("http://127.0.0.1:4173/api/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path === "/api/auth/login") return route.fulfill({ json: session });
     if (path === "/api/auth/me") {

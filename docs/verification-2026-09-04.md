@@ -1,5 +1,7 @@
 # Verification — 2026-09-04
 
+> Historical snapshot. The current verification is [verification-2026-09-10.md](verification-2026-09-10.md).
+
 Latest follow-up: [five-step verification and remaining release gates](five-step-verification.md).
 The historical results below predate that follow-up.
 

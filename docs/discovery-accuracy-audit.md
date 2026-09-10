@@ -1,5 +1,7 @@
 # Discovery accuracy audit — 2026-09-04
 
+> Historical audit. Current regression evidence is summarized in [verification-2026-09-10.md](verification-2026-09-10.md).
+
 Scope: local ECDAT-SIH collector, correlation, confidence and evaluation review.
 This is a targeted audit, not a certification or an exhaustive security review.
 

@@ -1,5 +1,7 @@
 # External accuracy benchmark v3
 
+> Historical consumed benchmark. Do not reuse it as a new independent holdout.
+
 Date: 2026-09-06
 
 ## Scope and review

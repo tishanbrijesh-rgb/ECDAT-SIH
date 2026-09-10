@@ -1,5 +1,7 @@
 # ECDAT release improvement implementation plan
 
+> Historical completed plan. See [IMPLEMENTATION.md](IMPLEMENTATION.md) for current work-package status.
+
 Date: 2026-09-07
 
 Status: implemented and verified on `fix/sha1-recommendation`.

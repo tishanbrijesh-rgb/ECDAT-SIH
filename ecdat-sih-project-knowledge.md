@@ -1,7 +1,7 @@
 # ECDAT project knowledge
 
-Last verified: 2026-09-07
-Repository: `https://github.com/tishanrijesh-rgb/ECDAT-SIH.git`
+Last verified: 2026-09-10
+Repository: `https://github.com/tishanbrijesh-rgb/ECDAT-SIH.git`
 Active branch: `fix/sha1-recommendation`
 
 ## Purpose
@@ -13,6 +13,17 @@ produces explainable quantum-risk and migration guidance.
 
 ## Architecture
 
+```mermaid
+flowchart LR
+    Dashboard --> API
+    API --> Lease[(Lease + job state)]
+    Lease --> Scanner
+    Scanner --> Correlation
+    Correlation --> Risk
+    Risk --> Database[(Database)]
+    Database --> Dashboard
+```
+
 1. The React 18 dashboard authenticates users and calls the FastAPI API.
 2. FastAPI validates roles, scan roots, limits and request data, then launches one
    isolated scanner child process.
@@ -23,7 +34,7 @@ produces explainable quantum-risk and migration guidance.
 5. Confidence, coverage, conflicts, blind spots and the Mosca-style risk model are
    calculated independently and persisted through SQLAlchemy.
 6. Alembic manages schema migrations (0001 baseline, 0002 scan_failures,
-   0003 remove_implicit_creation). PostgreSQL 16 is used by Docker Compose;
+   0003 remove_implicit_creation, 0004 scan_leases). PostgreSQL 16 is used by Docker Compose;
    SQLite remains available for local development and tests.
 7. Inventory, CBOM, risk report, evidence graph, audit history and benchmark
    evaluation are exposed through authenticated API endpoints.
@@ -39,7 +50,7 @@ tests. Graphify reports no import cycles.
 - Data endpoints require signed sessions. Role-header impersonation is disabled by
   default.
 - Scan roots, file size, file count and timeout are bounded. A process-level lock
-  permits one active scan per backend process, and authorized users can cancel it.
+  plus database-backed expiring leases coordinate claims, and authorized users can cancel local workers.
 - Linked files are not read. Oversized, malformed or failed supported files reduce
   measured coverage instead of being silently counted as processed.
 - Scanner workers are separate child processes, but they are not a complete OS
@@ -56,10 +67,10 @@ tests. Graphify reports no import cycles.
 
 The 2026-09-07 local verification produced these results:
 
-- 117 backend unit/API/regression tests pass, 1 skips, and 84 subtests pass. Migration tests restore
+- 118 backend unit/API/regression tests pass, 1 skips, and 84 subtests pass. Migration tests restore
   `DATABASE_URL`, preventing cross-test scan-worker failures.
 - 8/8 Alembic migration tests pass (upgrade, downgrade, data preservation, graph).
-- 15 frontend unit tests and 7 Microsoft Edge end-to-end tests passed; the full
+- 22 frontend unit tests and 7 Chromium end-to-end tests passed; the full
   E2E suite passed three consecutive times.
 - Python compilation, dependency consistency, Bandit medium/high analysis,
   TypeScript, Prettier and the Vite production build pass.
@@ -93,7 +104,7 @@ The 2026-09-07 local verification produced these results:
 ## Phase 3 completion summary
 
 - Alembic 1.19.2 configured with `env.py`, `alembic.ini`, and `ScriptDirectory`.
-- Three migrations: 0001_baseline, 0002_scan_failures, 0003_remove_implicit_creation.
+- Four migrations: 0001_baseline, 0002_scan_failures, 0003_remove_implicit_creation and 0004_scan_leases.
 - `ScanFailureDB` model with FK relationship and cascade delete.
 - `ScanJobResponse` schema coerces ORM objects via `ConfigDict(from_attributes=True)`
   and `field_validator(mode="before")`.
@@ -153,7 +164,8 @@ cd dashboard && npx vite --host 0.0.0.0 --port 3000
 - `docs/ARCHITECTURE.md` — system flow and assurance principles
 - `docs/THREAT_MODEL.md` — trust boundaries and remaining threats
 - `docs/five-step-verification.md` — detailed verification evidence
-- `docs/verification-2026-09-07.md` — latest full local audit, limitations and next work
+- `docs/verification-2026-09-10.md` — latest full local audit, limitations and next work
+- `docs/INDEX.md` — documentation and diagram map
 - `docs/stages-1-4-verification-2026-09-07.md` — completed implementation and repeated verification evidence
 - `docs/improvement-plan-2026-09-07.md` — staged implementation and verification plan
 - `docs/authentication.md` — account and secret configuration

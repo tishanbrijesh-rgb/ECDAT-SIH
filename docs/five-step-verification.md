@@ -1,5 +1,7 @@
 # Five-step verification — 2026-09-06
 
+> Historical snapshot. The current verification is [verification-2026-09-10.md](verification-2026-09-10.md).
+
 Scope: ECDAT-SIH only. No Loop Engineering changes or deployment.
 The user approved isolated workers, per-process admission, limits and cancellation.
 Graphify provided navigation context; current source and executed checks were the

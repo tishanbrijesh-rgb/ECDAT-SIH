@@ -1,5 +1,7 @@
 # ECDAT verification report — 2026-09-07
 
+> Historical snapshot. The current verification is [verification-2026-09-10.md](verification-2026-09-10.md).
+
 ## Verdict
 
 The current frontend and backend code pass the local code, browser, security,

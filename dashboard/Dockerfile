@@ -4,7 +4,7 @@ WORKDIR /app
 COPY dashboard/package.json dashboard/package-lock.json ./
 RUN npm ci
 COPY dashboard/ ./
-ARG VITE_API_URL=http://localhost:8000
+ARG VITE_API_URL=""
 ENV VITE_API_URL=${VITE_API_URL}
 RUN npm run build
 
