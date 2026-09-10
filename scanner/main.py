@@ -23,15 +23,18 @@ from scanner.collectors.dep_collector import DepCollector
 from scanner.collectors.cert_collector import CertCollector
 from scanner.collectors.rule_collector import CODE_EXTENSIONS, RuleCollector
 from scanner.redaction import redact_evidence
-from scanner.limits import positive_int, max_evidence_count, max_file_bytes
+from scanner.limits import positive_int, max_evidence_count, max_file_bytes, scan_duration_budget_ms, scan_memory_budget_mb, check_memory_budget
 
 # Ensure `scanner` package is importable
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import logging as _logging
+_scanner_logger = _logging.getLogger("ecdat.scanner")
+
 
 def _print(msg: str) -> None:
-    """Print progress message to stdout (visible to a judging terminal)."""
-    print(f"[scanner] {msg}", flush=True)
+    """Log progress message via structured logger."""
+    _scanner_logger.info(msg)
 
 
 def _safe_filename(repo_path: str) -> str:
@@ -131,9 +134,22 @@ def scan_with_metrics(
     _print("=== ECDAT discovery-assurance scan starting ===")
     _print(f"Target: {_safe_filename(repo_path)} ({repo_path})")
     report(0)
+    duration_budget = scan_duration_budget_ms()
+    mem_budget_code = check_memory_budget()
+    if mem_budget_code:
+        failure_codes[repo_path] = mem_budget_code
+        failed_paths.add(repo_path)
     # All collectors use the same declared scope; do not walk the tree four times.
     for index, path in enumerate(sorted(supported), 1):
         if path not in failed_paths:
+            if duration_budget > 0 and (time.perf_counter() - started) * 1000 >= duration_budget:
+                failure_codes[path] = "duration_budget_exceeded"
+                failed_paths.add(path)
+                continue
+            if check_memory_budget():
+                failure_codes[path] = "memory_budget_exceeded"
+                failed_paths.add(path)
+                continue
             ext = os.path.splitext(path)[1].lower()
             filename = os.path.basename(path)
             handlers = []
@@ -145,6 +161,14 @@ def scan_with_metrics(
                 handlers.append(("dep", dep_collector.scan_requirements))
             if filename == "pom.xml":
                 handlers.append(("dep", dep_collector.scan_pom_xml))
+            if filename == "package-lock.json":
+                handlers.append(("dep", dep_collector.scan_package_lock))
+            if filename == "Gemfile.lock":
+                handlers.append(("dep", dep_collector.scan_gemfile_lock))
+            if filename == "go.sum":
+                handlers.append(("dep", dep_collector.scan_go_sum))
+            if filename == "Cargo.lock":
+                handlers.append(("dep", dep_collector.scan_cargo_lock))
             if ext in {".crt", ".pem", ".cer"}:
                 handlers.append(("cert", cert_collector.scan_cert))
             for name, handler in handlers:
@@ -184,6 +208,10 @@ def scan_with_metrics(
         blind_spots.append("No supported files were found; coverage is not established")
     if failed_paths:
         blind_spots.append(f"{len(failed_paths)} supported file(s) had read or parser errors; evidence may be partial")
+    if duration_budget > 0:
+        blind_spots.append(f"Scan duration capped at {duration_budget / 1000:.0f}s; remaining files skipped on budget exhaustion")
+    if scan_memory_budget_mb() > 0:
+        blind_spots.append(f"Memory budget of {scan_memory_budget_mb()} MB enforced; remaining files skipped on budget exhaustion")
     failures: list[dict[str, str]] = []
     for path in sorted(failed_paths):
         relative = _relative_failure_path(repo_path, path)
@@ -256,9 +284,7 @@ def _cli_main() -> None:
             json.dump(evidences, fh, indent=2)
         _print(f"Wrote {args.output}")
     else:
-        # Print first 3 records as a sample
-        for ev in evidences[:3]:
-            print(json.dumps(ev, indent=2))
+        _scanner_logger.info("Evidence sample", extra={"extra_data": {"count": min(3, len(evidences)), "sample": evidences[:3]}})
 
 
 if __name__ == "__main__":

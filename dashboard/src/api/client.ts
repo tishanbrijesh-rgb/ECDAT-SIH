@@ -265,6 +265,72 @@ export const getRiskReport = (scanId?: number) =>
 export const getCbom = (scanId?: number) =>
   _get<Record<string, unknown>>(`/api/cbom${scanId ? `?scan_id=${scanId}` : ""}`);
 
+export type ScanProgressEvent = {
+  scan_id: number;
+  status: string;
+  collector_stats: Record<string, number>;
+  assets_found: number;
+  coverage_pct: number;
+  duration_ms: number;
+};
+
+export type ScanProgressCallback = (event: ScanProgressEvent) => void;
+
+export function subscribeScanEvents(
+  scanId: number,
+  onEvent: ScanProgressCallback,
+  onDone?: (final: ScanProgressEvent) => void,
+  onError?: (error: Error) => void,
+): () => void {
+  const controller = new AbortController();
+  let closed = false;
+
+  void (async () => {
+    const response = await authenticatedFetch(`/api/scans/${scanId}/events`, {
+      headers: { Accept: "text/event-stream" },
+      signal: controller.signal,
+    });
+    if (!response.ok || !response.body) throw new Error(`Event stream failed: ${response.status}`);
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (!closed) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
+      const frames = buffer.split("\n\n");
+      buffer = frames.pop() ?? "";
+      for (const frame of frames) {
+        const event = frame.match(/^event:\s*(.+)$/m)?.[1] ?? "message";
+        const data = frame
+          .split("\n")
+          .filter((line) => line.startsWith("data:"))
+          .map((line) => line.slice(5).trimStart())
+          .join("\n");
+        if (!data) continue;
+        const payload = JSON.parse(data) as ScanProgressEvent;
+        if (event === "done") {
+          onDone?.(payload);
+          close();
+          return;
+        }
+        if (event === "message") onEvent(payload);
+      }
+    }
+  })().catch((error: unknown) => {
+    if (!closed) onError?.(error instanceof Error ? error : new Error(String(error)));
+  });
+
+  function close() {
+    if (closed) return;
+    closed = true;
+    controller.abort();
+  }
+
+  return close;
+}
+
 export async function getScanDetail(id: number): Promise<import("../types").ScanDetail> {
   const scan = await getScan(id);
   const { items: assets, total } = await getAssets(id, { limit: 200 });

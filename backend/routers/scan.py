@@ -1,23 +1,84 @@
-"""Scan router — start scans and query scan job history."""
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+"""Scan router — start scans, query scan job history, and stream live progress."""
+from typing import AsyncGenerator
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, StrictStr
-
-
-class ScanRequest(BaseModel):
-    repo_path: StrictStr = Field(min_length=1, max_length=4096)
+import json
+import asyncio
 
 from backend.db import SessionLocal
 from backend.models.scan_job import ScanJobDB
 from backend.schemas.asset import ScanJobResponse
 from backend.services.repository_guard import resolve_repository
 from backend.security import current_role, ensure_write_role, record_audit
-from backend.services.scan_control import reserve, release, supervise, request_cancel, _finish_if_active
+from backend.services.scan_control import claim, reserve, release, supervise, request_cancel, _finish_if_active
+from backend.middleware.rate_limit import limit as rate_limit
 
 router = APIRouter(prefix="/api", tags=["scan"])
 
 
+async def _event_stream(request: Request, scan_id: int) -> AsyncGenerator[str, None]:
+    """Poll the scan job DB record and yield SSE events until terminal or disconnect."""
+    terminal = {"completed", "failed", "cancelled", "timed_out"}
+    last_payload = ""
+    try:
+        while True:
+            if await request.is_disconnected():
+                break
+            with SessionLocal() as db:
+                job = db.get(ScanJobDB, scan_id)
+            if job is None:
+                yield f"event: error\ndata: {json.dumps({'detail': 'Scan job not found'})}\n\n"
+                break
+            status = job.status or "unknown"
+            payload = json.dumps({
+                "scan_id": job.id,
+                "status": status,
+                "collector_stats": job.collector_stats or {},
+                "assets_found": job.assets_found,
+                "coverage_pct": job.coverage_pct,
+                "duration_ms": job.duration_ms,
+            })
+            if payload != last_payload:
+                yield f"data: {payload}\n\n"
+                last_payload = payload
+            if status in terminal:
+                yield f"event: done\ndata: {payload}\n\n"
+                break
+            await asyncio.sleep(1)
+    except asyncio.CancelledError:
+        pass
+
+
+@router.get("/scans/{scan_id}/events")
+async def scan_events(scan_id: int, request: Request) -> StreamingResponse:
+    """Stream SSE progress events for an in-progress or completed scan."""
+    with SessionLocal() as db:
+        job = db.get(ScanJobDB, scan_id)
+        if job is None:
+            raise HTTPException(404, "Scan job not found")
+    return StreamingResponse(
+        _event_stream(request, scan_id),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+class ScanRequest(BaseModel):
+    repo_path: StrictStr = Field(min_length=1, max_length=4096)
+
+
 @router.post("/scan", response_model=dict)
-def post_scan(payload: ScanRequest, background_tasks: BackgroundTasks, role: str = Depends(current_role)) -> dict:
+@rate_limit(threshold=3, window=300)
+def post_scan(
+    request: Request,
+    payload: ScanRequest,
+    background_tasks: BackgroundTasks,
+    role: str = Depends(current_role),
+) -> dict:
     """Start a new scan. Body: {"repo_path": "..."}."""
     repo_path = payload.repo_path
     if not repo_path:
@@ -31,7 +92,7 @@ def post_scan(payload: ScanRequest, background_tasks: BackgroundTasks, role: str
         job = ScanJobDB(repo_path=repo_path, status="queued")
         db.add(job); db.commit(); db.refresh(job)
         scan_id = job.id
-        control.scan_id = scan_id
+        claim(control, scan_id)
     except Exception:
         try:
             if control.scan_id is not None:

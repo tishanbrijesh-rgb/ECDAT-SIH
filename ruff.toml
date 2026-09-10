@@ -1,0 +1,14 @@
+line-length = 100
+target-version = "py311"
+
+[lint]
+select = ["E", "F", "B"]
+ignore = [
+    "E501",   # line-length handled by line-length setting
+    "E701",   # legacy compact statements; tighten incrementally
+    "E702",   # legacy compact statements; tighten incrementally
+    "E402",   # application bootstrapping requires delayed imports
+    "E731",   # lambdas are used intentionally in the codebase
+    "B023",   # existing correlation closure is covered by regression tests
+    "B904",   # allow bare `raise` from `from None` chains already in use
+]

@@ -33,13 +33,44 @@ Open **http://localhost:3000** and sign in with an account configured in `.env`.
 
 ## Tests
 
-After installing `req.txt`, run the Python suite and the production dashboard build:
+After installing `requirements-dev.txt`, run the Python suite, frontend lint, and coverage:
 
 ```powershell
-.venv\Scripts\python.exe -m unittest discover -s tests -v
+# Backend — unit tests with coverage
+pytest --cov=backend --cov-report=term
+
+# Frontend — lint, unit tests, build
 cd dashboard
+npm run lint
+npm test
 npm run build
 ```
+
+### CI quality gates
+
+| Gate | Command |
+|---|---|
+| Python lint (Ruff) | `ruff check backend/` |
+| Backend coverage | `pytest --cov=backend --cov-report=xml` |
+| Frontend lint (ESLint) | `npm run lint` (from `dashboard/`) |
+| Frontend format check | `npm run format:check` |
+| Frontend unit tests | `npm test` |
+| Frontend build | `npm run build` |
+
+The CI pipeline runs all gates on every push and pull request. Coverage must stay above 70%. See `.coveragerc` for configuration.
+
+### Coverage configuration
+
+Coverage is configured in `.coveragerc` at the project root:
+
+- **Source**: `backend/` package
+- **Branch coverage**: enabled
+- **Minimum threshold**: 70%
+- **Reports**: terminal (text) and XML (for CI artifacts)
+
+### Python linting
+
+Ruff configuration is in `ruff.toml` at the project root. Run `ruff check backend/` to lint. The initial rule set covers pycodestyle errors (E), Pyflakes (F), and flake8-bugbear (B). Line length is 100 characters.
 
 On Windows, run the complete release gate:
 

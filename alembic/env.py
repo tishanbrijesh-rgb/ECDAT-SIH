@@ -25,6 +25,11 @@ try:
 except ImportError:  # pragma: no cover
     ScanFailureDB = None  # type: ignore[assignment,misc]
 
+try:
+    from backend.models.scan_lease import ScanLeaseDB  # noqa: F401, E402
+except ImportError:  # pragma: no cover
+    ScanLeaseDB = None  # type: ignore[assignment,misc]
+
 config = context.config
 
 if config.config_file_name is not None:

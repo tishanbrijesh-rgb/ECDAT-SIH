@@ -1,7 +1,12 @@
 // Scan detail — full job metrics, evidence summary, asset breakdown.
 import { useState, useEffect, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
-import { getScanDetail, downloadCsv } from "../api/client";
+import {
+  getScanDetail,
+  downloadCsv,
+  subscribeScanEvents,
+  type ScanProgressEvent,
+} from "../api/client";
 import { RiskBadge } from "../components/RiskBadge";
 import { formatDate } from "../utils/format";
 import type { ScanDetail } from "../types";
@@ -46,15 +51,64 @@ export default function ScanDetailPage() {
       return;
     }
     let cancelled = false;
-    getScanDetail(Number(id))
+    let unsubscribe: (() => void) | undefined;
+    const numericId = Number(id);
+
+    getScanDetail(numericId)
       .then((d) => {
-        if (!cancelled) setDetail(d);
+        if (cancelled) return;
+        setDetail(d);
+        if (
+          d.status === "completed" ||
+          d.status === "failed" ||
+          d.status === "cancelled" ||
+          d.status === "timed_out"
+        ) {
+          return;
+        }
+        unsubscribe = subscribeScanEvents(
+          numericId,
+          (event) => {
+            if (!cancelled) {
+              setDetail((prev) => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  status: event.status,
+                  collector_stats: event.collector_stats,
+                  assets_found: event.assets_found,
+                  coverage_pct: event.coverage_pct,
+                  duration_ms: event.duration_ms,
+                };
+              });
+            }
+          },
+          (final) => {
+            if (!cancelled) {
+              setDetail((prev) => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  status: final.status,
+                  assets_found: final.assets_found,
+                  coverage_pct: final.coverage_pct,
+                  duration_ms: final.duration_ms,
+                };
+              });
+            }
+          },
+          () => {
+            if (!cancelled) setDetail((prev) => prev);
+          },
+        );
       })
       .catch((e) => {
         if (!cancelled) setError(String(e));
       });
+
     return () => {
       cancelled = true;
+      unsubscribe?.();
     };
   }, [id]);
 

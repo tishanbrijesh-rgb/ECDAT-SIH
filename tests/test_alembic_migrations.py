@@ -115,9 +115,9 @@ class TestMigrations(unittest.TestCase):
     # ── downgrade ───────────────────────────────────────────────────────────
 
     def test_downgrade_removes_scan_failures(self):
-        """Downgrading -2 removes scan_failures but keeps the other tables."""
+        """Downgrading through 0002 removes scan_failures but keeps base tables."""
         self._upgrade("head")
-        self._downgrade("-2")
+        self._downgrade("-3")
         insp = self._inspect()
         self.assertNotIn("scan_failures", insp.get_table_names())
         self.assertIn("scan_jobs", insp.get_table_names())
@@ -177,11 +177,11 @@ class TestMigrations(unittest.TestCase):
     # ── migration graph ─────────────────────────────────────────────────────
 
     def test_linear_migration_graph(self):
-        """Revisions form a single linear chain: 0001 -> 0002 -> 0003."""
+        """Revisions form a single linear chain through the current head."""
         script = ScriptDirectory.from_config(_make_config(self.db_url))
         # walk_revisions() returns newest-to-oldest; reverse to oldest-first.
         revs = list(reversed(list(script.walk_revisions())))
-        self.assertEqual(3, len(revs))
+        self.assertEqual(4, len(revs))
         prev = None
         for rev in revs:
             self.assertEqual(prev, rev.down_revision,

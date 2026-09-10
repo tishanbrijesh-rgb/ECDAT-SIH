@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"e2e/**/*.ts\" \"*.{ts,json,html}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"e2e/**/*.ts\" \"*.{ts,json,html}\""
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"e2e/**/*.ts\" \"*.{ts,json,html}\"",
+    "lint": "eslint src/"
   },
   "dependencies": {
     "framer-motion": "^11.0.0",
@@ -30,6 +31,9 @@
     "@vitejs/plugin-react": "^6.1.1",
     "jsdom": "^30.0.1",
     "prettier": "^3.9.6",
+    "eslint": "^9.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
     "typescript": "^5.5.3",
     "vite": "^8.2.2",
     "vitest": "^5.0.0"

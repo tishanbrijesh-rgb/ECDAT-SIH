@@ -16,7 +16,10 @@ if _SCANNER_ROOT not in sys.path:
     sys.path.insert(0, _SCANNER_ROOT)
 
 from scanner.main import scan_with_metrics
-from scanner.main import _print as _scanner_print
+
+from backend.logging_config import get_logger
+
+logger = get_logger("ecdat.scanner_runner")
 
 from backend.models.scan_job import ScanJobDB
 from backend.models.asset import CryptoAssetDB
@@ -80,7 +83,7 @@ def _run_scan(repo_path: str, scan_id: int | None = None) -> dict[str, Any]:
     finally:
         db.close()
 
-    _scanner_print(f"Job {scan_id}: starting scan of {repo_path}")
+    logger.info("Starting scan", extra={"extra_data": {"scan_id": scan_id, "repo_path": repo_path}})
 
     def progress(stats: dict[str, int]) -> None:
         with SessionLocal() as progress_db:
@@ -93,7 +96,10 @@ def _run_scan(repo_path: str, scan_id: int | None = None) -> dict[str, Any]:
 
     # 3. Correlate
     findings = correlate(evidence)
-    _scanner_print(f"Job {scan_id}: {len(findings)} correlated findings")
+    logger.info(
+        "Correlation complete",
+        extra={"extra_data": {"scan_id": scan_id, "findings": len(findings)}},
+    )
 
     # 4. Score & risk-assess each finding, persist
     db = SessionLocal()
@@ -176,7 +182,7 @@ def _run_scan(repo_path: str, scan_id: int | None = None) -> dict[str, Any]:
                 reason=failure["reason"],
             ))
         db.commit()
-        _scanner_print(f"Job {scan_id}: done — {persisted} assets, avg confidence {avg_conf:.2%}")
+        logger.info("Scan complete", extra={"extra_data": {"scan_id": scan_id, "persisted": persisted, "avg_confidence": avg_conf}})
     finally:
         db.close()
 

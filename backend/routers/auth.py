@@ -1,8 +1,9 @@
 """Local signed-session endpoint used for the SIH demonstration."""
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field, StrictStr, field_validator
 
 from backend.security import current_role, issue_demo_token
+from backend.middleware.rate_limit import limit as rate_limit
 
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
@@ -22,7 +23,8 @@ class LoginRequest(BaseModel):
 
 
 @router.post("/login")
-def login(payload: LoginRequest) -> dict[str, str | int]:
+@rate_limit(threshold=5, window=60)
+def login(request: Request, payload: LoginRequest) -> dict[str, str | int]:
     return issue_demo_token(payload.username, payload.password)
 
 
