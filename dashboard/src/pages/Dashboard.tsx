@@ -160,7 +160,12 @@ export default function Dashboard() {
           </button>
         </div>
       )}
-      <section className="hero">
+      <motion.section
+        className="hero"
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+      >
         <div>
           <p className="eyebrow">Enterprise posture</p>
           <h1>Cryptographic assurance overview</h1>
@@ -190,7 +195,7 @@ export default function Dashboard() {
             View CBOM
           </Link>
         </div>
-      </section>
+      </motion.section>
       {downloadError && (
         <div className="callout error" role="alert">
           {downloadError}

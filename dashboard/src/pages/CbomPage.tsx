@@ -26,6 +26,8 @@ const EMPTY_CBOM: CbomEntry = {
   services: [],
 };
 
+const SKELETON_COUNT = 6;
+
 type JsonRecord = Record<string, unknown>;
 
 function readProperties(value: unknown): Record<string, string> {
@@ -105,16 +107,19 @@ export default function CbomPage() {
     return c as Array<Record<string, unknown>>;
   }, [cbom]);
 
-  if (error)
-    return (
-      <div className="state" role="alert">
-        <h1>CBOM unavailable</h1>
-        <p>{error}</p>
-        <button className="button" onClick={() => setRetryKey((key) => key + 1)}>
-          Try again
-        </button>
-      </div>
-    );
+  const riskDistribution = useMemo(() => {
+    const counts = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
+    for (const comp of components) {
+      const cp = comp.properties as Array<{ name: string; value: string }> | undefined;
+      const confEntry = cp?.find((p) => p.name === "ecdat:confidence");
+      const conf = confEntry ? Number(confEntry.value) : 0.5;
+      if (conf < 0.4) counts.CRITICAL++;
+      else if (conf < 0.6) counts.HIGH++;
+      else if (conf < 0.8) counts.MEDIUM++;
+      else counts.LOW++;
+    }
+    return counts;
+  }, [components]);
 
   const vulnerabilities = cbom.vulnerabilities || [];
   const services = cbom.services || [];
@@ -134,6 +139,17 @@ export default function CbomPage() {
     (metadataRecord as Record<string, string> | undefined)?.["spec_version"] ||
     "";
   const timestamp = (metadataRecord?.["timestamp"] as string | undefined) || "";
+
+  if (error)
+    return (
+      <div className="state" role="alert">
+        <h1>CBOM unavailable</h1>
+        <p>{error}</p>
+        <button className="button" onClick={() => setRetryKey((key) => key + 1)}>
+          Try again
+        </button>
+      </div>
+    );
 
   return (
     <>
@@ -173,13 +189,34 @@ export default function CbomPage() {
       </section>
 
       {loading && view === "components" ? (
-        <div className="state">
-          <span className="spinner" />
-          <h1>Building CBOM</h1>
-          <p>Correlating cryptographic components from all evidence sources…</p>
-        </div>
+        <>
+          <div className="cbom-skeleton-header">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div className="cbom-skeleton-chip" key={i} />
+            ))}
+          </div>
+          <div className="cbom-skeleton-grid">
+            {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+              <div className="cbom-skeleton-card" key={i}>
+                <div className="cbom-skeleton-pulse" />
+                <div className="cbom-skeleton-line short" />
+                <div className="cbom-skeleton-line" />
+                <div className="cbom-skeleton-line medium" />
+                <div className="cbom-skeleton-line short" />
+              </div>
+            ))}
+          </div>
+        </>
       ) : (
         <>
+          <div className="cbom-risk-bar">
+            {(["CRITICAL", "HIGH", "MEDIUM", "LOW"] as const).map((label) => (
+              <span key={label} className={`cbom-risk-chip cbom-risk-${label.toLowerCase()}`}>
+                <span className="cbom-risk-count">{riskDistribution[label]}</span>
+                {label}
+              </span>
+            ))}
+          </div>
           <motion.section
             className="cbom-meta"
             variants={staggerContainer}

@@ -25,13 +25,17 @@ describe("CbomPage", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Building CBOM")).toBeInTheDocument();
+    expect(document.querySelector(".cbom-skeleton-grid")).toBeInTheDocument();
     expect(await screen.findByText("No components found")).toBeInTheDocument();
     expect(
       screen.getByText(
         "This scan did not produce any cryptographic components. Run a full discovery scan with dependency analysis enabled.",
       ),
     ).toBeInTheDocument();
+    expect(screen.getByText("CRITICAL")).toBeInTheDocument();
+    expect(screen.getByText("HIGH")).toBeInTheDocument();
+    expect(screen.getByText("MEDIUM")).toBeInTheDocument();
+    expect(screen.getByText("LOW")).toBeInTheDocument();
   });
 
   it("reports a CBOM request failure and lets the user retry", async () => {

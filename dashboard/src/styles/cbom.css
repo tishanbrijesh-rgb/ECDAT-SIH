@@ -1,4 +1,119 @@
-/* ── CBOM page ────────────────────────────────────────────── */
+/* ── CBOM skeleton / scanning animation ─────────────────────── */
+.cbom-skeleton-header {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.cbom-skeleton-chip {
+  height: 28px;
+  width: 72px;
+  background: var(--bg-2);
+  border-radius: 99px;
+  position: relative;
+  overflow: hidden;
+}
+.cbom-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+}
+.cbom-skeleton-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.cbom-skeleton-pulse {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(20, 184, 166, 0.04) 50%,
+    transparent 100%
+  );
+  animation: cbom-shimmer 1.8s ease-in-out infinite;
+}
+.cbom-skeleton-line {
+  height: 10px;
+  background: var(--bg-2);
+  border-radius: 4px;
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+}
+.cbom-skeleton-line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 50%,
+    transparent 100%
+  );
+  animation: cbom-shimmer 1.8s ease-in-out infinite;
+  animation-delay: inherit;
+}
+.cbom-skeleton-line.short {
+  width: 55%;
+}
+.cbom-skeleton-line.medium {
+  width: 78%;
+}
+@keyframes cbom-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+.cbom-risk-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.cbom-risk-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 5px 12px;
+  border-radius: 99px;
+  border: 1px solid transparent;
+}
+.cbom-risk-count {
+  font-weight: 800;
+  font-size: 12px;
+}
+.cbom-risk-critical {
+  background: var(--red-wash);
+  color: var(--red);
+  border-color: rgba(239, 68, 68, 0.18);
+}
+.cbom-risk-high {
+  background: var(--amber-wash);
+  color: var(--amber);
+  border-color: rgba(245, 158, 11, 0.18);
+}
+.cbom-risk-medium {
+  background: rgba(212, 164, 58, 0.06);
+  color: #d4a43a;
+  border-color: rgba(212, 164, 58, 0.18);
+}
+.cbom-risk-low {
+  background: var(--teal-wash);
+  color: var(--teal);
+  border-color: rgba(20, 184, 166, 0.18);
+}
 .cbom-meta {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

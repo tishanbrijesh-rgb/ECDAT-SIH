@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getScan, getScans, scanRepo, canWrite, cancelScan } from "../api/client";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { useToast } from "../components/Toast";
 import { relativeTime, formatDate } from "../utils/format";
 import type { ScanJob } from "../types";
 
@@ -38,6 +39,7 @@ export default function ScanPage() {
   const [cancelling, setCancelling] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const navigate = useNavigate();
+  const toast = useToast();
 
   const validatePath = useCallback((raw: string): string => {
     const trimmed = raw.trim();
@@ -78,6 +80,7 @@ export default function ScanPage() {
         setError("");
         setJob(current);
         if (current.status === "completed") {
+          toast.success(`Scan #${scanId} completed — ${current.assets_found} assets found`);
           timer = setTimeout(() => navigate(`/assets?scan_id=${scanId}`), 900);
         } else if (!terminal(current.status)) {
           timer = setTimeout(poll, 700);
@@ -207,18 +210,13 @@ export default function ScanPage() {
           {scanId && (
             <div className="scan-progress" role="status" aria-live="polite">
               <div className="progress-track">
-                <i className={job?.status === "completed" ? "done" : ""} />
+                <i className={job?.status === "completed" ? "done" : "loading"} />
               </div>
-              <div>
-                <strong>
-                  {job?.status === "running" && (
-                    <span
-                      className="pulse-dot"
-                      style={{ background: "var(--indigo)", marginRight: 6 }}
-                    />
-                  )}
-                  {job?.status || "queued"}
-                </strong>
+              <div className="scan-progress-info">
+                <div className="scan-status-indicator">
+                  {job?.status === "running" && <span className="scan-radar" aria-hidden="true" />}
+                  <strong>{job?.status || "queued"}</strong>
+                </div>
                 <span>Scan #{scanId}</span>
               </div>
               {terminal(job?.status) && job?.status !== "completed" ? (
