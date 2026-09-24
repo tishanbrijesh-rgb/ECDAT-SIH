@@ -35,6 +35,12 @@ describe("Login", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(message);
   });
 
+  it("renders the recovered ECDAT brand asset", () => {
+    const { container } = render(<Login onSuccess={vi.fn()} />);
+
+    expect(container.querySelector('img.brand-mark[src="/ecdat-logo.svg"]')).toBeInTheDocument();
+  });
+
   it("submits the entered credentials and completes a successful sign-in", async () => {
     const user = userEvent.setup();
     const onSuccess = vi.fn();

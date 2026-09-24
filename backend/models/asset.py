@@ -1,6 +1,17 @@
 """CryptoAsset model — persisted finding from a scan job."""
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, DateTime, JSON
+
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+)
 
 from backend.db import Base
 
@@ -38,4 +49,17 @@ class CryptoAssetDB(Base):
     risk_reasons = Column(JSON, default=list)
     hybrid_recommended = Column(Boolean, default=False)
     logical_asset_id = Column(String, default="", index=True)
+    evidence_kind = Column(String, default="unknown", index=True)
+    parser_version = Column(String, default="")
+    evidence_quality = Column(String, default="unknown")
+    confirmed_use = Column(Boolean, default=False)
+    capability_only = Column(Boolean, default=False)
+    risk_context_provenance = Column(JSON, default=dict)
+    span = Column(JSON, default=dict)
+    confidence_reasons = Column(JSON, default=list)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index("ix_crypto_assets_risk", "priority_label"),
+        Index("ix_crypto_assets_quantum", "quantum_vulnerable"),
+    )

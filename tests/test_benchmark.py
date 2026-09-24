@@ -6,8 +6,12 @@ from pathlib import Path
 from unittest import mock
 
 from scripts import benchmark_external
-from scripts.benchmark_external import (_finding_line, _in_scope_findings,
-                                        _validate_manifest, compare)
+from scripts.benchmark_external import (
+    _finding_line,
+    _in_scope_findings,
+    _validate_manifest,
+    compare,
+)
 from tests import test_precision as precision
 
 
@@ -59,12 +63,25 @@ class BenchmarkMetricTests(unittest.TestCase):
         ]}
         self.assertEqual(_finding_line(finding), 7)
 
+    def test_line_reads_collector_span(self):
+        finding = {'evidence_list': [{'span': {'line_start': 29}, 'evidence': {}}]}
+
+        self.assertEqual(_finding_line(finding), 29)
+
     def test_taxonomy_ignores_out_of_scope_algorithms_only(self):
         findings = [{'algorithm': 'SHA-256'}, {'algorithm': 'AES'}]
         self.assertEqual(_in_scope_findings(findings, ['SHA-256']), [findings[0]])
         result = compare([], [{'file': 'x', 'line': 1, 'algorithm': 'SHA-256',
                                'usage': 'hashing', 'key_size': None}])
         self.assertEqual(result['fp'], 1)
+
+    def test_missing_line_can_be_compared_with_located_finding(self):
+        expected = [self.label(line=None)]
+        actual = [self.label(line=1)]
+
+        result = compare(expected, actual)
+
+        self.assertEqual((result['tp'], result['fp'], result['fn']), (0, 1, 1))
 
 
 class ManifestValidationTests(unittest.TestCase):
@@ -129,6 +146,19 @@ class ManifestValidationTests(unittest.TestCase):
 
 
 class ExternalBugRegressionTests(unittest.TestCase):
+    def test_openssl_hmac_call_is_detected_as_hmac(self):
+        result = self.scan(
+            "HMAC(EVP_sha256(), key, key_len, data, data_len, out, &out_len);",
+            "example.c",
+        )
+
+        self.assertIn("HMAC", [item["algorithm"] for item in result])
+
+    def test_bouncy_castle_provider_registration_is_not_a_hash_operation(self):
+        result = self.scan('Security.addProvider(new BouncyCastleProvider());', 'Example.java')
+
+        self.assertEqual(result, [])
+
     def test_nested_hash_and_aead_names_do_not_change_primitive_usage(self):
         from scanner.collectors.rule_collector import _usage
         self.assertEqual(_usage('ec.ECDSA(hashes.SHA256())', 'ECDSA'), 'signature')
@@ -161,7 +191,7 @@ class ExternalBugRegressionTests(unittest.TestCase):
                   'getDigest(MessageDigestAlgorithms.SHA_256);\n'
                   'getDigest(MessageDigestAlgorithms.SHA_512);\n')
         result = self.scan(source, 'Example.java')
-        self.assertEqual(sorted((item['evidence_list'][0]['evidence']['line'], item['algorithm'])
+        self.assertEqual(sorted((item['evidence_list'][0]['span']['line_start'], item['algorithm'])
                                 for item in result),
                          [(1, 'SHA-1'), (2, 'SHA-256'), (3, 'SHA-512'),
                           (4, 'SHA-1'), (5, 'SHA-256'), (6, 'SHA-512')])
@@ -189,7 +219,7 @@ class ExternalBugRegressionTests(unittest.TestCase):
                   'MessageDigest.getInstance("SHA256");\n'
                   'MessageDigest.getInstance("SHA512");\n')
         result = self.scan(source, 'Example.java')
-        self.assertEqual(sorted((item['evidence_list'][0]['evidence']['line'], item['algorithm'])
+        self.assertEqual(sorted((item['evidence_list'][0]['span']['line_start'], item['algorithm'])
                                 for item in result),
                          [(1, 'SHA-1'), (2, 'SHA-256'), (3, 'SHA-512')])
 

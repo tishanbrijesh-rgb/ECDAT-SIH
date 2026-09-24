@@ -1,6 +1,6 @@
 """Small adversarial cases independent of the bundled demonstration corpus."""
-import unittest
 import tempfile
+import unittest
 from pathlib import Path
 
 from backend.services.confidence import score_finding

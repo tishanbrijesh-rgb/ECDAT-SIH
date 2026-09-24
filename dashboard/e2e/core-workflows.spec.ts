@@ -36,7 +36,7 @@ async function mockApi(page: Page) {
       return route.fulfill({ status: 404, json: { detail: "No evaluation" } });
     }
     if (path === "/api/scans") return route.fulfill({ json: [] });
-    if (path === "/api/scan") return route.fulfill({ json: { scan_id: 41, status: "queued" } });
+    if (path === "/api/scan") return route.fulfill({ json: { scan_id: 41, status: "running" } });
     if (path === "/api/scans/41") {
       return route.fulfill({
         json: {
@@ -82,7 +82,8 @@ test("an administrator can sign in and start a repository scan", async ({ page }
   ).toBeVisible();
 
   await page.getByRole("link", { name: "New scan" }).click();
-  await page.getByRole("button", { name: "Run discovery scan" }).click();
-  await expect(page.getByText("Scan #41")).toBeVisible();
+  await page.getByRole("textbox", { name: "Repository path" }).fill("/test-repo");
+  await page.getByRole("button", { name: "Start scan" }).click();
+  await expect(page.getByRole("heading", { name: "Scanning repository" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Cancel scan" })).toBeVisible();
 });

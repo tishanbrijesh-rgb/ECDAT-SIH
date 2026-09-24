@@ -15,7 +15,7 @@ export const ConfidenceBar = memo(function ConfidenceBar({ confidence }: Props) 
       <div className="track">
         <div className="fill" style={{ width: `${pct}%` }} />
       </div>
-      <span className="pct">{pct}% confidence</span>
+      <span className="pct">{pct}% evidence confidence</span>
     </div>
   );
 });

@@ -52,3 +52,18 @@ export function escapeHtml(str: string): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
+
+/** Compact machine-specific paths while preserving the most useful source context. */
+export function displayPath(path: string, segments = 3): string {
+  if (!path) return "—";
+  const parts = path.split(/[\\/]/).filter(Boolean);
+  const isAbsolute = /^[A-Za-z]:[\\/]/.test(path) || path.startsWith("/");
+  if (!isAbsolute || parts.length <= segments) return path.replace(/\\/g, "/");
+  return `…/${parts.slice(-segments).join("/")}`;
+}
+
+/** Repository label for compact navigation and report headings. */
+export function repositoryName(path: string): string {
+  const parts = path.split(/[\\/]/).filter(Boolean);
+  return parts[parts.length - 1] || path || "Current repository";
+}

@@ -14,7 +14,12 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from backend.services.stale_job_recovery import recover_stale_jobs, utc_now
+from backend.services.stale_job_recovery import recover_stale_jobs, utc_now as _utc_now  # noqa: I001
+
+
+def utc_now():
+    """Backward-compatible public timestamp helper used by regression tests."""
+    return _utc_now()
 
 
 def main() -> None:

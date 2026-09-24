@@ -15,8 +15,8 @@ from cryptography.hazmat.primitives.asymmetric import dsa, ec, ed25519, rsa
 from cryptography.utils import CryptographyDeprecationWarning
 from cryptography.x509.oid import NameOID
 
-from scanner.models.asset import CryptoAsset
 from scanner.limits import read_bytes
+from scanner.models.asset import CryptoAsset
 
 
 def _split_pem_blocks(data: str) -> list[str]:
@@ -52,11 +52,37 @@ def _common_name(name: x509.Name) -> str:
         return ""
 
 
+def _eku_to_usage(eku_oids: list[str]) -> str:
+    """Map Extended Key Usage OIDs to a usage label."""
+    eku_lower = [o.lower() for o in eku_oids]
+    if any("serverauth" in o for o in eku_lower) or any("1.3.6.1.5.5.7.3.1" in o for o in eku_lower):
+        return "tls"
+    if any("clientauth" in o for o in eku_lower) or any("1.3.6.1.5.5.7.3.2" in o for o in eku_lower):
+        return "tls"
+    if any("codesigning" in o for o in eku_lower) or any("1.3.6.1.5.5.7.3.3" in o for o in eku_lower):
+        return "signature"
+    if any("emailprotection" in o for o in eku_lower):
+        return "signature"
+    return "unknown"
+
+
+def _extract_eku(cert: x509.Certificate) -> tuple[list[str], str]:
+    """Extract EKU OIDs and derive usage from certificate extensions."""
+    try:
+        eku_ext = cert.extensions.get_extension_for_oid(
+            x509.oid.ExtensionOID.EXTENDED_KEY_USAGE
+        )
+        oids = [str(o.dotted_string) for o in eku_ext.value]  # type: ignore[attr-defined]
+        return oids, _eku_to_usage(oids)
+    except Exception:
+        return [], "unknown"
+
+
 def _asset_from_certificate(cert: x509.Certificate, path: str) -> CryptoAsset:
     """Convert a validated certificate to evidence; callers contain failures."""
     pub_key = cert.public_key()
     try:
-        key_size = pub_key.key_size
+        key_size = pub_key.key_size  # type: ignore[union-attr]
     except (AttributeError, TypeError):
         key_size = 0
 
@@ -79,14 +105,79 @@ def _asset_from_certificate(cert: x509.Certificate, path: str) -> CryptoAsset:
 
     not_after = cert.not_valid_after_utc.isoformat() if cert.not_valid_after_utc else ""
     signature_hash = cert.signature_hash_algorithm
+    eku_oids, eku_usage = _extract_eku(cert)
+
+    # Phase 2: usage defaults to "unknown" unless EKU establishes a role.
+    usage = eku_usage
+    if usage != "unknown":
+        evidence_kind = "configured_protocol"
+    else:
+        evidence_kind = "artifact_metadata"
+        usage = "unknown"
+
     evidence = {
         "key_size": key_size,
         "subject_cn": _common_name(cert.subject),
         "issuer": _common_name(cert.issuer),
+        "version": cert.version.name,
         "not_after": not_after,
+        "validity_not_before": cert.not_valid_before_utc.isoformat()
+        if cert.not_valid_before_utc else "",
         "serial_number": str(cert.serial_number),
         "signature_hash_algorithm": signature_hash.name if signature_hash else "unknown",
+        "signature_algorithm": cert.signature_algorithm_oid._name
+        if hasattr(cert.signature_algorithm_oid, "_name") else str(cert.signature_algorithm_oid),
+        "eku_oids": eku_oids,
+        "chain_position": None,
     }
+
+    # Optional extensions extracted via try/except
+    try:
+        ku_ext = cert.extensions.get_extension_for_oid(
+            x509.oid.ExtensionOID.KEY_USAGE
+        )
+        ku = ku_ext.value
+        key_usage_flags = []
+        if ku.digital_signature:  # type: ignore[attr-defined]
+            key_usage_flags.append("digitalSignature")
+        if ku.key_encipherment:  # type: ignore[attr-defined]
+            key_usage_flags.append("keyEncipherment")
+        if ku.key_agreement:  # type: ignore[attr-defined]
+            key_usage_flags.append("keyAgreement")
+        if ku.key_cert_sign:  # type: ignore[attr-defined]
+            key_usage_flags.append("keyCertSign")
+        if ku.crl_sign:  # type: ignore[attr-defined]
+            key_usage_flags.append("cRLSign")
+        evidence["key_usage"] = key_usage_flags
+    except Exception:
+        evidence["key_usage"] = []
+
+    try:
+        bc_ext = cert.extensions.get_extension_for_oid(
+            x509.oid.ExtensionOID.BASIC_CONSTRAINTS
+        )
+        evidence["is_ca"] = bc_ext.value.ca  # type: ignore[attr-defined]
+    except Exception:
+        evidence["is_ca"] = False
+
+    try:
+        san_ext = cert.extensions.get_extension_for_oid(
+            x509.oid.ExtensionOID.SUBJECT_ALTERNATIVE_NAME
+        )
+        san_names = []
+        for name in san_ext.value:  # type: ignore[attr-defined]
+            san_names.append(name.value)
+        evidence["san"] = san_names
+    except Exception:
+        evidence["san"] = []
+
+    evidence["usage"] = usage
+
+    confidence_reasons = [
+        {"source": "cert", "evidence_kind": evidence_kind,
+         "base": 0.95, "bonus": 0.0, "penalty": 0.0,
+         "note": f"artifact metadata; EKU {'established' if eku_usage != 'unknown' else 'not established'}"}
+    ]
 
     return CryptoAsset(
         algorithm=algorithm,
@@ -95,6 +186,12 @@ def _asset_from_certificate(cert: x509.Certificate, path: str) -> CryptoAsset:
         location=path,
         evidence=evidence,
         confidence=0.95,
+        evidence_kind=evidence_kind,
+        parser_version="cert-v2",
+        span={"file": path, "line_start": None,
+              "line_end": None, "column_start": None,
+              "column_end": None},
+        confidence_reasons=confidence_reasons,
     )
 
 

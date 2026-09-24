@@ -4,33 +4,56 @@
       "category": "encryption",
       "patterns": [
         "AES", "AES\\.Cipher", "AES/GCM", "AES/CBC", "aes_gcm", "aes_cbc",
-        "Cipher\\.getInstance.*AES"
+        "AES-GCM", "AES-CBC",
+        "Cipher\\.getInstance.*AES",
+        "Cipher\\.getInstance\\(\\s*[\"']AES/GCM/NoPadding[\"']\\s*\\)",
+        "Cipher\\.getInstance\\(\\s*[\"']AES/CBC/PKCS5Padding[\"']\\s*\\)",
+        "AesCryptoServiceProvider", "AesManaged", "AesCng", "Aes\\.Create",
+        "EVP_aes_", "AES_", "EVP_CIPHER_CTX",
+        "AES_set_encrypt_key", "AES_set_decrypt_key",
+        "crypto\\.createCipheriv", "crypto\\.createDecipheriv",
+        "createCipheriv.*aes-.*gcm",
+        "crypto\\.subtle\\.encrypt", "crypto\\.subtle\\.decrypt",
+        "crypto/aes", "aes\\.NewCipher", "gcm\\.New"
       ]
     },
     "RSA": {
       "category": "encryption",
       "patterns": [
         "RSA", "RSA/ECB/PKCS1Padding", "RSA.*OAEP", "get_instance.*RSA",
-        "generate_private_key.*RSA"
+        "generate_private_key.*RSA",
+        "RSACryptoServiceProvider", "RSA\\.Create", "RSAParameters",
+        "RSA\\.ImportParameters",
+        "RSA_generate_key", "RSA_public_encrypt", "RSA_private_decrypt",
+        "RSA_new", "RSA_free",
+        "crypto\\.generateKeyPairSync", "crypto\\.generateKeyPair",
+        "RSA-OAEP"
       ]
     },
     "ECDSA": {
       "category": "signature",
       "patterns": [
         "ECDSA", "ec\\.ECDSA", "EllipticCurve", "SECP", "prime256v1",
-        "secp256"
+        "secp256", "node-forge", "generateKeyPairSync.*EC",
+        "getInstance.*\\bEC\\b", "KeyPairGenerator\\.getInstance.*EC",
+        "EC_KEY", "ECDSA_sign", "ECDSA_verify", "EC_GROUP_new_curve",
+        "crypto\\.generateKeyPairSync.*ec", "crypto\\.createECDH"
       ]
     },
     "ECDH": {
       "category": "key_exchange",
       "patterns": [
-        "ECDH", "ec\\.ECDH", "key_exchange.*ECDH"
+        "ECDH", "ec\\.ECDH", "key_exchange.*ECDH",
+        "ECDH_compute_key", "EVP_PKEY_derive",
+        "crypto\\.createECDH", "crypto/ecdh", "ecdh\\.GenerateKey",
+        "ecdh\\.P256", "ecdh\\.P521", "ecdh\\.X25519"
       ]
     },
     "DH": {
       "category": "key_exchange",
       "patterns": [
-        "\\bDH\\b", "DiffieHellman", "Diffie-Hellman"
+        "\\bDH\\b", "DiffieHellman", "Diffie-Hellman",
+        "DH_generate_key", "EVP_PKEY_derive_init"
       ]
     },
     "DSA": {
@@ -42,7 +65,10 @@
     "SHA-256": {
       "category": "hash",
       "patterns": [
-        "SHA-?256", "sha256", "SHA256"
+        "SHA-?256", "sha256(?![0-9_])", "SHA256(?![0-9_])",
+        "SHA256\\.Create", "SHA256Managed",
+        "SHA256_", "SHA256_Init", "SHA256_Update", "SHA256_Final",
+        "SHA256_DIGEST_LENGTH"
       ],
       "java_patterns": [
         "\\bSHA256Digest\\s*(?:\\.\\s*newInstance)?\\s*\\(",
@@ -54,7 +80,10 @@
     "SHA-512": {
       "category": "hash",
       "patterns": [
-        "SHA-?512", "sha512", "SHA512"
+        "SHA-?512", "sha512(?![0-9_])", "SHA512(?![0-9_])",
+        "SHA512\\.Create", "SHA512Managed",
+        "SHA512_", "SHA512_Init", "SHA512_Update", "SHA512_Final",
+        "SHA512_DIGEST_LENGTH"
       ],
       "java_patterns": [
         "\\bSHA512Digest\\s*\\(",
@@ -66,7 +95,10 @@
     "SHA-1": {
       "category": "hash",
       "patterns": [
-        "SHA-?1", "sha1", "SHA1"
+        "SHA-?1", "sha1(?![0-9])", "SHA1(?![0-9])",
+        "SHA1\\.Create", "SHA1Managed",
+        "SHA1_", "SHA1_Init", "SHA1_Update", "SHA1_Final",
+        "SHA_DIGEST_LENGTH"
       ],
       "java_patterns": [
         "\\bSHA1Digest\\s*\\(",
@@ -78,13 +110,17 @@
     "MD5": {
       "category": "hash",
       "patterns": [
-        "MD5", "md5"
+        "MD5", "md5",
+        "apache.*codec", "org\\.apache\\.commons\\.codec",
+        "apr1Crypt", "md5Crypt", "shaCrypt", "md5_crypt",
+        "\\bmd5\\(|md5\\s*\\(", "\\bmd5_crypt\\s*\\("
       ],
       "java_patterns": [
         "\\bMD5Digest\\s*\\(",
-        "\\b(?:getMd5Digest|md5(?:Hex|Crypt)?|apr1Crypt)\\s*\\(",
+        "\\b(?:getMd5Digest|md5(?:Hex|Crypt)?)\\s*\\(",
         "\\b(?:getDigest|get)\\s*\\([^;\\n]*\\bMD5\\b",
-        "\\bMessageDigest\\s*\\.\\s*getInstance\\s*\\(\\s*[\"']MD5[\"']"
+        "\\bMessageDigest\\s*\\.\\s*getInstance\\s*\\(\\s*[\"']MD5[\"']",
+        "\\bapr1Crypt\\s*\\(", "\\bmd5Crypt\\s*\\(", "\\bshaCrypt\\s*\\("
       ]
     },
     "BLAKE2": {
@@ -96,7 +132,26 @@
     "Ed25519": {
       "category": "signature",
       "patterns": [
-        "Ed25519", "ed25519"
+        "Ed25519", "ed25519",
+        "ed25519.GenerateKey", "ed25519.Sign", "ed25519.Verify"
+      ]
+    },
+    "PBKDF2": {
+      "category": "kdf",
+      "patterns": [
+        "PBKDF2", "pbkdf2"
+      ]
+    },
+    "scrypt": {
+      "category": "kdf",
+      "patterns": [
+        "scrypt", "Scrypt"
+      ]
+    },
+    "HKDF": {
+      "category": "kdf",
+      "patterns": [
+        "HKDF", "hkdf"
       ]
     },
     "ML-KEM": {
@@ -108,13 +163,39 @@
     "ML-DSA": {
       "category": "signature",
       "patterns": [
-        "ML-DSA", "mldsa", "dilithium"
+        "ML-DSA", "mldsa", "dilithium", "ml_dsa"
       ]
     },
     "TLS": {
       "category": "protocol",
       "patterns": [
-        "TLSv?1[._]?[23]", "SSLContext", "PROTOCOL_TLS", "https://", "OpenSSL"
+        "TLSv?1[._]?[23]", "SSLContext", "PROTOCOL_TLS", "https://",
+        "SslStream", "TlsClientCertificateOptions",
+        "SslStreamAuthenticationOptions",
+        "SSL_CTX", "SSL_new", "SSL_connect", "SSL_accept",
+        "TLS_method", "SSLv23_method", "SSL_library_init",
+        "tls\\.connect", "tls\\.createSecureContext", "tls\\.TLSSocket",
+        "tls\\.Config", "x509\\.Certificate", "tls\\.X509KeyPair",
+        "ListenTLS"
+      ]
+    },
+    "ChaCha20": {
+      "category": "encryption",
+      "patterns": [
+        "ChaCha20", "chacha20", "ChaCha20Poly1305", "chacha20poly1305",
+        "EVP_chacha20", "ChaChaEngine", "tweetnacl",
+        "crypto/chacha20", "chacha20poly1305.New"
+      ]
+    },
+    "HMAC": {
+      "category": "mac",
+      "patterns": [
+        "hmac\\.new\\s*\\(", "hmac\\.digest\\s*\\(",
+        "HmacSHA", "javax\\.crypto\\.Mac", "Mac\\.getInstance",
+        "hmac\\.New\\s*\\(", "Hmac::<", "Hmac::new_from_slice",
+        "HMACSHA256", "HMACSHA512", "HMACSHA1", "new HMACSHA",
+        "(?-i:\\bHMAC)\\s*\\(", "HMAC_CTX", "HMAC_Init", "HMAC_Update", "HMAC_Final", "HMAC_CTX_new",
+        "crypto\\.createHmac", "crypto\\.createHmac\\s*\\("
       ]
     }
   }

@@ -50,6 +50,7 @@ async function mockApi(page: Page) {
               hybrid: true,
             },
           ],
+          pagination: { total: 1, filtered: 1, offset: 0, limit: 100, loaded: 1 },
         },
       });
     }
@@ -94,6 +95,7 @@ async function mockApi(page: Page) {
           vulnerabilities: [],
           dependencies: [{ ref: "openssl" }],
           services: [],
+          pagination: { total: 1, filtered: 1, offset: 0, limit: 100, loaded: 1 },
         },
       });
     }
@@ -157,38 +159,41 @@ async function mockApi(page: Page) {
     if (path === "/api/assets") {
       return route.fulfill({
         headers: { "X-Total-Count": "1" },
-        json: [
-          {
-            id: 901,
-            scan_job_id: 73,
-            logical_asset_id: "rsa-encryption-src-crypto",
-            algorithm: "RSA",
-            category: "asymmetric",
-            source: ["ast", "rules"],
-            location: "src/crypto.ts:18",
-            evidence_json: {},
-            confidence: 0.92,
-            conflict: false,
-            quantum_vulnerable: true,
-            priority_score: 91,
-            priority_label: "HIGH",
-            pqc_candidate: "ML-KEM",
-            business_criticality: "high",
-            usage: "encryption",
-            library: "OpenSSL",
-            protocol: "",
-            key_size: 2048,
-            data_sensitivity: "confidential",
-            data_lifetime_years: 10,
-            migration_time_years: 2,
-            threat_horizon_years: 5,
-            exposure: "external",
-            migration_effort: "medium",
-            risk_reasons: ["Harvest-now-decrypt-later exposure"],
-            hybrid_recommended: true,
-            created_at: "2026-09-07T10:00:02Z",
-          },
-        ],
+        json: {
+          items: [
+            {
+              id: 901,
+              scan_job_id: 73,
+              logical_asset_id: "rsa-encryption-src-crypto",
+              algorithm: "RSA",
+              category: "asymmetric",
+              source: ["ast", "rules"],
+              location: "src/crypto.ts:18",
+              evidence_json: {},
+              confidence: 0.92,
+              conflict: false,
+              quantum_vulnerable: true,
+              priority_score: 91,
+              priority_label: "HIGH",
+              pqc_candidate: "ML-KEM",
+              business_criticality: "high",
+              usage: "encryption",
+              library: "OpenSSL",
+              protocol: "",
+              key_size: 2048,
+              data_sensitivity: "confidential",
+              data_lifetime_years: 10,
+              migration_time_years: 2,
+              threat_horizon_years: 5,
+              exposure: "external",
+              migration_effort: "medium",
+              risk_reasons: ["Harvest-now-decrypt-later exposure"],
+              hybrid_recommended: true,
+              created_at: "2026-09-07T10:00:02Z",
+            },
+          ],
+          total: 1,
+        },
       });
     }
     return route.fulfill({ status: 404, json: { detail: `Unhandled test route: ${path}` } });
@@ -200,7 +205,7 @@ async function signIn(page: Page) {
   await page.getByLabel("Username").fill("admin");
   await page.getByLabel("Password").fill("valid-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("navigation", { name: "Main navigation" })).toBeVisible();
+  await expect(page.locator(".app-shell")).toBeVisible();
 }
 
 test.beforeEach(async ({ page }) => mockApi(page));
@@ -216,9 +221,9 @@ test("reports show ranked migration priorities and evaluation metrics", async ({
 
 test("CBOM switches between components, dependency graph, and raw JSON", async ({ page }) => {
   await signIn(page);
-  await page.getByRole("link", { name: "CBOM" }).click();
+  await page.getByRole("link", { name: "CBOM", exact: true }).click();
 
-  await expect(page.getByRole("heading", { name: "Components (1)" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Components (1)" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "OpenSSL" })).toBeVisible();
   await page.getByRole("button", { name: "Dependency graph" }).click();
   await expect(page.getByRole("heading", { name: "Dependency graph" })).toBeVisible();
@@ -246,19 +251,29 @@ test("mobile dark mode honors the 375px viewport and reduced-motion preference",
   page,
 }) => {
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+  await page.addInitScript(() => {
+    localStorage.setItem("ecdat-theme", "light");
+  });
   await signIn(page);
 
-  await page.getByRole("button", { name: "Switch to dark mode" }).click();
+  const themeBtn = page.getByRole("button", { name: "Switch to dark mode" });
+  await themeBtn.scrollIntoViewIfNeeded();
+  await themeBtn.click();
+  await page.waitForTimeout(100);
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await expect(page.getByRole("navigation", { name: "Main navigation" })).toBeVisible();
+  await page.getByRole("button", { name: "Toggle navigation menu" }).click();
   const navigation = page.getByRole("navigation", { name: "Main navigation" });
+  await expect(navigation).toBeVisible();
   const navWidth = await navigation.evaluate((element) => element.clientWidth);
   expect(navWidth).toBeGreaterThan(300);
   await page.getByRole("link", { name: "CBOM", exact: true }).click();
   await expect(page).toHaveURL(/\/cbom$/);
+  await page.getByRole("button", { name: "Toggle navigation menu" }).click();
   await page.getByRole("link", { name: "Overview", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Risk distribution", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Full-scan risk distribution", exact: true }),
+  ).toBeVisible();
   const layout = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,
     page: document.documentElement.scrollWidth,

@@ -1,0 +1,316 @@
+/* ═══════════════════════════════════════════════════════════════════
+   ECDAT Design Tokens — Single source of truth for the entire system
+   All values are CSS custom properties consumed by primitives,
+   components, pages, and utilities layers.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Surfaces ─────────────────────────────────────────────────────── */
+:root {
+  --color-page: #f4f1ea;
+  --color-surface: #fdfcf9;
+  --color-surface-alt: #f5f3ed;
+  --color-surface-2: #f0ede6;
+  --color-surface-3: #eae6dd;
+  --color-bg: #f4f1ea;
+  --color-bg-2: #eae6dd;
+
+  /* ── Text ──────────────────────────────────────────────────────── */
+  --color-ink: #1c1a17;
+  --color-ink-soft: #3d3830;
+  --color-text: #1c1a17;
+  --color-text-soft: #3d3830;
+  --color-muted: #686256;
+  --color-muted-soft: #716b60;
+  --color-stone: #686256;
+  --color-stone-light: #716b60;
+
+  /* ── Rules ─────────────────────────────────────────────────────── */
+  --color-rule: #cec7ba;
+  --color-rule-heavy: #b8b0a4;
+
+  /* ── Accent ─────────────────────────────────────────────────────── */
+  --color-forest: #2d4f3e;
+  --color-forest-bright: #3a6b54;
+  --color-teal: #0a7d6e;
+  --color-teal-bright: #0e9a88;
+  --color-teal-wash: #e2f5f2;
+  --color-indigo: #4a54d0;
+  --color-indigo-wash: #eef0ff;
+  --color-violet: #8b5cf6;
+  --color-violet-wash: rgba(139, 92, 246, 0.08);
+
+  /* ── Semantic Risk ──────────────────────────────────────────────── */
+  --color-amber: #9a5e10;
+  --color-amber-wash: #fdf4e3;
+  --color-red: #b52d22;
+  --color-red-wash: #fceeed;
+  --color-red-deep: #8b1a12;
+
+  /* ── Shadows ────────────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 2px rgba(28, 26, 23, 0.05);
+  --shadow-md: 0 3px 8px rgba(28, 26, 23, 0.07), 0 1px 2px rgba(28, 26, 23, 0.04);
+  --shadow-lg: 0 8px 20px rgba(28, 26, 23, 0.09), 0 2px 6px rgba(28, 26, 23, 0.03);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Dark Theme — same token names, different values
+   ═══════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] {
+  --color-page: #050505;
+  --color-surface: #0c0c0c;
+  --color-surface-alt: #141414;
+  --color-surface-2: #1a1a1a;
+  --color-surface-3: #0f0f0f;
+  --color-bg: #050505;
+  --color-bg-2: #0f0f0f;
+
+  --color-ink: #f5f5f5;
+  --color-ink-soft: #d4d4d4;
+  --color-text: #d4d4d4;
+  --color-text-soft: #a3a3a3;
+  --color-muted: #969696;
+  --color-muted-soft: #858585;
+  --color-stone: #969696;
+  --color-stone-light: #858585;
+
+  --color-rule: #1f1f1f;
+  --color-rule-heavy: #2a2a2a;
+
+  --color-forest: #2d5a3f;
+  --color-forest-bright: #3d7a54;
+  --color-teal: #0d9488;
+  --color-teal-bright: #14b8a6;
+  --color-teal-wash: rgba(20, 184, 166, 0.06);
+  --color-indigo: #5b6fe6;
+  --color-indigo-wash: rgba(91, 111, 230, 0.06);
+  --color-violet: #8b5cf6;
+  --color-violet-wash: rgba(139, 92, 246, 0.08);
+  --color-sky: #365faa;
+  --color-sky-wash: #eef2ff;
+  --color-sky-soft: #8b9fd4;
+  --color-plum: #5a3fa0;
+  --color-plum-wash: #f3f0ff;
+  --color-plum-soft: #8b7bbd;
+  --color-rust: #8c4a10;
+  --color-rust-wash: #fef3e8;
+  --color-rust-soft: #b87a4a;
+  --color-emerald: #1a8060;
+  --color-emerald-wash: #e6f5f0;
+  --color-emerald-soft: #4a9e80;
+
+  --color-amber: #d4a43a;
+  --color-amber-wash: rgba(245, 158, 11, 0.06);
+  --color-red: #ef4444;
+  --color-red-wash: rgba(239, 68, 68, 0.06);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 3px 8px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* ── Typography ───────────────────────────────────────────────────── */
+:root {
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+
+  --text-xs: 0.75rem; /* 12px */
+  --text-sm: 0.8125rem; /* 13px */
+  --text-base: 0.875rem; /* 14px */
+  --text-md: 1rem; /* 16px */
+  --text-lg: 1.125rem; /* 18px */
+  --text-xl: clamp(1.5rem, 3.2vw, 2rem); /* 24-32px */
+  --text-2xl: clamp(1.75rem, 4vw, 2.5rem);
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.6;
+
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.04em;
+  --tracking-wider: 0.08em;
+  --tracking-widest: 0.14em;
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-black: 800;
+}
+
+/* ── Spacing ──────────────────────────────────────────────────────── */
+:root {
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+}
+
+/* ── Radii ────────────────────────────────────────────────────────── */
+:root {
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+}
+
+/* ── Motion ───────────────────────────────────────────────────────── */
+:root {
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-io: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --dur-fast: 80ms;
+  --dur-normal: 150ms;
+  --dur-slow: 300ms;
+  --dur-slower: 500ms;
+
+  --transition-fast: var(--dur-fast) var(--ease-io);
+  --transition: var(--dur-normal) var(--ease-out);
+  --transition-slow: var(--dur-slow) var(--ease-out);
+
+  /* reduced-motion is handled in enhancements.css */
+}
+
+/* ── Z-Scale ──────────────────────────────────────────────────────── */
+:root {
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+}
+
+/* ── Focus ────────────────────────────────────────────────────────── */
+:root {
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-color: var(--color-forest);
+  --color-primary: var(--color-teal);
+  --radius-full: 999px;
+}
+
+/* ── Status colors (semantic) ─────────────────────────────────────── */
+:root {
+  --status-running-bg: var(--color-teal-wash);
+  --status-running-text: var(--color-teal);
+  --status-ok-bg: var(--color-teal-wash);
+  --status-ok-text: var(--color-teal);
+  --status-warn-bg: var(--color-amber-wash);
+  --status-warn-text: var(--color-amber);
+  --status-error-bg: var(--color-red-wash);
+  --status-error-text: var(--color-red);
+}
+
+[data-theme="dark"] {
+  --status-running-bg: rgba(20, 184, 166, 0.1);
+  --status-running-text: var(--color-teal-bright);
+  --status-ok-bg: rgba(20, 184, 166, 0.1);
+  --status-ok-text: var(--color-teal-bright);
+  --status-warn-bg: rgba(245, 158, 11, 0.1);
+  --status-warn-text: var(--color-amber);
+  --status-error-bg: rgba(239, 68, 68, 0.1);
+  --status-error-text: #fca5a5;
+}
+
+/* ── Risk colors (semantic) ───────────────────────────────────────── */
+:root {
+  --risk-critical-bg: var(--color-red-wash);
+  --risk-critical-text: var(--color-red);
+  --risk-critical-rule: rgba(181, 45, 34, 0.2);
+  --risk-high-bg: var(--color-amber-wash);
+  --risk-high-text: var(--color-amber);
+  --risk-high-rule: rgba(249, 115, 22, 0.2);
+  --risk-medium-bg: rgba(212, 164, 58, 0.06);
+  --risk-medium-text: var(--color-amber);
+  --risk-medium-rule: rgba(234, 179, 8, 0.2);
+  --risk-low-bg: var(--color-teal-wash);
+  --risk-low-text: var(--color-teal);
+  --risk-low-rule: rgba(10, 125, 110, 0.2);
+}
+
+[data-theme="dark"] {
+  --risk-critical-bg: rgba(239, 68, 68, 0.1);
+  --risk-critical-text: var(--color-red);
+  --risk-critical-rule: rgba(239, 68, 68, 0.2);
+  --risk-high-bg: #fef3e6;
+  --risk-high-text: #c2410c;
+  --risk-high-rule: rgba(249, 115, 22, 0.2);
+  --risk-medium-bg: var(--color-amber-wash);
+  --risk-medium-text: var(--color-amber);
+  --risk-medium-rule: rgba(234, 179, 8, 0.2);
+  --risk-low-bg: var(--color-teal-wash);
+  --risk-low-text: var(--color-teal);
+  --risk-low-rule: rgba(20, 184, 166, 0.2);
+}
+
+/* ── Sizing tokens ────────────────────────────────────────────────── */
+:root {
+  --topbar-h: 56px;
+  --max-width: min(1200px, calc(100% - 40px));
+  --min-tap: 44px;
+}
+
+/* ── Deprecated aliases (keep for migration safety) ───────────────── */
+:root {
+  --page: var(--color-page);
+  --surface: var(--color-surface);
+  --surface-alt: var(--color-surface-alt);
+  --panel-2: var(--color-surface-2);
+  --bg-2: var(--color-bg-2);
+  --rule: var(--color-rule);
+  --rule-heavy: var(--color-rule-heavy);
+  --text: var(--color-text);
+  --text-soft: var(--color-text-soft);
+  --ink: var(--color-ink);
+  --stone: var(--color-stone);
+  --stone-light: var(--color-stone-light);
+  --forest: var(--color-forest);
+  --forest-bright: var(--color-forest-bright);
+  --teal: var(--color-teal);
+  --teal-bright: var(--color-teal-bright);
+  --teal-wash: var(--color-teal-wash);
+  --amber: var(--color-amber);
+  --amber-wash: var(--color-amber-wash);
+  --red: var(--color-red);
+  --red-wash: var(--color-red-wash);
+  --red-deep: var(--color-red-deep);
+  --indigo: var(--color-indigo);
+  --indigo-wash: var(--color-indigo-wash);
+  --violet: var(--color-violet);
+  --violet-wash: var(--color-violet-wash);
+  --sky: var(--color-sky);
+  --sky-wash: var(--color-sky-wash);
+  --sky-soft: var(--color-sky-soft);
+  --plum: var(--color-plum);
+  --plum-wash: var(--color-plum-wash);
+  --plum-soft: var(--color-plum-soft);
+  --rust: var(--color-rust);
+  --rust-wash: var(--color-rust-wash);
+  --rust-soft: var(--color-rust-soft);
+  --emerald: var(--color-emerald);
+  --emerald-wash: var(--color-emerald-wash);
+  --emerald-soft: var(--color-emerald-soft);
+  --bg: var(--color-bg);
+  --panel: var(--color-surface);
+  --line: var(--color-rule);
+  --line-strong: var(--color-rule-heavy);
+  --muted: var(--color-muted);
+  --muted-soft: var(--color-muted-soft);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --radius: var(--radius-md);
+  --radius-sm: var(--radius-sm);
+  --transition: var(--transition);
+  --transition-fast: var(--transition-fast);
+}

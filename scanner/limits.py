@@ -5,7 +5,7 @@ import stat
 try:
     import resource
 except ImportError:  # Windows has no stdlib resource module.
-    resource = None
+    resource = None  # type: ignore[assignment]
 
 
 def positive_int(name: str, default: int, maximum: int) -> int:
@@ -38,7 +38,7 @@ def scan_duration_budget_ms() -> int:
 
 def scan_memory_budget_mb() -> int:
     """Approximate RSS memory ceiling for a scan process. 0 means unlimited."""
-    return nonnegative_int('ECDAT_SCAN_MEMORY_BUDGET_MB', 0, 4096)
+    return nonnegative_int('ECDAT_SCAN_MEMORY_BUDGET_MB', 512, 4096)
 
 
 def check_memory_budget() -> str | None:
@@ -49,7 +49,7 @@ def check_memory_budget() -> str | None:
     try:
         if resource is None:
             return None
-        usage = resource.getrusage(resource.RUSAGE_SELF)
+        usage = resource.getrusage(resource.RUSAGE_SELF)  # type: ignore[attr-defined]
         rss_kb = usage.ru_maxrss
         rss_mb = rss_kb / 1024
         if rss_mb > budget:
@@ -73,5 +73,5 @@ def read_bytes(path: str) -> bytes:
     return data
 
 
-def read_text(path: str, errors='strict') -> str:
+def read_text(path: str, errors: str = "strict") -> str:
     return read_bytes(path).decode('utf-8', errors=errors)

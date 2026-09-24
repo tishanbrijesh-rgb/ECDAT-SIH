@@ -1,0 +1,7 @@
+{
+  "file": "ecdsa.java",
+  "expected_assets": [
+    {"algorithm": "ECDSA", "usage": "signature", "category": "signature"},
+    {"algorithm": "SHA-256", "usage": "hashing", "category": "hash"}
+  ]
+}

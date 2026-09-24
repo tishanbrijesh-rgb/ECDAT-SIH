@@ -13,7 +13,6 @@ from cryptography.utils import CryptographyDeprecationWarning
 
 from scanner.collectors.cert_collector import CertCollector
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 VALID_CERTIFICATE = PROJECT_ROOT / "test-repo" / "certs" / "server.crt"
 
@@ -51,10 +50,9 @@ class CertificateCollectorTests(unittest.TestCase):
             with patch(
                 "scanner.collectors.cert_collector.x509.load_pem_x509_certificate",
                 side_effect=load_with_first_block_warning,
-            ):
-                with warnings.catch_warnings(record=True) as emitted:
-                    warnings.simplefilter("always")
-                    assets = CertCollector().scan_cert(str(path), on_error=failures.append)
+            ), warnings.catch_warnings(record=True) as emitted:
+                warnings.simplefilter("always")
+                assets = CertCollector().scan_cert(str(path), on_error=failures.append)
 
         self.assertEqual(len(assets), 1)
         self.assertEqual(failures, [str(path)])

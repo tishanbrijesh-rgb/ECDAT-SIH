@@ -1,0 +1,6 @@
+{
+  "file": "ed25519.py",
+  "expected_assets": [
+    {"algorithm": "Ed25519", "usage": "signature", "category": "signature"}
+  ]
+}

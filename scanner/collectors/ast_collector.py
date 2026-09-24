@@ -8,8 +8,8 @@ from __future__ import annotations
 import ast
 import os
 
-from scanner.models.asset import CryptoAsset
 from scanner.limits import read_text
+from scanner.models.asset import CryptoAsset
 from scanner.rules.crypto_patterns import get_category
 
 # ---------------------------------------------------------------------------
@@ -35,15 +35,49 @@ _CRYPTO_IMPORTS: dict[str, str] = {
     "cryptography.hazmat.primitives.ciphers": "AES",
     "cryptography.hazmat.primitives.ciphers.modes": "AES",
     "cryptography.hazmat.primitives.ciphers.algorithms": "AES",
+    "cryptography.hazmat.primitives.ciphers.aead.ChaCha20Poly1305": "ChaCha20",
+    "cryptography.hazmat.primitives.ciphers.algorithms.ChaCha20Cipher": "ChaCha20",
     "cryptography.hazmat.primitives.asymmetric.rsa": "RSA",
     "cryptography.hazmat.primitives.asymmetric.ec": "ECDSA",
     "cryptography.hazmat.primitives.asymmetric.padding": "RSA",
     "cryptography.hazmat.primitives.asymmetric.ed25519": "Ed25519",
     "cryptography.hazmat.primitives.kdf": "KDF",
-    # ssl / cryptography.x509
+    "cryptography.hazmat.primitives.kdf.pbkdf2": "PBKDF2",
+    "cryptography.hazmat.primitives.kdf.scrypt": "scrypt",
+    "cryptography.hazmat.primitives.kdf.hkdf": "HKDF",
+    "cryptography.fernet": "AES",
+    # ssl / x509
     "ssl": "TLS",
     "cryptography.x509": "X509",
 }
+
+# AES mode constants for cipher construction detection.
+# Maps the attribute suffix (MODE_*) to a normalized mode name.
+_AES_MODES: dict[str, str] = {
+    "MODE_GCM": "GCM",
+    "MODE_CBC": "CBC",
+    "MODE_ECB": "ECB",
+    "MODE_CTR": "CTR",
+    "MODE_EAX": "EAX",
+    "MODE_OCB": "OCB",
+    "MODE_CFB": "CFB",
+    "MODE_OFB": "OFB",
+}
+
+
+def _extract_aes_mode(node: ast.Call) -> str | None:
+    """Return the AES mode name from AES.new(key, mode) arguments, or None."""
+    # Positional: AES.new(key, AES.MODE_GCM)
+    if len(node.args) >= 2:
+        mode_arg = node.args[1]
+        if isinstance(mode_arg, ast.Attribute) and mode_arg.attr in _AES_MODES:
+            return _AES_MODES[mode_arg.attr]
+    # Keyword: AES.new(key, mode=AES.MODE_GCM)
+    for kw in node.keywords:
+        if kw.arg == "mode" and isinstance(kw.value, ast.Attribute):
+            if kw.value.attr in _AES_MODES:
+                return _AES_MODES[kw.value.attr]
+    return None
 
 class _CryptoVisitor(ast.NodeVisitor):
     """Walks AST nodes and records crypto-related findings."""
@@ -167,8 +201,12 @@ class _CryptoVisitor(ast.NodeVisitor):
         evidence = {
             "import": full_name,
             "node_type": type(node).__name__,
-            "line": line_no,
         }
+        confidence_reasons = [
+            {"source": "ast", "evidence_kind": "declared_capability",
+             "base": 0.50, "bonus": 0.0, "penalty": 0.0,
+             "note": "import only; no confirmed operation"}
+        ]
         self.assets.append(
             CryptoAsset(
                 algorithm=algo,
@@ -176,11 +214,16 @@ class _CryptoVisitor(ast.NodeVisitor):
                 source="ast",
                 location=self.filepath,
                 evidence=evidence,
-                confidence=0.90,
+                confidence=0.50,
+                evidence_kind="declared_capability",
+                parser_version="ast-v3",
+                span={"file": self.filepath, "line_start": line_no,
+                      "line_end": line_no, "column_start": 1, "column_end": 1},
+                confidence_reasons=confidence_reasons,
             )
         )
 
-    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:  # noqa: N802
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         if node.module is not None and node.level == 0:
             full_name = node.module
             self._record_import(full_name, node, node.lineno)
@@ -194,7 +237,7 @@ class _CryptoVisitor(ast.NodeVisitor):
                 self.bindings[alias.asname or alias.name] = None
         self.generic_visit(node)
 
-    def visit_Import(self, node: ast.Import) -> None:  # noqa: N802
+    def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
             self.bindings[alias.asname or alias.name.split('.')[0]] = (
                 alias.name if alias.asname else alias.name.split('.')[0])
@@ -203,47 +246,83 @@ class _CryptoVisitor(ast.NodeVisitor):
 
     # ---- call handling -----------------------------------------------------
 
-    def visit_Call(self, node: ast.Call) -> None:  # noqa: N802
-        func_name = self._resolve(node.func)
+    def _hashlib_call(self, node: ast.Call, func_name: str):
         hashes = {"sha256": "SHA-256", "sha512": "SHA-512", "sha1": "SHA-1",
                   "md5": "MD5", "blake2b": "BLAKE2", "blake2s": "BLAKE2"}
-        algorithm = None
-        category, usage = "hash", "hashing"
-        if func_name.startswith("hashlib."):
-            name = func_name.removeprefix("hashlib.")
-            if name == "new":
-                selector = node.args[0] if node.args else next(
-                    (kw.value for kw in node.keywords if kw.arg == "name"), None)
-                if isinstance(selector, ast.Constant) and isinstance(selector.value, str):
-                    name = selector.value.lower().replace("-", "")
-            algorithm = hashes.get(name)
-        elif func_name.startswith("cryptography.hazmat.primitives.hashes."):
-            algorithm = hashes.get(func_name.rsplit('.', 1)[-1].lower())
-        elif func_name in {"hmac.new", "hmac.digest"}:
-            selector = node.args[2] if len(node.args) > 2 else next(
-                (kw.value for kw in node.keywords if kw.arg in {"digestmod", "digest"}), None)
+        name = func_name.removeprefix("hashlib.")
+        if name == "new":
+            selector = node.args[0] if node.args else next(
+                (kw.value for kw in node.keywords if kw.arg == "name"), None)
             if isinstance(selector, ast.Constant) and isinstance(selector.value, str):
-                algorithm = hashes.get(selector.value.lower().replace('-', ''))
-            elif selector is not None:
-                resolved = self._resolve(selector)
-                if resolved.startswith('hashlib.'):
-                    algorithm = hashes.get(resolved.removeprefix('hashlib.'))
-            if algorithm is None:
-                # HMAC is known even when its configurable digest is not.
-                algorithm, category, usage = "HMAC", "mac", "unknown"
-        elif func_name in {
-            "cryptography.hazmat.primitives.asymmetric.padding.OAEP",
-            "cryptography.hazmat.primitives.asymmetric.padding.PKCS1v15",
-            "Crypto.Cipher.PKCS1_OAEP.new",
-        }:
-            algorithm, category, usage = "RSA", "encryption", "unknown"
+                name = selector.value.lower().replace("-", "")
+        if name == "pbkdf2_hmac":
+            return "PBKDF2", "kdf", "key_derivation", None
+        return hashes.get(name), "hash", "hashing", None
+
+    def _hmac_call(self, node: ast.Call):
+        hashes = {"sha256": "SHA-256", "sha512": "SHA-512", "sha1": "SHA-1",
+                  "md5": "MD5", "blake2b": "BLAKE2", "blake2s": "BLAKE2"}
+        selector = node.args[2] if len(node.args) > 2 else next(
+            (kw.value for kw in node.keywords if kw.arg in {"digestmod", "digest"}), None)
+        digest_algorithm = None
+        if isinstance(selector, ast.Constant) and isinstance(selector.value, str):
+            digest_algorithm = hashes.get(selector.value.lower().replace('-', ''))
+        elif selector is not None:
+            resolved = self._resolve(selector)
+            if resolved.startswith('hashlib.'):
+                digest_algorithm = hashes.get(resolved.removeprefix('hashlib.'))
+        return "HMAC", "mac", "unknown", digest_algorithm
+
+    def _classify_call(self, node: ast.Call, func_name: str):
+        if func_name.startswith("hashlib."):
+            return self._hashlib_call(node, func_name)
+        if func_name.startswith("cryptography.hazmat.primitives.hashes."):
+            hashes = {"sha256": "SHA-256", "sha512": "SHA-512", "sha1": "SHA-1",
+                      "md5": "MD5", "blake2b": "BLAKE2", "blake2s": "BLAKE2"}
+            return hashes.get(func_name.rsplit('.', 1)[-1].lower()), "hash", "hashing", None
+        if func_name in {"hmac.new", "hmac.digest"}:
+            return self._hmac_call(node)
+        classifications = {
+            "cryptography.hazmat.primitives.asymmetric.padding.OAEP": ("RSA", "encryption", "encryption"),
+            "cryptography.hazmat.primitives.asymmetric.padding.PKCS1v15": ("RSA", "encryption", "encryption"),
+            "Crypto.Cipher.PKCS1_OAEP.new": ("RSA", "encryption", "encryption"),
+            "cryptography.hazmat.primitives.ciphers.aead.ChaCha20Poly1305.new": ("ChaCha20", "encryption", "encryption"),
+            "cryptography.hazmat.primitives.kdf.pbkdf2.PBKDF2HMAC": ("PBKDF2", "kdf", "key_derivation"),
+            "cryptography.hazmat.primitives.kdf.scrypt.Scrypt": ("scrypt", "kdf", "key_derivation"),
+            "cryptography.hazmat.primitives.kdf.hkdf.HKDF": ("HKDF", "kdf", "key_derivation"),
+            "cryptography.hazmat.primitives.asymmetric.ec.generate_private_key": ("ECDSA", "signature", "key_generation"),
+            "cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey.from_private_bytes": ("Ed25519", "signature", "key_generation"),
+            "cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey.generate": ("Ed25519", "signature", "key_generation"),
+            "ssl.SSLContext": ("TLS", "protocol", "tls"),
+            "cryptography.fernet.Fernet": ("AES", "encryption", "encryption"),
+        }
+        if func_name in classifications:
+            return *classifications[func_name], None
+        if (func_name.endswith(".AES.new") or func_name == "AES.new") and _extract_aes_mode(node):
+            return "AES", "encryption", "encryption", None
+        return None, "hash", "hashing", None
+
+    def visit_Call(self, node: ast.Call) -> None:
+        func_name = self._resolve(node.func)
+        algorithm, category, usage, digest_algorithm = self._classify_call(node, func_name)
         if algorithm:
+            line_end = max((getattr(n, 'lineno', node.lineno) for n in ast.walk(node)
+                           if hasattr(n, 'lineno')), default=node.lineno)
             self.assets.append(CryptoAsset(
                 algorithm=algorithm, category=category, source="ast",
                 location=self.filepath, confidence=0.90,
-                evidence={"call": func_name, "line": node.lineno,
-                          "column": node.col_offset, "usage": usage,
-                          "operation_id": f"python-call:{node.lineno}:{node.col_offset}"},
+                evidence={"call": func_name, "usage": usage,
+                          **({"digest_algorithm": digest_algorithm} if digest_algorithm else {})},
+                evidence_kind="observed_operation",
+                parser_version="ast-v3",
+                span={"file": self.filepath, "line_start": node.lineno,
+                      "line_end": line_end, "column_start": node.col_offset,
+                      "column_end": getattr(node, 'end_col_offset', node.col_offset + 1)},
+                confidence_reasons=[
+                    {"source": "ast", "evidence_kind": "observed_operation",
+                     "base": 0.90, "bonus": 0.0, "penalty": 0.0,
+                     "note": "direct call site confirmed in source"}
+                ],
             ))
         self.generic_visit(node)
 

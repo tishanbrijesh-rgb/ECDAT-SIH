@@ -7,10 +7,9 @@ into test-repo/certs/. Run this once before scanning.
 import os
 
 from cryptography import x509
-from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa, ec
-
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
+from cryptography.x509.oid import NameOID
 
 _CERTS_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -20,7 +19,7 @@ os.makedirs(_CERTS_DIR, exist_ok=True)
 
 
 def _make_rsa_cert() -> bytes:
-    key = rsa.generate_private_key(key_size=2048)
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     subject = issuer = x509.Name([
         x509.NameAttribute(NameOID.COUNTRY_NAME, "IN"),
         x509.NameAttribute(NameOID.ORGANIZATION_NAME, "ECDAT Demo"),
@@ -32,9 +31,9 @@ def _make_rsa_cert() -> bytes:
         .issuer_name(issuer)
         .public_key(key.public_key())
         .serial_number(x509.random_serial_number())
-        .not_valid_before(x509.CertificateBuilder._now())
+        .not_valid_before(x509.CertificateBuilder._now())  # type: ignore[attr-defined]
         .not_valid_after(
-            x509.CertificateBuilder._now().replace(year=2030)
+            x509.CertificateBuilder._now().replace(year=2030)  # type: ignore[attr-defined]
         )
         .add_extension(
             x509.SubjectAlternativeName([x509.DNSName("localhost")]),
@@ -58,9 +57,9 @@ def _make_ecdsa_cert() -> bytes:
         .issuer_name(issuer)
         .public_key(key.public_key())
         .serial_number(x509.random_serial_number())
-        .not_valid_before(x509.CertificateBuilder._now())
+        .not_valid_before(x509.CertificateBuilder._now())  # type: ignore[attr-defined]
         .not_valid_after(
-            x509.CertificateBuilder._now().replace(year=2030)
+            x509.CertificateBuilder._now().replace(year=2030)  # type: ignore[attr-defined]
         )
         .sign(key, hashes.SHA256())
     )

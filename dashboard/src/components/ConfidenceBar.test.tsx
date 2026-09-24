@@ -4,9 +4,9 @@ import { ConfidenceBar } from "./ConfidenceBar";
 
 describe("ConfidenceBar", () => {
   it.each([
-    [0.92, "92% confidence", "conf-high"],
-    [0.67, "67% confidence", "conf-mid"],
-    [0.3, "30% confidence", "conf-low"],
+    [0.92, "92% evidence confidence", "conf-high"],
+    [0.67, "67% evidence confidence", "conf-mid"],
+    [0.3, "30% evidence confidence", "conf-low"],
   ])("presents %s as a labelled severity band", (confidence, label, band) => {
     const { container } = render(<ConfidenceBar confidence={confidence as number} />);
     expect(screen.getByText(label as string)).toBeVisible();

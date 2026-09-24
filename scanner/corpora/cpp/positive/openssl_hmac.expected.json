@@ -1,0 +1,6 @@
+{
+  "file": "openssl_hmac.c",
+  "expected_assets": [
+    {"algorithm": "HMAC", "usage": "mac", "category": "mac"}
+  ]
+}

@@ -13,8 +13,8 @@ import tempfile
 from collections import defaultdict
 from pathlib import Path, PureWindowsPath
 
-from scanner.main import scan_with_metrics
 from backend.services.correlator import correlate
+from scanner.main import scan_with_metrics
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -101,7 +101,8 @@ def compare(expected, actual):
         actual_pools[(item['file'], item['line'], item['algorithm'])].append(item)
     tp = fp = usage_ok = key_ok = metadata_pair_ok = known_keys = known_keys_ok = 0
     missed, unexpected = [], []
-    for identity in sorted(expected_pools.keys() | actual_pools.keys()):
+    identities = expected_pools.keys() | actual_pools.keys()
+    for identity in sorted(identities, key=_item_key):
         labels = sorted(expected_pools[identity], key=_item_key)
         findings = sorted(actual_pools[identity], key=_item_key)
         pairs, missed_indices, unexpected_indices = _joint_pairs(labels, findings)
@@ -223,8 +224,13 @@ def _stage_source(source, directory):
 
 
 def _finding_line(finding):
-    lines = {item.get('evidence', {}).get('line') for item in finding['evidence_list']
-             if item.get('evidence', {}).get('line') is not None}
+    lines = set()
+    for item in finding['evidence_list']:
+        line = (item.get('span') or {}).get('line_start')
+        if line is None:
+            line = item.get('evidence', {}).get('line')
+        if line is not None:
+            lines.add(line)
     return next(iter(lines)) if len(lines) == 1 else None
 
 

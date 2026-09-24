@@ -1,0 +1,6 @@
+{
+  "file": "static_import.java",
+  "expected_assets": [
+    {"algorithm": "SHA-256", "usage": "hashing", "category": "hash"}
+  ]
+}

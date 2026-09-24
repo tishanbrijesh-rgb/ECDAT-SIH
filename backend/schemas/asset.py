@@ -1,7 +1,8 @@
 """Pydantic schemas for API serialization."""
 from __future__ import annotations
-from pathlib import PurePosixPath
+
 from datetime import datetime
+from pathlib import PurePosixPath
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -55,6 +56,13 @@ class AssetCreate(BaseModel):
     risk_reasons: list[str] = Field(default_factory=list)
     hybrid_recommended: bool = False
     logical_asset_id: str = ""
+    evidence_kind: str = "unknown"
+    parser_version: str = ""
+    evidence_quality: str = "unknown"
+    confirmed_use: bool = False
+    capability_only: bool = False
+    span: dict[str, Any] | None = Field(default=None)
+    confidence_reasons: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class AssetResponse(BaseModel):
@@ -88,7 +96,15 @@ class AssetResponse(BaseModel):
     risk_reasons: list[str]
     hybrid_recommended: bool
     logical_asset_id: str
+    evidence_kind: str = "unknown"
+    parser_version: str = ""
+    evidence_quality: str = "unknown"
+    confirmed_use: bool = False
+    capability_only: bool = False
+    span: dict[str, Any] = Field(default_factory=dict)
+    confidence_reasons: list[dict[str, Any]] = Field(default_factory=list)
     created_at: datetime
+    risk_context_provenance: dict[str, str] = Field(default_factory=dict)
 
     @field_validator("evidence_json")
     @classmethod
@@ -123,7 +139,7 @@ class ScanJobResponse(BaseModel):
     failed_files: int = 0
     coverage_pct: float = 0.0
     duration_ms: int = 0
-    collector_stats: dict[str, int] = Field(default_factory=dict)
+    collector_stats: dict[str, int | str] = Field(default_factory=dict)
     blind_spots: list[str] = Field(default_factory=list)
     failures: list[ScanFailure] = Field(default_factory=list)
 
@@ -153,5 +169,8 @@ class DashboardSummary(BaseModel):
     risk_distribution: dict[str, int]
     quantum_vulnerable_count: int = 0
     conflict_count: int = 0
+    confirmed_use_count: int = 0
+    capability_only_count: int = 0
     latest_scan_id: int | None = None
-    collector_stats: dict[str, int] = Field(default_factory=dict)
+    collector_stats: dict[str, int | str] = Field(default_factory=dict)
+    confidence_distribution: dict[str, int] = Field(default_factory=dict)

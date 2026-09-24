@@ -1,20 +1,63 @@
 // Scan detail — full job metrics, evidence summary, asset breakdown.
 import { useState, useEffect, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
-import { motion } from "framer-motion";
-import { getScanDetail, downloadCsv, subscribeScanEvents } from "../api/client";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { getScanDetail, downloadCsv, subscribeScanEvents, getScans } from "../api/client";
 import { RiskBadge } from "../components/RiskBadge";
 import { formatDate } from "../utils/format";
 import type { ScanDetail } from "../types";
 
-// ── Stagger variants ───────────────────────────────────────────
-const staggerContainer = {
-  animate: { transition: { staggerChildren: 0.05, delayChildren: 0.05 } },
-};
-const staggerItem = {
-  initial: { opacity: 0, y: 10 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] } },
-};
+export type AssetRiskFilter = "all" | "critical" | "high" | "conflict" | "quantum";
+
+const SCAN_ASSET_FILTERS: {
+  key: AssetRiskFilter;
+  label: string;
+}[] = [
+  { key: "all", label: "All" },
+  { key: "critical", label: "Critical" },
+  { key: "high", label: "High" },
+  { key: "conflict", label: "Conflicts" },
+  { key: "quantum", label: "Quantum" },
+];
+
+function ScanAssetFilters({
+  active,
+  onChange,
+  counts,
+  total,
+}: {
+  active: AssetRiskFilter;
+  onChange: (v: AssetRiskFilter) => void;
+  counts: Record<string, number>;
+  total: number;
+}) {
+  return (
+    <div className="scan-asset-filters" role="group" aria-label="Filter scan assets">
+      {SCAN_ASSET_FILTERS.map((f) => {
+        const count =
+          f.key === "all"
+            ? total
+            : f.key === "critical"
+              ? counts.critical
+              : f.key === "high"
+                ? counts.high
+                : f.key === "conflict"
+                  ? counts.conflict
+                  : counts.quantum;
+        return (
+          <button
+            key={f.key}
+            className={`scan-asset-filter-btn${active === f.key ? " active" : ""}`}
+            onClick={() => onChange(f.key)}
+            aria-pressed={active === f.key}
+          >
+            {f.label} ({count})
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function formatDuration(ms: number): string {
   if (ms < 1000) return `${ms} ms`;
@@ -47,6 +90,43 @@ export default function ScanDetailPage() {
   const [detail, setDetail] = useState<ScanDetail | null>(null);
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
+
+  const [assetRiskFilter, setAssetRiskFilter] = useState<AssetRiskFilter>("all");
+  const [previousScans, setPreviousScans] = useState<ScanDetail[]>([]);
+
+  useEffect(() => {
+    if (!id) return;
+    const numericId = Number(id);
+    getScans()
+      .then((scans) => {
+        const completed = scans
+          .filter((s) => s.status === "completed" && s.id !== numericId)
+          .sort((a, b) => b.id - a.id);
+        if (completed.length > 0) {
+          getScanDetail(completed[0].id).then((d) => setPreviousScans([d]));
+        }
+      })
+      .catch(() => {});
+  }, [id]);
+
+  const prev = previousScans[0];
+
+  const trends = useMemo(() => {
+    if (!detail || !prev) return null;
+    const prevAssets = prev.assets_found || 0;
+    const prevConflicts = prev.summary.conflict_count;
+    const prevQuantum = prev.summary.quantum_vulnerable_count;
+    const prevCoverage = prev.coverage_pct || 0;
+    const prevConfidence = prev.avg_confidence ?? 0;
+
+    return {
+      assets: detail.assets_found - prevAssets,
+      coverage: detail.coverage_pct - prevCoverage,
+      confidence: (detail.avg_confidence ?? 0) - prevConfidence,
+      conflicts: detail.summary.conflict_count - prevConflicts,
+      quantum: detail.summary.quantum_vulnerable_count - prevQuantum,
+    };
+  }, [detail, prev]);
 
   useEffect(() => {
     setDetail(null);
@@ -114,18 +194,41 @@ export default function ScanDetailPage() {
     return () => {
       cancelled = true;
       unsubscribe?.();
+      setAssetRiskFilter("all");
     };
   }, [id]);
 
-  const riskCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    detail?.assets.forEach((asset) => {
-      counts[asset.priority_label] = (counts[asset.priority_label] || 0) + 1;
+  const riskCounts = detail?.summary.risk_distribution ?? {
+    CRITICAL: 0,
+    HIGH: 0,
+    MEDIUM: 0,
+    LOW: 0,
+  };
+
+  const hasMoreAssets = detail ? detail.assets_total > detail.assets.length : false;
+
+  const assetRiskCounts = useMemo(() => {
+    if (!detail) return { critical: 0, high: 0, conflict: 0, quantum: 0 };
+    const counts: Record<string, number> = { critical: 0, high: 0, conflict: 0, quantum: 0 };
+    detail.assets.forEach((a) => {
+      if (a.priority_label === "CRITICAL") counts.critical++;
+      if (a.priority_label === "HIGH") counts.high++;
+      if (a.conflict) counts.conflict++;
+      if (a.quantum_vulnerable) counts.quantum++;
     });
     return counts;
   }, [detail?.assets]);
 
-  const hasMoreAssets = detail ? detail.assets_total > detail.assets.length : false;
+  const filteredAssets = useMemo(() => {
+    if (!detail || assetRiskFilter === "all") return detail?.assets ?? [];
+    return (detail?.assets ?? []).filter((a) => {
+      if (assetRiskFilter === "critical") return a.priority_label === "CRITICAL";
+      if (assetRiskFilter === "high") return a.priority_label === "HIGH";
+      if (assetRiskFilter === "conflict") return a.conflict;
+      if (assetRiskFilter === "quantum") return a.quantum_vulnerable;
+      return true;
+    });
+  }, [detail?.assets, assetRiskFilter]);
 
   const handleExport = async () => {
     if (!detail) return;
@@ -178,7 +281,7 @@ export default function ScanDetailPage() {
   }
 
   return (
-    <>
+    <div className="scan-detail-page">
       <section className="hero compact">
         <div>
           <p className="eyebrow">Scan detail</p>
@@ -202,130 +305,131 @@ export default function ScanDetailPage() {
         </div>
       </section>
 
-      <motion.section
-        className="stats six"
-        variants={staggerContainer}
-        initial="initial"
-        animate="animate"
-      >
-        <motion.div variants={staggerItem}>
-          <Stat label="Assets found" value={detail.assets_found} tone="blue" />
-        </motion.div>
-        <motion.div variants={staggerItem}>
-          <Stat label="Scanned" value={detail.scanned_files} tone="teal" />
-        </motion.div>
-        <motion.div variants={staggerItem}>
-          <Stat label="Coverage" value={`${detail.coverage_pct}%`} tone="teal" />
-        </motion.div>
-        <motion.div variants={staggerItem}>
-          <Stat
-            label="Confidence"
+      <section className="stats six">
+        <div>
+          <StatWithTrend
+            label="Assets found"
+            value={detail.assets_found}
+            trend={trends?.assets}
+            filter="critical"
+            scanId={id ? Number(id) : undefined}
+          />
+        </div>
+        <div>
+          <StatWithTrend label="Scanned" value={detail.scanned_files} tone="teal" />
+        </div>
+        <div>
+          <StatWithTrend
+            label="Supported-file coverage"
+            value={`${detail.coverage_pct}%`}
+            trend={trends?.coverage}
+            suffix="%"
+            tone="teal"
+            scanId={id ? Number(id) : undefined}
+          />
+        </div>
+        <div>
+          <StatWithTrend
+            label="Avg evidence confidence"
             value={`${detail.avg_confidence ? Math.round(detail.avg_confidence * 100) : 0}%`}
             tone={detail.avg_confidence != null && detail.avg_confidence >= 0.8 ? "teal" : "amber"}
           />
-        </motion.div>
-        <motion.div variants={staggerItem}>
-          <Stat
+        </div>
+        <div>
+          <StatWithTrend
             label="Conflicts"
-            value={detail.assets.filter((a) => a.conflict).length}
+            value={detail.summary.conflict_count}
+            trend={trends?.conflicts}
+            filter="conflict"
             tone="red"
+            scanId={id ? Number(id) : undefined}
           />
-        </motion.div>
-        <motion.div variants={staggerItem}>
-          <Stat
+        </div>
+        <div>
+          <StatWithTrend
             label="Quantum exposed"
-            value={detail.assets.filter((a) => a.quantum_vulnerable).length}
+            value={detail.summary.quantum_vulnerable_count}
+            trend={trends?.quantum}
+            filter="quantum"
             tone="amber"
+            scanId={id ? Number(id) : undefined}
           />
-        </motion.div>
-      </motion.section>
+        </div>
+      </section>
 
-      <motion.section
-        className="dashboard-grid"
-        variants={staggerContainer}
-        initial="initial"
-        animate="animate"
-      >
-        <motion.article
-          className="panel"
-          variants={staggerItem}
-          initial="initial"
-          animate="animate"
-        >
+      <section className="scan-analytics-grid">
+        <article className="panel scan-job-panel">
           <div className="panel-title">
             <h2>Job metrics</h2>
             <p>Scan execution details</p>
           </div>
           <div className="scan-detail-facts">
-            <Fact label="Repository" value={detail.repo_path} />
+            <div className="scan-fact scan-fact--wide">
+              <span className="scan-fact-label">Repository</span>
+              <span className="scan-fact-value path">{detail.repo_path}</span>
+            </div>
             <Fact label="Status" value={detail.status} />
             <Fact label="Duration" value={formatDuration(detail.duration_ms)} />
-            <Fact label="Total files" value={String(detail.total_files)} />
-            <Fact label="In scope" value={String(detail.in_scope_files)} />
-            <Fact label="Scanned" value={String(detail.scanned_files)} />
-            <Fact label="Failed" value={String(detail.failed_files)} />
+            <Fact label="Discovered" value={detail.total_files.toLocaleString()} />
+            <Fact label="Eligible" value={detail.in_scope_files.toLocaleString()} />
+            <Fact label="Successful" value={detail.scanned_files.toLocaleString()} />
+            <Fact label="Failed" value={detail.failed_files.toLocaleString()} />
             {detail.started_at && <Fact label="Started" value={formatDate(detail.started_at)} />}
             {detail.finished_at && <Fact label="Finished" value={formatDate(detail.finished_at)} />}
           </div>
-        </motion.article>
+        </article>
 
-        <motion.article
-          className="panel"
-          variants={staggerItem}
-          initial="initial"
-          animate="animate"
-        >
+        <article className="panel scan-coverage-panel">
+          <div className="panel-title">
+            <h2>Supported-file coverage</h2>
+            <p>Successful files within the eligible scan scope</p>
+          </div>
+          <CoverageDonut
+            scanned={detail.scanned_files}
+            failed={detail.failed_files}
+            percentage={detail.coverage_pct}
+          />
+          <div className="coverage-scope-note">
+            <strong>{detail.in_scope_files.toLocaleString()}</strong> of{" "}
+            <strong>{detail.total_files.toLocaleString()}</strong> discovered files were eligible.
+            Coverage does not measure detection accuracy.
+          </div>
+        </article>
+
+        <article className="panel scan-risk-panel">
           <div className="panel-title">
             <h2>Risk breakdown</h2>
-            <p>Assets by priority level</p>
+            <p>All {detail.summary.total_assets.toLocaleString()} findings, not the preview</p>
           </div>
-          {["CRITICAL", "HIGH", "MEDIUM", "LOW"].map((label) => (
-            <div key={label} className="scan-risk-row">
-              <RiskBadge label={label} score={undefined} />
-              <span className="scan-risk-count">{riskCounts[label] || 0}</span>
-            </div>
-          ))}
-        </motion.article>
+          <RiskDonut counts={riskCounts} />
+        </article>
 
-        <motion.article
-          className="panel"
-          variants={staggerItem}
-          initial="initial"
-          animate="animate"
-        >
+        <article className="panel scan-collector-panel">
           <div className="panel-title">
             <h2>Collector output</h2>
             <p>Independent evidence records</p>
           </div>
-          <motion.div
-            className="collector-list"
-            variants={staggerContainer}
-            initial="initial"
-            animate="animate"
-          >
-            {Object.entries(detail.collector_stats).map(([label, count]) => (
-              <motion.div key={label} variants={staggerItem}>
-                <span>{label.toUpperCase()}</span>
-                <strong>{count}</strong>
-                <i
-                  style={{
-                    width: `${Math.min(100, (count / Math.max(1, detail.scanned_files)) * 100)}%`,
-                  }}
-                />
-              </motion.div>
-            ))}
-          </motion.div>
-        </motion.article>
+          <div className="collector-list scan-collector-list">
+            {Object.entries(detail.collector_stats)
+              .filter(([label, count]) => !label.startsWith("_") && typeof count === "number")
+              .map(([label, count], _index, entries) => (
+                <div key={label}>
+                  <span>{label.toUpperCase()}</span>
+                  <strong>{count}</strong>
+                  <i
+                    style={{
+                      width: `${Math.min(100, (Number(count) / Math.max(1, ...entries.map(([, value]) => Number(value)))) * 100)}%`,
+                    }}
+                  />
+                </div>
+              ))}
+          </div>
+        </article>
 
-        <motion.article
-          className="panel span-2"
-          variants={staggerItem}
-          initial="initial"
-          animate="animate"
-        >
+        <article className="panel scan-span-full scan-assets-panel">
           <div className="panel-title">
             <h2>
-              Assets ({detail.assets.length}
+              Assets ({filteredAssets.length}
               {hasMoreAssets ? ` of ${detail.assets_total}` : ""})
             </h2>
             <p>Cryptographic findings from this scan</p>
@@ -337,8 +441,14 @@ export default function ScanDetailPage() {
               {detail.assets_total} assets.
             </div>
           )}
-          {detail.assets.length === 0 ? (
-            <p className="muted">No assets found in this scan.</p>
+          <ScanAssetFilters
+            active={assetRiskFilter}
+            onChange={setAssetRiskFilter}
+            counts={assetRiskCounts}
+            total={detail.assets.length}
+          />
+          {filteredAssets.length === 0 ? (
+            <p className="muted">No assets match this filter.</p>
           ) : (
             <div className="table-wrap">
               <table>
@@ -352,9 +462,9 @@ export default function ScanDetailPage() {
                     <th scope="col" />
                   </tr>
                 </thead>
-                <motion.tbody variants={staggerContainer} initial="initial" animate="animate">
-                  {detail.assets.map((a) => (
-                    <motion.tr key={a.id} variants={staggerItem}>
+                <tbody>
+                  {filteredAssets.map((a) => (
+                    <tr key={a.id}>
                       <td>
                         <strong>
                           {a.algorithm}
@@ -388,81 +498,123 @@ export default function ScanDetailPage() {
                           Inspect &rarr;
                         </Link>
                       </td>
-                    </motion.tr>
+                    </tr>
                   ))}
-                </motion.tbody>
+                </tbody>
               </table>
             </div>
           )}
-        </motion.article>
+        </article>
 
         {detail.failures && detail.failures.length > 0 && (
-          <motion.article
-            className="panel span-2 scan-failures"
-            variants={staggerItem}
-            initial="initial"
-            animate="animate"
-          >
+          <article className="panel scan-span-full scan-failures">
             <div className="panel-title">
               <h2>Failed files</h2>
               <p>Safe relative paths and controlled failure categories</p>
             </div>
-            <motion.ul
-              className="scan-failure-list"
-              variants={staggerContainer}
-              initial="initial"
-              animate="animate"
-            >
+            <ul className="scan-failure-list">
               {detail.failures.map((failure) => (
-                <motion.li key={`${failure.path}:${failure.reason}`} variants={staggerItem}>
+                <li key={`${failure.path}:${failure.reason}`}>
                   <span className="path">{failure.path}</span>
                   <span className="status status-failed">
                     {FAILURE_LABELS[failure.reason] || "Processing error"}
                   </span>
-                </motion.li>
+                </li>
               ))}
-            </motion.ul>
-          </motion.article>
+            </ul>
+          </article>
         )}
 
         {detail.blind_spots.length > 0 && (
-          <motion.article
-            className="panel span-2 blind"
-            variants={staggerItem}
-            initial="initial"
-            animate="animate"
-          >
+          <article className="panel scan-span-full blind">
             <div className="panel-title">
               <h2>Blind spots</h2>
               <p>Areas outside this scan's measured scope</p>
             </div>
-            <motion.div
-              className="gap-list"
-              variants={staggerContainer}
-              initial="initial"
-              animate="animate"
-            >
+            <div className="gap-list">
               {detail.blind_spots.map((gap, i) => (
-                <motion.div key={gap} variants={staggerItem}>
+                <div key={gap}>
                   <span>{i + 1}</span>
                   <p>{gap}</p>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
-          </motion.article>
+            </div>
+          </article>
         )}
-      </motion.section>
-    </>
+      </section>
+    </div>
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: string | number; tone?: string }) {
+function TrendArrow({ value }: { value: number }) {
+  if (value === 0)
+    return (
+      <span className="trend-arrow trend-stable" aria-label="stable">
+        −
+      </span>
+    );
+  const isUp = value > 0;
+  const cls = isUp ? "trend-up" : "trend-down";
+  const arrow = isUp ? "▲" : "▼";
   return (
-    <article className={`stat tone-${tone || "blue"}`}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </article>
+    <span
+      className={`trend-arrow ${cls}`}
+      aria-label={isUp ? "increased" : "decreased"}
+      title={isUp ? `+${value}` : `${value}`}
+    >
+      {arrow}
+    </span>
   );
+}
+
+function StatWithTrend({
+  label,
+  value,
+  trend,
+  tone,
+  filter,
+  suffix,
+  scanId,
+}: {
+  label: string;
+  value: number | string;
+  trend?: number;
+  tone?: string;
+  filter?: string;
+  suffix?: string;
+  scanId?: number;
+}) {
+  const trendAbs = trend !== undefined ? Math.abs(trend) : undefined;
+
+  const inner = (
+    <>
+      <span>{label}</span>
+      <div className="stat-value-row">
+        <strong>{typeof value === "number" && suffix === "%" ? `${value}%` : value}</strong>
+        {trend !== undefined && <TrendArrow value={trend} />}
+      </div>
+      {trendAbs !== undefined && trendAbs > 0 && (
+        <span className="stat-trend-detail">
+          {trend! > 0 ? "+" : ""}
+          {trend}
+          {suffix || ""} vs prior scan
+        </span>
+      )}
+    </>
+  );
+
+  if (filter) {
+    return (
+      <Link
+        to={`/assets?scan_id=${scanId ?? ""}&risk=${filter === "quantum" ? "ALL" : filter}`}
+        className={`stat tone-${tone || "blue"} stat--clickable`}
+      >
+        {inner}
+      </Link>
+    );
+  }
+
+  return <article className={`stat tone-${tone || "blue"}`}>{inner}</article>;
 }
 
 function Fact({ label, value }: { label: string; value: string }) {
@@ -470,6 +622,116 @@ function Fact({ label, value }: { label: string; value: string }) {
     <div className="scan-fact">
       <span className="scan-fact-label">{label}</span>
       <span className="scan-fact-value">{value}</span>
+    </div>
+  );
+}
+
+const RISK_META = [
+  { label: "CRITICAL", color: "#b4232d" },
+  { label: "HIGH", color: "#b96a00" },
+  { label: "MEDIUM", color: "#d5a000" },
+  { label: "LOW", color: "#07845f" },
+] as const;
+
+function RiskDonut({ counts }: { counts: Record<string, number> }) {
+  const data = RISK_META.map((item) => ({ ...item, value: counts[item.label] || 0 }));
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+  return (
+    <div className="scan-donut-layout">
+      <div
+        className="scan-donut"
+        role="img"
+        aria-label={`Risk distribution across ${total} findings`}
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={data}
+              dataKey="value"
+              nameKey="label"
+              innerRadius="62%"
+              outerRadius="88%"
+              paddingAngle={total ? 2 : 0}
+              stroke="none"
+            >
+              {data.map((item) => (
+                <Cell key={item.label} fill={item.color} />
+              ))}
+            </Pie>
+            <Tooltip formatter={(value: number) => value.toLocaleString()} />
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="scan-donut-center">
+          <strong>{total.toLocaleString()}</strong>
+          <span>findings</span>
+        </div>
+      </div>
+      <div className="scan-chart-legend" aria-label="Risk distribution values">
+        {data.map((item) => (
+          <div key={item.label}>
+            <span className="scan-chart-swatch" style={{ background: item.color }} />
+            <span>{item.label}</span>
+            <strong>{item.value.toLocaleString()}</strong>
+            <small>{total ? `${Math.round((item.value / total) * 100)}%` : "0%"}</small>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CoverageDonut({
+  scanned,
+  failed,
+  percentage,
+}: {
+  scanned: number;
+  failed: number;
+  percentage: number;
+}) {
+  const data = [
+    { name: "Successful", value: scanned, color: "#07845f" },
+    { name: "Failed", value: failed, color: "#b4232d" },
+  ];
+  return (
+    <div className="scan-donut-layout scan-donut-layout--coverage">
+      <div
+        className="scan-donut"
+        role="img"
+        aria-label={`${percentage}% processing coverage: ${scanned} successful and ${failed} failed files`}
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={data}
+              dataKey="value"
+              nameKey="name"
+              innerRadius="64%"
+              outerRadius="88%"
+              paddingAngle={2}
+              stroke="none"
+            >
+              {data.map((item) => (
+                <Cell key={item.name} fill={item.color} />
+              ))}
+            </Pie>
+            <Tooltip formatter={(value: number) => value.toLocaleString()} />
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="scan-donut-center">
+          <strong>{percentage}%</strong>
+          <span>processed</span>
+        </div>
+      </div>
+      <div className="scan-chart-legend">
+        {data.map((item) => (
+          <div key={item.name}>
+            <span className="scan-chart-swatch" style={{ background: item.color }} />
+            <span>{item.name}</span>
+            <strong>{item.value.toLocaleString()}</strong>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

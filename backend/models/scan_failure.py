@@ -1,6 +1,7 @@
 """ScanFailure model — durable structured failure record for a scan job."""
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 from backend.db import Base

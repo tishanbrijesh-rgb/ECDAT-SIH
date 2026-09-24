@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "ECDAT Implemented End to End Architecture",
+    "quality_profile": "showcase",
+    "viewBox": [1460, 780],
+    "views": [
+      {
+        "id": "request-path",
+        "label": "User and API path",
+        "focus": ["analyst", "web", "api", "auth", "database"],
+        "note": "Follow authenticated browser traffic through the control plane to durable state."
+      },
+      {
+        "id": "scan-path",
+        "label": "Scan execution path",
+        "focus": ["api", "dispatch", "worker", "collectors", "correlation", "scoring", "database"],
+        "note": "Trace an accepted scan through supervised discovery, analysis, and transactional persistence."
+      },
+      {
+        "id": "results-path",
+        "label": "Results and assurance",
+        "focus": ["database", "outputs", "web", "analyst"],
+        "note": "See how stored findings become dashboards, evidence graphs, CBOM, and risk exports."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "analyst",
+      "type": "external",
+      "label": "Security analyst",
+      "pos": [36, 330],
+      "size": [140, 64]
+    },
+    {
+      "id": "web",
+      "type": "frontend",
+      "label": "React assurance console",
+      "pos": [230, 330],
+      "size": [190, 72]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "FastAPI control plane",
+      "pos": [485, 330],
+      "size": [190, 72]
+    },
+    {
+      "id": "auth",
+      "type": "security",
+      "label": "Authentication and RBAC",
+      "pos": [485, 120],
+      "size": [190, 72]
+    },
+    {
+      "id": "dispatch",
+      "type": "messagebus",
+      "label": "Durable dispatch and lease",
+      "pos": [745, 330],
+      "size": [200, 72]
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "Supervised scanner worker",
+      "pos": [1005, 330],
+      "size": [200, 72]
+    },
+    {
+      "id": "collectors",
+      "type": "backend",
+      "label": "Discovery collectors",
+      "pos": [1265, 170],
+      "size": [170, 72]
+    },
+    {
+      "id": "correlation",
+      "type": "backend",
+      "label": "Evidence correlation",
+      "pos": [1265, 330],
+      "size": [170, 72]
+    },
+    {
+      "id": "scoring",
+      "type": "backend",
+      "label": "Confidence and risk",
+      "pos": [1265, 490],
+      "size": [170, 72]
+    },
+    {
+      "id": "database",
+      "type": "database",
+      "label": "SQLAlchemy data store",
+      "pos": [745, 570],
+      "size": [200, 72]
+    },
+    {
+      "id": "outputs",
+      "type": "backend",
+      "label": "Assurance read models",
+      "pos": [485, 570],
+      "size": [190, 72]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "ECDAT deployment boundary",
+      "wraps": ["web", "api", "auth", "dispatch", "worker", "collectors", "correlation", "scoring", "database", "outputs"],
+      "pad": 22
+    },
+    {
+      "kind": "security-group",
+      "label": "Read-only repository scanning boundary",
+      "wraps": ["worker", "collectors", "correlation", "scoring"],
+      "pad": 16
+    }
+  ],
+  "connections": [
+    {"id": "analyst-web", "from": "analyst", "to": "web", "label": "HTTPS", "variant": "emphasis"},
+    {"id": "web-api", "from": "web", "to": "api", "label": "Bearer REST and SSE", "variant": "emphasis", "labelAt": [453, 326]},
+    {"id": "auth-api", "from": "auth", "to": "api", "label": "verify session and role", "variant": "security", "labelAt": [580, 206]},
+    {"id": "api-dispatch", "from": "api", "to": "dispatch", "label": "persist then wake dispatcher", "labelAt": [710, 326]},
+    {"id": "dispatch-worker", "from": "dispatch", "to": "worker", "label": "claim, heartbeat, cancel", "labelAt": [975, 416]},
+    {"id": "worker-collectors", "from": "worker", "to": "collectors", "label": "read-only repository walk"},
+    {"id": "collectors-correlation", "from": "collectors", "to": "correlation", "label": "redacted evidence", "labelAt": [1350, 256]},
+    {"id": "correlation-scoring", "from": "correlation", "to": "scoring", "label": "logical findings", "labelAt": [1350, 416]},
+    {"id": "scoring-database", "from": "scoring", "to": "database", "label": "transactional results"},
+    {"id": "dispatch-database", "from": "dispatch", "to": "database", "label": "jobs, outbox, leases", "variant": "dashed", "labelAt": [845, 416]},
+    {"id": "api-database", "from": "api", "to": "database", "label": "SQL and audit events"},
+    {"id": "database-outputs", "from": "database", "to": "outputs", "label": "queries and aggregation", "labelAt": [710, 656]},
+    {"id": "outputs-web", "from": "outputs", "to": "web", "label": "JSON, CSV and text", "variant": "emphasis"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Implemented runtime",
+      "items": [
+        "React and Nginx frontend with same-origin API proxy",
+        "FastAPI control plane backed by SQLite or PostgreSQL",
+        "One supervised scan active per API server process"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Evidence pipeline",
+      "items": [
+        "Collector registry keeps inventory and dispatch consistent",
+        "Correlation separates observed operations from declared capability",
+        "Confidence and coverage remain distinct assurance measures"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Trust controls",
+      "items": [
+        "Allowed-root validation and bounded repository processing",
+        "Worker environment excludes control-plane secrets",
+        "RBAC, audit attribution, request IDs, rate limits, and readiness checks"
+      ]
+    }
+  ]
+}

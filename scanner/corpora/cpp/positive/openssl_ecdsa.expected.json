@@ -1,0 +1,6 @@
+{
+  "file": "openssl_ecdsa.c",
+  "expected_assets": [
+    {"algorithm": "ECDSA", "usage": "signature", "category": "signature"}
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "file": "tls_ssl.py",
+  "expected_assets": [
+    {"algorithm": "TLS", "usage": "tls", "category": "protocol"}
+  ]
+}

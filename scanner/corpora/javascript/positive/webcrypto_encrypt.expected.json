@@ -1,0 +1,6 @@
+{
+  "file": "webcrypto_encrypt.js",
+  "expected_assets": [
+    {"algorithm": "AES", "usage": "encryption", "category": "encryption"}
+  ]
+}

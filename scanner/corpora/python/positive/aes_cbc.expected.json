@@ -1,0 +1,6 @@
+{
+  "file": "aes_cbc.py",
+  "expected_assets": [
+    {"algorithm": "AES", "usage": "encryption", "category": "encryption"}
+  ]
+}

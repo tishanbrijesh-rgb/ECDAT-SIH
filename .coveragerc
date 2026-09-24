@@ -2,6 +2,7 @@
 source = backend
 omit =
     tests/*
+    backend/tests/*
     */__pycache__/*
     .venv/*
 branch = True

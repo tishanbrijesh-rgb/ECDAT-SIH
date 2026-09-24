@@ -16,8 +16,8 @@ STALE_STATUSES = ("running", "queued")
 
 
 def utc_now() -> datetime:
-    """Naive UTC for SQLite DateTime compatibility."""
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    """Timezone-aware UTC, consistent with ScanJobDB.DateTime(timezone=True)."""
+    return datetime.now(timezone.utc)
 
 
 def find_stale_jobs(db_session) -> list[ScanJobDB]:

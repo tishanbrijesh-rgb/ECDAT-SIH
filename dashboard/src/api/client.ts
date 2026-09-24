@@ -198,12 +198,15 @@ async function _patch<T>(path: string, body: unknown): Promise<T> {
 
 export const API_BASE_URL = API_BASE;
 
-export async function scanRepo(repoPath: string): Promise<{ scan_id: number; status: string }> {
-  return _post("/api/scan", { repo_path: repoPath });
+export async function scanRepo(
+  repoPath: string,
+  options?: { max_depth?: number; min_size?: number },
+): Promise<{ scan_id: number; status: string }> {
+  return _post("/api/scan", { repo_path: repoPath, ...options });
 }
 
 export async function getScans(): Promise<import("../types").ScanJob[]> {
-  return _get("/api/scans");
+  return _get("/api/scans?limit=200");
 }
 
 export async function getScan(id: number): Promise<import("../types").ScanJob> {
@@ -225,7 +228,11 @@ export async function getAssets(
     sort?: "priority" | "confidence" | "algorithm";
     signal?: AbortSignal;
   } = {},
-): Promise<{ items: import("../types").CryptoAsset[]; total: number }> {
+): Promise<{
+  items: import("../types").CryptoAsset[];
+  total: number;
+  risk_counts?: Record<string, number>;
+}> {
   const qs = new URLSearchParams();
   if (scanJobId != null) qs.set("scan_job_id", String(scanJobId));
   if (options.limit != null) qs.set("limit", String(options.limit));
@@ -239,9 +246,12 @@ export async function getAssets(
     signal: options.signal,
   });
   if (!res.ok) throw new Error(`GET /api/assets → ${res.status}`);
-  const total = parseInt(res.headers.get("X-Total-Count") || "0", 10);
-  const items = (await res.json()) as import("../types").CryptoAsset[];
-  return { items, total };
+  const data = (await res.json()) as {
+    items: import("../types").CryptoAsset[];
+    total: number;
+    risk_counts?: Record<string, number>;
+  };
+  return { items: data.items, total: data.total, risk_counts: data.risk_counts };
 }
 
 export async function getAsset(id: number): Promise<import("../types").CryptoAsset> {
@@ -268,18 +278,52 @@ export async function updateAsset(
 
 export const getEvaluation = (scanId?: number) =>
   _get<import("../types").Evaluation>(`/api/evaluation${scanId ? `?scan_id=${scanId}` : ""}`);
-export const getRiskReport = (scanId?: number) =>
-  _get<import("../types").RiskReport>(`/api/reports/risk${scanId ? `?scan_id=${scanId}` : ""}`);
-export const getCbom = (scanId?: number) =>
-  _get<Record<string, unknown>>(`/api/cbom${scanId ? `?scan_id=${scanId}` : ""}`);
+
+type OutputPageOptions = {
+  limit?: number;
+  offset?: number;
+  query?: string;
+  risk?: import("../types").RiskLabel;
+};
+
+export type OutputPagination = {
+  total: number;
+  filtered: number;
+  offset: number;
+  limit: number;
+  loaded: number;
+};
+
+function outputQuery(scanId?: number, options: OutputPageOptions = {}): string {
+  const qs = new URLSearchParams();
+  if (scanId != null) qs.set("scan_id", String(scanId));
+  if (options.limit != null) qs.set("limit", String(options.limit));
+  if (options.offset != null) qs.set("offset", String(options.offset));
+  if (options.risk) qs.set("risk", options.risk);
+  if (options.query?.trim()) qs.set("q", options.query.trim());
+  const value = qs.toString();
+  return value ? `?${value}` : "";
+}
+
+export const getRiskReport = (scanId?: number, options: OutputPageOptions = {}) =>
+  _get<import("../types").RiskReport & { pagination: OutputPagination }>(
+    `/api/reports/risk${outputQuery(scanId, options)}`,
+  );
+export const getCbom = (scanId?: number, options: Omit<OutputPageOptions, "risk"> = {}) =>
+  _get<import("../types").CbomEntry & { pagination: OutputPagination }>(
+    `/api/cbom${outputQuery(scanId, options)}`,
+  );
 
 export type ScanProgressEvent = {
   scan_id: number;
   status: string;
-  collector_stats: Record<string, number>;
+  collector_stats: Record<string, number | string>;
   assets_found: number;
   coverage_pct: number;
   duration_ms: number;
+  in_scope_files?: number;
+  scanned_files?: number;
+  blind_spots?: string[];
 };
 
 export type ScanProgressCallback = (event: ScanProgressEvent) => void;
@@ -340,12 +384,22 @@ export function subscribeScanEvents(
 }
 
 export async function getScanDetail(id: number): Promise<import("../types").ScanDetail> {
-  const scan = await getScan(id);
-  const { items: assets, total } = await getAssets(id, { limit: 200 });
-  return { ...scan, assets, assets_total: total };
+  const [scan, assetPage, summary] = await Promise.all([
+    getScan(id),
+    getAssets(id, { limit: 200 }),
+    getDashboardSummary(id),
+  ]);
+  return {
+    ...scan,
+    assets: assetPage.items,
+    assets_total: assetPage.total,
+    summary,
+  };
 }
 
-export async function getEvidenceGraph(scanId?: number): Promise<Record<string, unknown>> {
+export async function getEvidenceGraph(
+  scanId?: number,
+): Promise<import("../types").EvidenceGraphResponse> {
   return _get(`/api/evidence-graph${scanId ? `?scan_id=${scanId}` : ""}`);
 }
 

@@ -2,10 +2,13 @@ name: ECDAT CI
 
 on:
   push:
+    branches: [main, "fix/*", dev]
   pull_request:
+    branches: [main, "fix/*", dev]
 
 jobs:
-  test:
+  lint-backend:
+    name: Lint Python and type-check incremental scope
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -13,16 +16,41 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: backend/requirements-dev.txt
-      - run: pip install -r backend/requirements-dev.txt
-      - run: pytest -q -p no:cacheprovider --cov=backend --cov-report=xml --cov-report=term
-      - run: ruff check backend/
-      - uses: actions/upload-artifact@v4
-        if: always()
+          cache-dependency-path: backend/requirements.lock
+      - run: pip install --require-hashes -r backend/requirements.lock
+      - run: python -m ruff check backend/ scanner/ scripts/ tests/
+      - run: python -m mypy --config-file=mypy.ini backend/ scanner/
+
+  security-backend:
+    name: Backend security and advisory audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          name: coverage-report
-          path: coverage.xml
-          retention-days: 30
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.lock
+      - run: pip install --require-hashes -r backend/requirements.lock
+      - run: python -m bandit -r backend scanner -x backend/tests,scanner/corpora -lll -q
+      - run: python -m pip_audit -r backend/requirements.lock --require-hashes --strict
+
+  production-compose:
+    name: Disposable PostgreSQL production rehearsal
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build, migrate, scan, restart, and verify persistence
+        run: python scripts/verify_compose.py
+
+  lint-frontend:
+    name: Lint frontend (eslint + prettier + tsc)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -34,12 +62,176 @@ jobs:
         working-directory: dashboard
       - run: npm run lint
         working-directory: dashboard
+      - run: npx tsc --noEmit
+        working-directory: dashboard
+
+  test-backend:
+    name: Backend tests (pytest + coverage)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.lock
+      - run: pip install --require-hashes -r backend/requirements.lock
+      - run: python -m pytest tests/ backend/tests/ -x -q --cov=backend --cov-report=xml --cov-report=term
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage.xml
+          retention-days: 30
+
+  test-benchmark:
+    name: Benchmark arithmetic tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.lock
+      - run: pip install --require-hashes -r backend/requirements.lock
+      - run: python -m pytest tests/test_benchmark.py -v
+
+  test-corpus:
+    name: Corpus evaluation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.lock
+      - run: pip install --require-hashes -r backend/requirements.lock
+      - run: ECC_GATEGUARD=off python scripts/evaluate_corpora.py
+
+
+  test-calibration-dataset:
+    name: Calibration dataset (Phase 4)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.lock
+      - run: pip install --require-hashes -r backend/requirements.lock
+      - run: python -m pytest tests/test_calibration_dataset.py -v
+
+  test-frontend:
+    name: Frontend unit tests (vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - run: npm ci
+        working-directory: dashboard
       - run: npm test -- --reporter=dot
+        working-directory: dashboard
+
+  build-frontend:
+    name: Frontend build (type check + bundle)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - run: npm ci
         working-directory: dashboard
       - run: npm run build
         working-directory: dashboard
 
+  test-api-contract:
+    name: API contract tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.lock
+      - run: pip install --require-hashes -r backend/requirements.lock
+      - run: python -m pytest tests/test_api_contract.py -v
+
+  test-performance:
+    name: Performance budget tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.lock
+      - run: pip install --require-hashes -r backend/requirements.lock
+      - run: python -m pytest tests/test_performance.py -v
+
+  validate-schema:
+    name: Schema validation
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: sqlite:///./schema-validation.db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.lock
+      - run: pip install --require-hashes -r backend/requirements.lock
+      - name: Generate a completed controlled scan
+        run: python -c "from backend.services.scanner_runner import run_scan; from backend.db import Base, engine; Base.metadata.create_all(engine); result = run_scan('test-repo'); assert result['status'] == 'completed', result"
+      - run: python scripts/validate_schema.py
+
+  a11y-check:
+    name: Accessibility check (axe-core)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: npm ci
+        working-directory: dashboard
+      - run: pip install playwright
+      - run: python -m playwright install chromium
+      - run: npm run dev &
+        working-directory: dashboard
+        env:
+          CI: "true"
+      - name: Wait for server
+        run: npx wait-on http://localhost:3000
+        working-directory: dashboard
+      - name: Run a11y check
+        run: python scripts/a11y_check.py --base-url http://localhost:3000
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: a11y-report
+          path: dashboard/test-results/
+          retention-days: 7
+
   e2e:
+    name: Playwright E2E tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

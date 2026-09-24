@@ -1,72 +1,25 @@
-/* ── Evidence chain improvements ──────────────────── */
-.evidence-details {
-  margin-top: 8px;
-}
-.evidence-details pre {
-  font-size: 12px;
-  line-height: 1.5;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-xs);
-  padding: 10px 12px;
-  overflow-x: auto;
-  color: var(--text);
-  margin: 4px 0;
-}
+/* ═══════════════════════════════════════════════════════════════════
+   ECDAT Enhancements — Animations, transitions, theme toggle button
+   Animations are centralized in utilities.css.
+   Button micro-interactions are in primitives.css.
+   Reduced-motion is in primitives.css.
+   This file retains only items not yet covered.
+   ═══════════════════════════════════════════════════════════════════ */
 
-/* ── Scan progress improvement ────────────────────── */
-.scan-progress {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
-}
-.progress-track {
-  height: 4px;
-  background: var(--line);
-  border-radius: 2px;
-  margin-bottom: 10px;
-  overflow: hidden;
-}
-.progress-track i {
-  display: block;
-  height: 100%;
-  width: 40%;
-  background: var(--indigo);
-  border-radius: 2px;
-  animation: progressPulse 1.4s ease-in-out infinite;
-}
-.progress-track i.done {
-  width: 100%;
-  background: var(--teal);
-  animation: none;
-}
-@keyframes progressPulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-/* ── Dark mode toggle button ──────────────────────── */
+/* ── Theme Toggle Button ──────────────────────────────────────────── */
 .theme-toggle {
   display: inline-grid;
   place-items: center;
-  background: var(--surface);
-  border: 1px solid var(--line);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-rule);
   border-radius: var(--radius-xs);
   padding: 6px 10px;
   cursor: pointer;
   font-size: 16px;
-  color: var(--text);
-  transition:
-    background var(--transition),
-    border-color var(--transition),
-    box-shadow var(--transition);
+  color: var(--color-text);
   box-shadow: var(--shadow-sm);
 }
+
 .theme-toggle svg {
   display: block;
   width: 17px;
@@ -77,92 +30,82 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
 .theme-toggle:hover {
-  background: var(--bg-2);
-  border-color: var(--forest);
+  background: var(--color-bg-2);
+  border-color: var(--color-forest);
   box-shadow: var(--shadow-sm);
 }
 
-/* ── Animations & Transitions (Area 11) ───────────── */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+[data-theme="dark"] .theme-toggle {
+  background: var(--color-surface-2);
+  border-color: var(--color-rule);
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+[data-theme="dark"] .theme-toggle:hover {
+  background: var(--color-surface-3);
+  border-color: var(--color-teal-bright);
 }
 
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+/* ── Scan Progress (enhanced) ─────────────────────────────────────── */
+.scan-progress {
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--color-rule);
 }
 
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+.progress-track {
+  height: 4px;
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-rule);
+  border-radius: 2px;
+  margin-bottom: var(--sp-2);
+  overflow: hidden;
 }
 
-@keyframes pulse-status {
+.progress-track i {
+  display: block;
+  height: 100%;
+  width: 40%;
+  background: var(--color-indigo);
+  border-radius: 2px;
+  animation: progressPulse 1.4s ease-in-out infinite;
+}
+
+.progress-track i.done {
+  width: 100%;
+  background: var(--color-teal);
+  animation: none;
+}
+
+@keyframes progressPulse {
   0%,
   100% {
     opacity: 1;
   }
   50% {
-    opacity: 0.55;
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -200% center;
-  }
-  100% {
-    background-position: 200% center;
-  }
-}
-
-@keyframes glowPulse {
-  0%,
-  100% {
     opacity: 0.5;
   }
-  50% {
-    opacity: 1;
-  }
 }
 
-/* Page entry */
-main {
-  animation: fadeIn 0.2s ease-out;
+/* ── Evidence Details (enhanced) ──────────────────────────────────── */
+.evidence-details {
+  margin-top: var(--sp-2);
 }
 
-/* ── Focus transitions ────────────────────────────── */
+.evidence-details pre {
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  background: var(--color-bg);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-xs);
+  padding: var(--sp-2) var(--sp-3);
+  overflow-x: auto;
+  color: var(--color-text);
+  margin: 4px 0;
+}
+
+/* ── Focus Transitions ────────────────────────────────────────────── */
 button,
 input,
 select,
@@ -174,18 +117,4 @@ select,
     border-color var(--transition),
     box-shadow var(--transition),
     transform 120ms ease;
-}
-
-/* ── Reduced motion ────────────────────────────────── */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
-    transition-delay: 0s !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    animation-delay: 0s !important;
-  }
 }

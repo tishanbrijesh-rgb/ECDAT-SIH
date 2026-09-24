@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import os
 import re
-import io
-import tokenize
+from collections.abc import Callable, Iterator
 from pathlib import Path
+from typing import Any
 
-from scanner.models.asset import CryptoAsset
 from scanner.limits import read_text
+from scanner.models.asset import CryptoAsset
 from scanner.rules.crypto_patterns import load_rules
 
-CODE_EXTENSIONS = {".py", ".java", ".js", ".ts", ".c", ".cpp", ".go", ".cs"}
+CODE_EXTENSIONS = {".py", ".java", ".js", ".ts", ".c", ".cpp", ".go", ".cs", ".rs"}
 
 
 def _usage(line: str, algorithm: str) -> str:
@@ -23,7 +23,7 @@ def _usage(line: str, algorithm: str) -> str:
         return "signature"
     if algorithm in {"ECDH", "DH", "ML-KEM"}:
         return "key_establishment"
-    if algorithm == "AES":
+    if algorithm in {"AES", "ChaCha20"}:
         return "encryption"
     if any(word in value for word in ("sign", "verify", "signature")):
         return "signature"
@@ -38,22 +38,9 @@ def _usage(line: str, algorithm: str) -> str:
 
 def _strip_comments(text: str, extension: str) -> str:
     """Preserve line numbers and avoid treating quoted URLs as comments."""
-    if extension == ".py":
-        # Text literals are not observed crypto use. Recognized string-selected
-        # hash calls are handled structurally by ASTCollector.
-        tokens = []
-        try:
-            for token in tokenize.generate_tokens(io.StringIO(text).readline):
-                if token.type in {tokenize.STRING, tokenize.COMMENT}:
-                    token = token._replace(string=re.sub(r"[^\n\r]", " ", token.string))
-                tokens.append(token)
-        except (tokenize.TokenError, IndentationError):
-            # Retain only the safely tokenized prefix; AST reports the error.
-            pass
-        return tokenize.untokenize(tokens)
     pattern = r'''"""[\s\S]*?"""|`(?:\\.|[^`\\])*`|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|//[^\n]*|/\*[\s\S]*?\*/'''
-    # Keep literals only in recognized algorithm-selector positions. A printed
-    # code example is one outer string token, never executable source.
+    if extension == ".py":
+        pattern += r"|#[^\n]*"
     output, end, prefix = [], 0, ""
     for match in re.finditer(pattern, text):
         segment = text[end:match.start()]
@@ -61,10 +48,10 @@ def _strip_comments(text: str, extension: str) -> str:
         prefix = (prefix + segment)[-160:]
         selector = re.search(
             r'(?:\b(?:Cipher|Signature|MessageDigest|KeyGenerator|KeyPairGenerator|SSLContext)'
-            r'\s*\.\s*getInstance|\b(?:createHash|createHmac|ECGenParameterSpec))\s*\(\s*$', prefix)
-        token = match.group(0)
-        keep = selector and token.startswith(('"', "'")) and not token.startswith('"""')
-        masked = token if keep else re.sub(r"[^\n\r]", " ", token)
+            r'\s*\.\s*getInstance|\b(?:createHash|createHmac|ECGenParameterSpec|generateKeyPairSync))\s*\(\s*$', prefix)
+        literal = match.group(0)
+        keep = selector and literal.startswith(('"', "'")) and not literal.startswith('"""')
+        masked = literal if keep else re.sub(r"[^\n\r]", " ", literal)
         output.append(masked)
         prefix = (prefix + masked)[-160:]
         end = match.end()
@@ -84,7 +71,7 @@ def _key_size(line: str, algorithm: str) -> int | None:
     return sizes.pop() if len(sizes) == 1 else None
 
 
-def _statements(text: str):
+def _statements(text: str) -> Iterator[tuple[int, int, str]]:
     """Separate same-line statements without splitting quoted selector values."""
     for line_no, line in enumerate(text.splitlines(), 1):
         start = 0
@@ -107,7 +94,7 @@ def _java_hash_non_operation(line: str) -> bool:
         r'^(?:SHA1|SHA256|SHA512|MD5)Digest\s*\([^;{}]*\)\s*'
         r'(?:throws\s+[^{}]+)?(?:\{|\{\s*\})?\s*$',
         value,
-        re.I,
+        re.IGNORECASE,
     )
     interface_declaration = None
     if not re.match(r'^(?:return|new|throw|yield)\b', value):
@@ -120,12 +107,35 @@ def _java_hash_non_operation(line: str) -> bool:
     return bool(modified_declaration or digest_constructor or interface_declaration or nested_mac)
 
 
+def _java_field_declaration(line: str) -> bool:
+    """Reject Java declarations that do not invoke or assign crypto operations."""
+    return bool(re.match(
+        r"^\s*(?:(?:public|private|protected|static|final|volatile|transient)\s+)*"
+        r"[\w<>\[\].,?]+\s+\w+\s*$",
+        line,
+    ))
+
+
+def _algorithm_named_assignment(line: str, algorithm: str) -> bool:
+    """Reject configuration symbols named after an algorithm, not its use."""
+    name = re.escape(algorithm.replace("-", "[_-]?"))
+    declaration = re.match(
+        rf"^\s*(?:(?:public|private|protected|static|final|const|let|var|volatile|transient)\s+)*"
+        rf"(?:[\w<>\[\].,?]+\s+)?{name}\s*=\s*(.*)$",
+        line,
+        re.IGNORECASE,
+    )
+    if not declaration:
+        return False
+    return re.search(name, declaration.group(1), re.IGNORECASE) is None
+
+
 class RuleCollector:
     """Scans supported source languages using transparent JSON regex rules."""
 
-    confidence = 0.82
+    confidence: float = 0.82
 
-    def scan_file(self, path: str, on_error=None) -> list[CryptoAsset]:
+    def scan_file(self, path: str, on_error: Callable[[str], None] | None = None) -> list[CryptoAsset]:
         extension = Path(path).suffix.lower()
         if extension not in CODE_EXTENSIONS:
             return []
@@ -147,14 +157,17 @@ class RuleCollector:
                 dynamic_depth = max(0, dynamic_depth)
                 continue
             for algorithm, config in rules.items():
-                # Python hashes have binding-aware AST evidence. Lexical name
-                # hits are not independent observations and must not duplicate
-                # calls or revive shadowed/non-crypto names.
-                if extension == ".py" and config.get("category") == "hash":
+                if _algorithm_named_assignment(line, algorithm):
+                    continue
+                if extension == ".java" and _java_field_declaration(line):
+                    continue
+                # Python hash and HMAC calls are binding-aware AST detections.
+                # Regex evidence would duplicate them and revive shadowed names.
+                if extension == ".py" and (
+                    config.get("category") == "hash" or algorithm == "HMAC"
+                ):
                     continue
                 if extension == '.java' and config.get('category') == 'hash':
-                    # Declarations/constants are not digest operations. Keep
-                    # constructor and factory calls, including assignment RHSs.
                     if '(' not in line or re.match(
                         r'^\s*(?:(?:public|private|protected|static|final|synchronized|abstract|native)\s+)+'
                         r'(?:[\w<>\[\].]+\s+)?\w+\s*\([^;]*\)\s*(?:throws\s+[^{}]+)?\{\s*$', line):
@@ -166,9 +179,9 @@ class RuleCollector:
                     else "patterns", []))
                 for pattern in patterns:
                     try:
-                        matched = re.search(pattern, line, flags=re.I)
+                        matched = re.search(pattern, line, flags=re.IGNORECASE)
                     except re.error:
-                        matched = re.search(re.escape(pattern), line, flags=re.I)
+                        matched = re.search(re.escape(pattern), line, flags=re.IGNORECASE)
                     if not matched or (algorithm, line_no, column) in seen:
                         continue
                     seen.add((algorithm, line_no, column))
@@ -191,22 +204,29 @@ class RuleCollector:
                         evidence={
                             "rule_id": f"crypto.{algorithm.lower().replace('-', '_')}",
                             "pattern": pattern,
-                            "line": line_no,
-                            "column": column,
                             "snippet": line.strip()[:240],
-                            "usage": usage,
                             "library": library,
                             "protocol": "TLS" if usage == "tls" else "",
                             "key_size": _key_size(line, algorithm),
-                            "operation_id": f"{path}:{line_no}:{column}:{usage}",
+                            "usage": usage,
                         },
                         confidence=self.confidence,
+                        evidence_kind="observed_operation",
+                        parser_version="rule-v1",
+                        span={"file": path, "line_start": line_no,
+                              "line_end": line_no, "column_start": column,
+                              "column_end": column + len(matched.group(0))},
+                        confidence_reasons=[
+                            {"source": "rule", "evidence_kind": "observed_operation",
+                             "base": 0.82, "bonus": 0.0, "penalty": 0.0,
+                             "note": "regex match against code pattern"}
+                        ],
                     ))
                     break
         return assets
 
-    def scan_directory(self, root: str) -> dict[tuple[str, str], list[dict]]:
-        results: dict[tuple[str, str], list[dict]] = {}
+    def scan_directory(self, root: str) -> dict[tuple[str, str], list[dict[str, Any]]]:
+        results: dict[tuple[str, str], list[dict[str, Any]]] = {}
         for dirpath, dirnames, filenames in os.walk(root):
             dirnames[:] = [d for d in dirnames if d not in {".git", "node_modules", "dist", "build", "__pycache__"}]
             for filename in filenames:

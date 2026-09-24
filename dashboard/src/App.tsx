@@ -13,6 +13,7 @@ import { MotionConfig, AnimatePresence, motion } from "framer-motion";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastProvider, useToast } from "./components/Toast";
 import { ConfirmDialog } from "./components/ConfirmDialog";
+import ThemeToggle from "./components/ThemeToggle";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -50,57 +51,8 @@ const AssetsPage = lazy(() => import("./pages/AssetsPage"));
 const RiskReportPage = lazy(() => import("./pages/RiskReport"));
 const CbomPage = lazy(() => import("./pages/CbomPage"));
 const ScanDetailPage = lazy(() => import("./pages/ScanDetailPage"));
-
-type Theme = "light" | "dark";
-
-function preferredTheme(): Theme {
-  const applied = document.documentElement.getAttribute("data-theme");
-  if (applied === "light" || applied === "dark") return applied;
-  const saved = localStorage.getItem("ecdat-theme");
-  if (saved === "light" || saved === "dark") return saved;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
-function ThemeIcon({ theme }: { theme: Theme }) {
-  return theme === "dark" ? (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41" />
-    </svg>
-  ) : (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M20.5 15.3A8.5 8.5 0 1 1 8.7 3.5a7 7 0 0 0 11.8 11.8Z" />
-    </svg>
-  );
-}
-
-function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>(preferredTheme);
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
-
-  const toggle = useCallback(() => {
-    setTheme((prev) => {
-      const next = prev === "dark" ? "light" : "dark";
-      document.documentElement.setAttribute("data-theme", next);
-      localStorage.setItem("ecdat-theme", next);
-      return next;
-    });
-  }, []);
-
-  return (
-    <button
-      className="theme-toggle"
-      onClick={toggle}
-      title={theme === "dark" ? "Light mode" : "Dark mode"}
-      aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-    >
-      <ThemeIcon theme={theme} />
-    </button>
-  );
-}
+const ScanHistoryPage = lazy(() => import("./pages/ScanHistoryPage"));
+const EvidenceGraphPage = lazy(() => import("./pages/EvidenceGraphPage"));
 
 function AppInner() {
   const [authState, setAuthState] = useState<"checking" | "signed-in" | "signed-out">(() =>
@@ -108,8 +60,12 @@ function AppInner() {
   );
   const [loginMessage, setLoginMessage] = useState(() => getInitialSessionExpiry());
   const [confirmLogout, setConfirmLogout] = useState(false);
+  const [accountMenu, setAccountMenu] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { toast } = useToast();
   const mainRef = useRef<HTMLElement>(null);
+  const mobileNavRef = useRef<HTMLElement>(null);
+  const mobileNavToggleRef = useRef<HTMLButtonElement>(null);
   const [navParams] = useSearchParams();
   const rawNavScanId = navParams.get("scan_id");
   const scanQuery = rawNavScanId && /^\d+$/.test(rawNavScanId) ? `?scan_id=${rawNavScanId}` : "";
@@ -144,6 +100,61 @@ function AppInner() {
     };
   }, [authState]);
 
+  const closeMobileNav = useCallback((restoreFocus = true) => {
+    setMobileNavOpen(false);
+    if (restoreFocus) requestAnimationFrame(() => mobileNavToggleRef.current?.focus());
+  }, []);
+
+  // Close account menu and mobile nav on Escape key.
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (accountMenu) setAccountMenu(false);
+        if (mobileNavOpen) closeMobileNav();
+      }
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [accountMenu, closeMobileNav, mobileNavOpen]);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const firstDestination = mobileNavRef.current?.querySelector<HTMLAnchorElement>("a");
+    requestAnimationFrame(() => firstDestination?.focus());
+  }, [mobileNavOpen]);
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const handleOutsidePointer = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (
+        !mobileNavRef.current?.contains(target) &&
+        !mobileNavToggleRef.current?.contains(target)
+      ) {
+        closeMobileNav(false);
+      }
+    };
+    const handleFocusTransfer = (event: FocusEvent) => {
+      const target = event.target as Node;
+      if (
+        !mobileNavRef.current?.contains(target) &&
+        !mobileNavToggleRef.current?.contains(target)
+      ) {
+        closeMobileNav(false);
+      }
+    };
+    document.addEventListener("pointerdown", handleOutsidePointer);
+    document.addEventListener("focusin", handleFocusTransfer);
+    return () => {
+      document.removeEventListener("pointerdown", handleOutsidePointer);
+      document.removeEventListener("focusin", handleFocusTransfer);
+    };
+  }, [closeMobileNav, mobileNavOpen]);
+
   if (authState === "checking") {
     return (
       <div className="state" role="status" aria-live="polite">
@@ -173,27 +184,174 @@ function AppInner() {
         <NavLink className="brand" to="/">
           <img className="brand-mark" src="/ecdat-logo.svg" alt="" aria-hidden="true" />
           <span>
-            ECDAT<small>Discovery Assurance</small>
+            ECDAT<small>Assurance</small>
           </span>
         </NavLink>
-        <nav aria-label="Main navigation">
+        <nav
+          ref={mobileNavRef}
+          aria-label="Main navigation"
+          className={"topbar-nav" + (mobileNavOpen ? " open" : "")}
+          id="main-nav"
+        >
           <NavLink to={`/${scanQuery}`} end>
             Overview
           </NavLink>
           <NavLink to={`/assets${scanQuery}`}>Inventory</NavLink>
-          {canWrite() && <NavLink to="/scan">New scan</NavLink>}
+          <NavLink to="/scans">Scan history</NavLink>
+          {canWrite() && (
+            <NavLink to="/scan" className="topbar-scan-link">
+              <svg
+                className="icon-inline"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              New scan
+            </NavLink>
+          )}
           <NavLink to={`/reports${scanQuery}`}>Reports</NavLink>
           <NavLink to={`/cbom${scanQuery}`}>CBOM</NavLink>
         </nav>
-        <span className="privacy-chip">Local & explainable</span>
-        <ThemeToggle />
         <button
-          className="button secondary"
-          onClick={() => setConfirmLogout(true)}
-          aria-label="Sign out"
+          ref={mobileNavToggleRef}
+          className="topbar-mobile-toggle"
+          onClick={() => {
+            if (mobileNavOpen) closeMobileNav();
+            else setMobileNavOpen(true);
+          }}
+          aria-expanded={mobileNavOpen}
+          aria-label="Toggle navigation menu"
+          aria-controls="main-nav"
         >
-          Sign out
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            {mobileNavOpen ? (
+              <>
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </>
+            ) : (
+              <>
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </>
+            )}
+          </svg>
         </button>
+        <ThemeToggle />
+        <div className="topbar-account">
+          <button
+            className="button topbar-menu-btn"
+            onClick={() => setAccountMenu((v: boolean) => !v)}
+            aria-expanded={accountMenu}
+            aria-haspopup="true"
+            aria-label="Account menu"
+            aria-controls="account-dropdown"
+          >
+            <svg
+              className="icon-inline"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 20c0-4 4-7 8-7s8 3 8 7" />
+            </svg>
+            <span className="topbar-menu-label">Account</span>
+            <svg
+              className="icon-inline"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+          {accountMenu && (
+            <>
+              <div className="topbar-dropdown-backdrop" onClick={() => setAccountMenu(false)} />
+              <div className="topbar-dropdown" role="menu" id="account-dropdown">
+                <div className="topbar-dropdown-header">
+                  <div className="topbar-avatar" aria-hidden="true">
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="12" cy="8" r="4" />
+                      <path d="M4 20c0-4 4-7 8-7s8 3 8 7" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="topbar-dropdown-name">Operator</div>
+                    <div className="topbar-dropdown-role">Authenticated</div>
+                  </div>
+                </div>
+                <div className="topbar-dropdown-divider" />
+                <button
+                  className="topbar-dropdown-item"
+                  onClick={() => {
+                    setAccountMenu(false);
+                    setConfirmLogout(true);
+                  }}
+                  role="menuitem"
+                >
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+                  Sign out
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </header>
       <main id="main-content" ref={mainRef} tabIndex={-1}>
         <Suspense
@@ -256,10 +414,26 @@ function AppInner() {
                   }
                 />
                 <Route
+                  path="/scans"
+                  element={
+                    <PageTransition routeKey="scan-history">
+                      <ScanHistoryPage />
+                    </PageTransition>
+                  }
+                />
+                <Route
                   path="/scans/:id"
                   element={
                     <PageTransition routeKey="scan-detail">
                       <ScanDetailPage />
+                    </PageTransition>
+                  }
+                />
+                <Route
+                  path="/evidence-graph"
+                  element={
+                    <PageTransition routeKey="evidence-graph">
+                      <EvidenceGraphPage />
                     </PageTransition>
                   }
                 />

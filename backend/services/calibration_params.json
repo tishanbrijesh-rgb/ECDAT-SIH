@@ -1,0 +1,25 @@
+{
+  "version": "1.0.0",
+  "band_thresholds": {
+    "HIGH": [
+      0.85,
+      1.0
+    ],
+    "MEDIUM": [
+      0.6,
+      0.85
+    ],
+    "LOW": [
+      0.4,
+      0.6
+    ],
+    "UNCERTAIN": [
+      0.0,
+      0.4
+    ]
+  },
+  "brier_score": 0.180592,
+  "ece": 0.11079,
+  "last_calibrated": "2026-09-12T03:11:11.534238+00:00",
+  "sample_count": 600
+}

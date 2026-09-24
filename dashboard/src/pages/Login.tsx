@@ -38,106 +38,117 @@ export default function Login({
   };
 
   return (
-    <div className="login-shell">
-      <aside className="login-context" aria-label="ECDAT capabilities">
-        <div className="login-context-copy">
-          <p className="eyebrow">Evidence before assumptions</p>
-          <h2>Know where cryptography lives before it becomes urgent.</h2>
+    <>
+      <a className="skip-link" href="#main-content">
+        Skip to main content
+      </a>
+      <main className="login-shell" id="main-content" tabIndex={-1}>
+        <aside className="login-context" aria-label="ECDAT capabilities">
+          <div className="login-context-copy">
+            <p className="eyebrow">Evidence before assumptions</p>
+            <h2>Know where cryptography lives before it becomes urgent.</h2>
+            <p>
+              Correlate source, dependency, certificate, and rule evidence into an inventory your
+              security team can defend.
+            </p>
+          </div>
+          <dl className="login-signals">
+            <div>
+              <dt>4</dt>
+              <dd>independent collectors</dd>
+            </div>
+            <div>
+              <dt>Local</dt>
+              <dd>repository analysis</dd>
+            </div>
+            <div>
+              <dt>CBOM</dt>
+              <dd>export-ready evidence</dd>
+            </div>
+          </dl>
+        </aside>
+        <motion.div
+          className="login-card"
+          aria-labelledby="login-heading"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <div className="login-brand">
+            <img className="brand-mark" src="/ecdat-logo.svg" alt="" aria-hidden="true" />
+            <div>
+              <div className="brand-text">ECDAT</div>
+              <div className="brand-sub">Discovery Assurance</div>
+            </div>
+          </div>
+
+          <h1 id="login-heading">Sign in</h1>
           <p>
-            Correlate source, dependency, certificate, and rule evidence into an inventory your
-            security team can defend.
+            Authenticated access to the cryptographic inventory and discovery-assurance console.
           </p>
-        </div>
-        <dl className="login-signals">
-          <div>
-            <dt>4</dt>
-            <dd>independent collectors</dd>
+          <div className="login-system-status">
+            <span className="login-system-dot" aria-hidden="true" />
+            <span>All systems operational</span>
           </div>
-          <div>
-            <dt>Local</dt>
-            <dd>repository analysis</dd>
-          </div>
-          <div>
-            <dt>CBOM</dt>
-            <dd>export-ready evidence</dd>
-          </div>
-        </dl>
-      </aside>
-      <motion.div
-        className="login-card"
-        aria-labelledby="login-heading"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <div className="login-brand">
-          <img className="brand-mark" src="/ecdat-logo.svg" alt="" aria-hidden="true" />
-          <div>
-            <div className="brand-text">ECDAT</div>
-            <div className="brand-sub">Discovery Assurance</div>
-          </div>
-        </div>
 
-        <h1 id="login-heading">Sign in</h1>
-        <p>Authenticated access to the cryptographic inventory and discovery-assurance console.</p>
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                className="login-error"
+                id="login-error"
+                role="alert"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                {error}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-        <AnimatePresence>
-          {error && (
-            <motion.div
-              className="login-error"
-              id="login-error"
-              role="alert"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+          <form onSubmit={submit} aria-busy={busy}>
+            <FloatingLabel
+              label="Username"
+              value={username}
+              onChange={setUsername}
+              autoComplete="username"
+              autoFocus
+              invalid={Boolean(error)}
+              describedBy={error ? "login-error" : undefined}
+            />
+
+            <FloatingLabel
+              label="Password"
+              value={password}
+              onChange={setPassword}
+              type="password"
+              autoComplete="current-password"
+              invalid={Boolean(error)}
+              describedBy={error ? "login-error" : undefined}
+            />
+
+            <button
+              type="submit"
+              className="button wide login-submit"
+              disabled={busy || !username || !password}
             >
-              {error}
-            </motion.div>
-          )}
-        </AnimatePresence>
+              {busy && <span className="spinner login-spinner" aria-hidden="true" />}
+              {busy ? "Signing in…" : "Sign in"}
+            </button>
+          </form>
 
-        <form onSubmit={submit} aria-busy={busy}>
-          <FloatingLabel
-            label="Username"
-            value={username}
-            onChange={setUsername}
-            autoComplete="username"
-            autoFocus
-            invalid={Boolean(error)}
-            describedBy={error ? "login-error" : undefined}
-          />
+          <div className="login-hint">
+            <strong>Administrator-provisioned access</strong>
+            <br />
+            Use your configured account. There are no default passwords.
+          </div>
+        </motion.div>
 
-          <FloatingLabel
-            label="Password"
-            value={password}
-            onChange={setPassword}
-            type="password"
-            autoComplete="current-password"
-            invalid={Boolean(error)}
-            describedBy={error ? "login-error" : undefined}
-          />
-
-          <button
-            type="submit"
-            className="button wide login-submit"
-            disabled={busy || !username || !password}
-          >
-            {busy && <span className="spinner login-spinner" aria-hidden="true" />}
-            {busy ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
-
-        <div className="login-hint">
-          <strong>Administrator-provisioned access</strong>
-          <br />
-          Use your configured account. There are no default passwords.
+        <div className="login-footer">
+          ECDAT &middot; SIH26164 &middot; Authenticated local access
         </div>
-      </motion.div>
-
-      <div className="login-footer">
-        ECDAT &middot; SIH26164 &middot; Authenticated local access
-      </div>
-    </div>
+      </main>
+    </>
   );
 }
 

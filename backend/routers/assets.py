@@ -6,18 +6,20 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import or_
 
 from backend.db import SessionLocal
+from backend.logging_config import get_logger
 from backend.models.asset import CryptoAssetDB
 from backend.models.scan_job import ScanJobDB
 from backend.schemas.asset import AssetResponse, AssetUpdate
 from backend.security import current_role, ensure_write_role, record_audit
 
+logger = get_logger("ecdat.assets")
 router = APIRouter(prefix="/api", tags=["assets"])
 
 
 @router.get("/assets", response_model=list[AssetResponse])
 def list_assets(
     scan_job_id: int | None = Query(default=None, ge=1),
-    limit: int | None = Query(default=None, ge=1, le=200),
+    limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     search: str | None = Query(
         default=None, alias="q", min_length=1, max_length=200, pattern=r".*\S.*"
@@ -28,9 +30,8 @@ def list_assets(
 ) -> JSONResponse:
     """List assets, with optional server-side filtering and pagination.
 
-    Omitting ``limit`` preserves the original unpaginated response.  The
-    ``X-Total-Count`` header always describes the filtered result set before
-    pagination.
+    ``X-Total-Count`` header describes the filtered result set before
+    pagination. Body contains ``items`` and ``total`` fields.
     """
     db = SessionLocal()
     try:
@@ -44,7 +45,9 @@ def list_assets(
             )
             target_scan_id = latest.id if latest else None
         if target_scan_id is None:
-            return JSONResponse(content=[], headers={"X-Total-Count": "0"})
+            logger.info("No completed scan available for asset listing")
+            return JSONResponse(content={"items": [], "total": 0}, headers={"X-Total-Count": "0"})
+        logger.info("Listing assets", extra={"extra_data": {"scan_id": target_scan_id, "offset": offset, "limit": limit}})
         q = db.query(CryptoAssetDB).filter(CryptoAssetDB.scan_job_id == target_scan_id)
         if search_text := (search.strip() if search else ""):
             escaped = search_text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
@@ -63,20 +66,19 @@ def list_assets(
             q = q.filter(CryptoAssetDB.quantum_vulnerable.is_(quantum))
         total = q.count()
         if offset >= total:
-            return JSONResponse(content=[], headers={"X-Total-Count": str(total)})
+            return JSONResponse(content={"items": [], "total": total}, headers={"X-Total-Count": str(total)})
         if sort == "confidence":
             q = q.order_by(CryptoAssetDB.confidence.desc(), CryptoAssetDB.id.desc())
         elif sort == "algorithm":
             q = q.order_by(CryptoAssetDB.algorithm.asc(), CryptoAssetDB.id.desc())
         else:
             q = q.order_by(CryptoAssetDB.priority_score.desc(), CryptoAssetDB.id.desc())
-        q = q.offset(offset)
-        if limit is not None:
-            q = q.limit(limit)
+        q = q.offset(offset).limit(limit)
         assets = q.all()
         validated = [AssetResponse.model_validate(a) for a in assets]
+        items = [a.model_dump(mode="json") for a in validated]
         return JSONResponse(
-            content=[a.model_dump(mode="json") for a in validated],
+            content={"items": items, "total": total},
             headers={"X-Total-Count": str(total)},
         )
     finally:
@@ -90,7 +92,9 @@ def get_asset(asset_id: int) -> AssetResponse:
     try:
         asset = db.query(CryptoAssetDB).filter(CryptoAssetDB.id == asset_id).first()
         if not asset:
+            logger.info("Asset not found", extra={"extra_data": {"asset_id": asset_id}})
             raise HTTPException(404, detail="Asset not found")
+        logger.info("Asset retrieved", extra={"extra_data": {"asset_id": asset_id, "scan_job_id": asset.scan_job_id}})
         return AssetResponse.model_validate(asset)
     finally:
         db.close()
@@ -126,10 +130,20 @@ def update_asset(asset_id: int, payload: AssetUpdate, role: str = Depends(curren
         asset.quantum_vulnerable = risk["quantum_vulnerable"]
         asset.risk_reasons = risk["risk_reasons"]
         asset.hybrid_recommended = risk["hybrid_recommended"]
+        asset.risk_context_provenance = risk.get("risk_context_provenance", {})
 
+        record_audit(
+            "asset.risk_context_updated",
+            f"asset:{asset_id}",
+            role,
+            changes,
+            session=db,
+        )
         db.commit()
         db.refresh(asset)
-        record_audit("asset.risk_context_updated", f"asset:{asset_id}", role, changes)
         return AssetResponse.model_validate(asset)
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()

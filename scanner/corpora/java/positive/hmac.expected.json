@@ -1,0 +1,6 @@
+{
+  "file": "hmac.java",
+  "expected_assets": [
+    {"algorithm": "HMAC", "usage": "mac", "category": "mac"}
+  ]
+}

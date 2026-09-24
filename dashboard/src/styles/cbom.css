@@ -1,28 +1,28 @@
 /* ── CBOM skeleton / scanning animation ─────────────────────── */
 .cbom-skeleton-header {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-5);
   flex-wrap: wrap;
 }
 .cbom-skeleton-chip {
   height: 28px;
   width: 72px;
-  background: var(--bg-2);
-  border-radius: 99px;
+  background: var(--color-bg-2);
+  border-radius: var(--radius-pill);
   position: relative;
   overflow: hidden;
 }
 .cbom-skeleton-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 16px;
+  gap: var(--sp-4);
 }
 .cbom-skeleton-card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
+  padding: var(--sp-5);
   position: relative;
   overflow: hidden;
 }
@@ -32,16 +32,16 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(20, 184, 166, 0.04) 50%,
+    color-mix(in srgb, var(--color-teal) 4%, transparent) 50%,
     transparent 100%
   );
   animation: cbom-shimmer 1.8s ease-in-out infinite;
 }
 .cbom-skeleton-line {
   height: 10px;
-  background: var(--bg-2);
+  background: var(--color-bg-2);
   border-radius: 4px;
-  margin-bottom: 10px;
+  margin-bottom: var(--sp-2);
   position: relative;
   overflow: hidden;
 }
@@ -74,57 +74,57 @@
 }
 .cbom-risk-bar {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-5);
   flex-wrap: wrap;
 }
 .cbom-risk-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 5px 12px;
-  border-radius: 99px;
+  letter-spacing: var(--tracking-wide);
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--radius-pill);
   border: 1px solid transparent;
 }
 .cbom-risk-count {
-  font-weight: 800;
+  font-weight: var(--weight-black);
   font-size: 12px;
 }
 .cbom-risk-critical {
-  background: var(--red-wash);
-  color: var(--red);
-  border-color: rgba(239, 68, 68, 0.18);
+  background: var(--color-red-wash);
+  color: var(--color-red);
+  border-color: color-mix(in srgb, var(--color-red) 18%, transparent);
 }
 .cbom-risk-high {
-  background: var(--amber-wash);
-  color: var(--amber);
-  border-color: rgba(245, 158, 11, 0.18);
+  background: var(--color-amber-wash);
+  color: var(--color-amber);
+  border-color: color-mix(in srgb, var(--color-amber) 18%, transparent);
 }
 .cbom-risk-medium {
-  background: rgba(212, 164, 58, 0.06);
-  color: #d4a43a;
-  border-color: rgba(212, 164, 58, 0.18);
+  background: var(--color-amber-wash);
+  color: var(--color-amber);
+  border-color: color-mix(in srgb, var(--color-amber) 18%, transparent);
 }
 .cbom-risk-low {
-  background: var(--teal-wash);
-  color: var(--teal);
-  border-color: rgba(20, 184, 166, 0.18);
+  background: var(--color-teal-wash);
+  color: var(--color-teal);
+  border-color: color-mix(in srgb, var(--color-teal) 18%, transparent);
 }
 .cbom-meta {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-6);
 }
 .cbom-meta-card {
-  background: var(--surface);
-  border: 1px solid var(--line);
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
   border-radius: var(--radius-sm);
-  padding: 14px 18px;
+  padding: var(--sp-3) var(--sp-4);
   box-shadow: var(--shadow-sm);
   transition:
     transform var(--transition),
@@ -136,55 +136,47 @@
 }
 .cbom-meta-label {
   display: block;
-  font-size: 10px;
-  font-weight: 800;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-black);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  margin-bottom: 4px;
+  letter-spacing: var(--tracking-wider);
+  color: var(--color-muted);
+  margin-bottom: var(--sp-1);
 }
 .cbom-meta-value {
   display: block;
-  font:
-    700 15px system-ui,
-    sans-serif;
-  color: var(--text);
+  font: 700 15px var(--font-sans);
+  color: var(--color-text);
 }
 .cbom-meta-value code {
-  font:
-    500 13px ui-monospace,
-    SFMono-Regular,
-    Consolas,
-    monospace;
-  background: var(--bg-2);
+  font: 500 13px var(--font-mono);
+  background: var(--color-bg-2);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 .cbom-section {
-  margin-bottom: 28px;
+  margin-bottom: var(--sp-7);
 }
 .cbom-section h2 {
-  font:
-    700 18px system-ui,
-    sans-serif;
-  margin: 0 0 14px;
-  color: var(--text);
+  font: 700 18px var(--font-sans);
+  margin: 0 0 var(--sp-3);
+  color: var(--color-text);
 }
 .cbom-section > p {
-  color: var(--muted);
-  font-size: 13px;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
 }
 .cbom-component-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 16px;
+  gap: var(--sp-4);
 }
 .cbom-component-card {
   position: relative;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
+  padding: var(--sp-5);
   box-shadow: var(--shadow-sm);
   transition: box-shadow var(--transition);
 }
@@ -195,230 +187,208 @@
   top: 0;
   bottom: 0;
   width: 3px;
-  background: var(--forest);
+  background: var(--color-forest);
   border-radius: var(--radius-sm) 0 0 var(--radius-sm);
 }
 .cbom-component-card:hover {
   box-shadow: var(--shadow-md);
 }
 .cbom-component-card.cbom-risk-critical::before {
-  background: var(--red);
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+  background: var(--color-red);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--color-red) 20%, transparent);
 }
 .cbom-component-card.cbom-risk-high::before {
-  background: var(--amber);
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+  background: var(--color-amber);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--color-amber) 20%, transparent);
 }
 .cbom-component-card.cbom-risk-medium::before {
-  background: #d4a43a;
-  box-shadow: 0 0 10px rgba(212, 164, 58, 0.3);
+  background: var(--color-amber);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--color-amber) 20%, transparent);
 }
 .cbom-component-card.cbom-risk-low::before {
-  background: var(--teal);
-  box-shadow: 0 0 10px rgba(20, 184, 166, 0.3);
+  background: var(--color-teal);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--color-teal) 20%, transparent);
 }
 .cbom-comp-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
-  padding-left: 4px;
+  margin-bottom: var(--sp-2);
+  padding-left: var(--sp-1);
 }
 .cbom-comp-type {
-  font-size: 10px;
-  font-weight: 800;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-black);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--forest);
-  background: rgba(54, 93, 75, 0.08);
+  letter-spacing: var(--tracking-wider);
+  color: var(--color-forest);
+  background: color-mix(in srgb, var(--color-forest) 8%, transparent);
   padding: 3px 8px;
-  border-radius: 99px;
+  border-radius: var(--radius-pill);
 }
 .cbom-purl {
-  font:
-    500 11px ui-monospace,
-    SFMono-Regular,
-    Consolas,
-    monospace;
-  color: var(--muted);
-  background: var(--bg-2);
+  font: 500 11px var(--font-mono);
+  color: var(--color-muted);
+  background: var(--color-bg-2);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 .cbom-component-card h3 {
-  font:
-    700 15px system-ui,
-    sans-serif;
-  margin: 0 0 6px;
-  padding-left: 4px;
-  color: var(--text);
+  font: 700 15px var(--font-sans);
+  margin: 0 0 var(--sp-1);
+  padding-left: var(--sp-1);
+  color: var(--color-text);
 }
 .cbom-component-card > p {
-  margin: 0 0 12px;
-  padding-left: 4px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.5;
+  margin: 0 0 var(--sp-3);
+  padding-left: var(--sp-1);
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
 }
 .cbom-evidence-list {
-  border-top: 1px solid var(--line);
-  padding-top: 10px;
-  margin-top: 8px;
+  border-top: 1px solid var(--color-rule);
+  padding-top: var(--sp-2);
+  margin-top: var(--sp-2);
 }
 .cbom-evidence-item {
-  padding: 10px 0;
-  border-bottom: 1px solid var(--line);
+  padding: var(--sp-2) 0;
+  border-bottom: 1px solid var(--color-rule);
 }
 .cbom-evidence-item:last-child {
   border-bottom: none;
 }
 .cbom-evidence-row {
   display: flex;
-  gap: 8px;
+  gap: var(--sp-2);
   align-items: center;
-  margin-bottom: 4px;
+  margin-bottom: var(--sp-1);
   flex-wrap: wrap;
 }
 .cbom-algorithm {
-  font:
-    700 12px system-ui,
-    sans-serif;
-  color: var(--text);
+  font: 700 12px var(--font-sans);
+  color: var(--color-text);
 }
 .cbom-category {
-  font-size: 10px;
-  font-weight: 700;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--tracking-wide);
   padding: 2px 7px;
-  border-radius: 99px;
+  border-radius: var(--radius-pill);
 }
 .cbom-category[data-cat] {
   /* color assigned via component classes */
 }
 .cbom-confidence {
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--teal);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-black);
+  color: var(--color-teal);
   margin-left: auto;
 }
 .cbom-evidence-detail {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  font-size: 11px;
-  color: var(--muted);
+  gap: var(--sp-2);
+  font-size: var(--text-xs);
+  color: var(--color-muted);
 }
 .cbom-hashes {
-  margin-top: 10px;
+  margin-top: var(--sp-2);
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--sp-1);
   align-items: center;
 }
 .cbom-hash {
-  font:
-    400 10px ui-monospace,
-    SFMono-Regular,
-    Consolas,
-    monospace;
-  background: var(--bg-2);
+  font: 400 10px var(--font-mono);
+  background: var(--color-bg-2);
   padding: 2px 6px;
-  border-radius: 4px;
-  color: var(--muted);
+  border-radius: var(--radius-xs);
+  color: var(--color-muted);
   word-break: break-all;
 }
 .cbom-graph {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
+  gap: var(--sp-4);
 }
 .cbom-graph-visual {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
+  gap: var(--sp-5);
 }
 .cbom-graph-node {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 .cbom-node-card {
-  background: var(--surface);
-  border: 1px solid var(--line);
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
   border-radius: var(--radius-sm);
-  padding: 14px;
+  padding: var(--sp-3) var(--sp-4);
   box-shadow: var(--shadow-sm);
 }
 .cbom-node-card strong {
   display: block;
-  font:
-    700 13px system-ui,
-    sans-serif;
-  margin-bottom: 4px;
+  font: 700 13px var(--font-sans);
+  margin-bottom: var(--sp-1);
 }
 .cbom-node-type {
-  font-size: 10px;
-  font-weight: 800;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-black);
   text-transform: uppercase;
-  color: var(--forest);
-  background: rgba(54, 93, 75, 0.08);
+  color: var(--color-forest);
+  background: color-mix(in srgb, var(--color-forest) 8%, transparent);
   padding: 2px 6px;
-  border-radius: 99px;
+  border-radius: var(--radius-pill);
 }
 .cbom-node-deps {
-  margin-left: 16px;
-  padding-left: 12px;
-  border-left: 2px solid var(--line);
+  margin-left: var(--sp-4);
+  padding-left: var(--sp-3);
+  border-left: 2px solid var(--color-rule);
 }
 .cbom-dep-edge {
-  font-size: 11px;
-  color: var(--muted);
-  padding: 4px 0;
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  padding: var(--sp-1) 0;
 }
 .cbom-graph-raw {
-  background: var(--surface);
-  border: 1px solid var(--line);
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
   border-radius: var(--radius-sm);
-  padding: 18px;
-  font:
-    400 13px ui-monospace,
-    SFMono-Regular,
-    Consolas,
-    monospace;
-  color: var(--text);
-  line-height: 1.7;
+  padding: var(--sp-4) var(--sp-5);
+  font: 400 13px var(--font-mono);
+  color: var(--color-text);
+  line-height: var(--leading-normal);
 }
 .cbom-raw-json {
-  background: var(--ink);
-  color: #e2e8f0;
-  border-radius: 8px;
-  padding: 20px;
+  background: var(--color-ink);
+  color: var(--color-text);
+  border-radius: var(--radius-md);
+  padding: var(--sp-5);
   overflow-x: auto;
-  font:
-    400 12px ui-monospace,
-    SFMono-Regular,
-    Consolas,
-    monospace;
-  line-height: 1.6;
+  font: 400 12px var(--font-mono);
+  line-height: var(--leading-normal);
   margin: 0;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid color-mix(in srgb, var(--color-surface) 8%, transparent);
   box-shadow: var(--shadow-lg);
 }
 .cbom-vuln-list,
 .cbom-service-list {
   display: grid;
-  gap: 10px;
+  gap: var(--sp-2);
 }
 .cbom-vuln-item {
   display: grid;
   grid-template-columns: 100px 1fr;
-  gap: 10px;
+  gap: var(--sp-2);
   align-items: center;
-  background: var(--surface);
-  border: 1px solid var(--line);
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
   border-radius: var(--radius-sm);
-  padding: 14px 18px;
+  padding: var(--sp-3) var(--sp-4);
   box-shadow: var(--shadow-sm);
   transition:
     transform var(--transition-fast),
@@ -428,58 +398,56 @@
   box-shadow: var(--shadow-md);
 }
 .cbom-vuln-id {
-  font:
-    800 12px system-ui,
-    sans-serif;
-  color: var(--text);
+  font: 800 12px var(--font-sans);
+  color: var(--color-text);
 }
 .cbom-vuln-severity {
-  font-size: 10px;
-  font-weight: 800;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-black);
   text-transform: uppercase;
   padding: 3px 8px;
-  border-radius: 99px;
+  border-radius: var(--radius-pill);
   justify-self: start;
   border: 1px solid transparent;
 }
 .sev-critical {
-  background: var(--red-wash);
-  color: var(--red);
-  border-color: rgba(239, 68, 68, 0.2);
+  background: var(--color-red-wash);
+  color: var(--color-red);
+  border-color: color-mix(in srgb, var(--color-red) 20%, transparent);
 }
 .sev-high {
-  background: #fef3e6;
-  color: #c2410c;
-  border-color: rgba(249, 115, 22, 0.2);
+  background: var(--color-amber-wash);
+  color: var(--color-amber);
+  border-color: color-mix(in srgb, var(--color-amber) 20%, transparent);
 }
 .sev-medium {
-  background: var(--amber-wash);
-  color: var(--amber);
-  border-color: rgba(234, 179, 8, 0.2);
+  background: var(--color-amber-wash);
+  color: var(--color-amber);
+  border-color: color-mix(in srgb, var(--color-amber) 20%, transparent);
 }
 .sev-low {
-  background: var(--teal-wash);
-  color: var(--teal);
-  border-color: rgba(20, 184, 166, 0.2);
+  background: var(--color-teal-wash);
+  color: var(--color-teal);
+  border-color: color-mix(in srgb, var(--color-teal) 20%, transparent);
 }
 .sev-unknown {
-  background: #f1f5f9;
-  color: #64748b;
-  border-color: rgba(100, 116, 139, 0.15);
+  background: var(--color-bg-2);
+  color: var(--color-muted-soft);
+  border-color: color-mix(in srgb, var(--color-muted-soft) 15%, transparent);
 }
 .cbom-service-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: var(--surface);
-  border: 1px solid var(--line);
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
   border-radius: var(--radius-sm);
-  padding: 12px 18px;
+  padding: var(--sp-3) var(--sp-4);
   box-shadow: var(--shadow-sm);
 }
 .cbom-service-item span {
-  color: var(--muted);
-  font-size: 12px;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
 }
 
 /* ── Tier 2: CBOM micro-interactions & color depth ────────────── */
@@ -510,7 +478,7 @@
 }
 .cbom-node-card:hover {
   box-shadow:
-    0 0 0 1px var(--forest),
+    0 0 0 1px var(--color-forest),
     0 4px 12px rgba(0, 0, 0, 0.06);
 }
 

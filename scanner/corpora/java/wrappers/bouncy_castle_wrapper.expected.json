@@ -1,0 +1,7 @@
+{
+  "file": "bouncy_castle_wrapper.java",
+  "expected_assets": [
+    {"algorithm": "AES", "usage": "encryption", "category": "encryption"},
+    {"algorithm": "RSA", "usage": "encryption", "category": "encryption"}
+  ]
+}

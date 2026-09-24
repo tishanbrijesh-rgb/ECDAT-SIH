@@ -1,10 +1,28 @@
 // CBOM (Cryptographic Bill of Materials) viewer.
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { getCbom, getEvidenceGraph, getRiskReport } from "../api/client";
-import { formatDate } from "../utils/format";
+import { downloadReport, getCbom, getEvidenceGraph, getRiskReport } from "../api/client";
+import type { OutputPagination } from "../api/client";
+import { displayPath, formatDate } from "../utils/format";
 import type { CbomEntry } from "../types";
+
+// ── CBOM schema validation ──────────────────────────────────────
+const REQUIRED_FIELDS = ["bomFormat", "specVersion", "serialNumber", "metadata", "components"];
+
+function validateCbomSchema(entry: CbomEntry): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  for (const field of REQUIRED_FIELDS) {
+    const val = (entry as unknown as Record<string, unknown>)[field];
+    if (val === undefined || val === null || val === "") {
+      errors.push(`Missing or empty "${field}"`);
+    }
+  }
+  if (!Array.isArray(entry.components)) {
+    errors.push("Components must be an array");
+  }
+  return { valid: errors.length === 0, errors };
+}
 
 // ── Stagger variants ───────────────────────────────────────────
 const staggerContainer = {
@@ -16,9 +34,9 @@ const staggerItem = {
 };
 
 const EMPTY_CBOM: CbomEntry = {
-  bom_format: "",
-  spec_version: "",
-  serial_number: "",
+  bomFormat: "",
+  specVersion: "",
+  serialNumber: "",
   metadata: {},
   components: [],
   vulnerabilities: [],
@@ -27,6 +45,7 @@ const EMPTY_CBOM: CbomEntry = {
 };
 
 const SKELETON_COUNT = 6;
+const PAGE_SIZE = 100;
 
 type JsonRecord = Record<string, unknown>;
 
@@ -57,8 +76,8 @@ export default function CbomPage() {
   const [params] = useSearchParams();
   const scanId = params.get("scan_id") ? Number(params.get("scan_id")) : undefined;
 
-  const [cbom, setCbom] = useState<CbomEntry>(EMPTY_CBOM);
-  const [graph, setGraph] = useState<Record<string, unknown> | null>(null);
+  const [cbom, setCbom] = useState<CbomEntry & { pagination?: OutputPagination }>(EMPTY_CBOM);
+  const [graph, setGraph] = useState<import("../types").EvidenceGraphResponse | null>(null);
   const [report, setReport] = useState<{
     title: string;
     scan_id: number;
@@ -68,6 +87,10 @@ export default function CbomPage() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"components" | "graph" | "raw">("components");
   const [retryKey, setRetryKey] = useState(0);
+  const [compFilter, setCompFilter] = useState("");
+  const [offset, setOffset] = useState(0);
+  const [exporting, setExporting] = useState(false);
+  const [exportedCount, setExportedCount] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,7 +100,7 @@ export default function CbomPage() {
     setError("");
     setLoading(true);
     Promise.all([
-      getCbom(scanId),
+      getCbom(scanId, { limit: PAGE_SIZE, offset, query: compFilter }),
       getEvidenceGraph(scanId).catch(() => null),
       scanId ? getRiskReport(scanId).catch(() => null) : Promise.resolve(null),
     ])
@@ -100,30 +123,71 @@ export default function CbomPage() {
     return () => {
       cancelled = true;
     };
-  }, [scanId, retryKey]);
+  }, [scanId, retryKey, offset, compFilter]);
 
   const components = useMemo(() => {
     const c = cbom.components || [];
     return c as Array<Record<string, unknown>>;
   }, [cbom]);
 
+  const schemaValidation = useMemo(() => {
+    if (cbom.bomFormat === "" && cbom.specVersion === "") return null;
+    return validateCbomSchema(cbom);
+  }, [cbom]);
+
   const riskDistribution = useMemo(() => {
     const counts = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
     for (const comp of components) {
       const cp = comp.properties as Array<{ name: string; value: string }> | undefined;
-      const confEntry = cp?.find((p) => p.name === "ecdat:confidence");
-      const conf = confEntry ? Number(confEntry.value) : 0.5;
-      if (conf < 0.4) counts.CRITICAL++;
-      else if (conf < 0.6) counts.HIGH++;
-      else if (conf < 0.8) counts.MEDIUM++;
-      else counts.LOW++;
+      const labelEntry = cp?.find((p) => p.name === "ecdat:risk-label");
+      const scoreEntry = cp?.find((p) => p.name === "ecdat:risk-score");
+      let label = labelEntry?.value;
+      if (!label) {
+        const score = scoreEntry ? Number(scoreEntry.value) : 0;
+        label = score >= 75 ? "CRITICAL" : score >= 50 ? "HIGH" : score >= 25 ? "MEDIUM" : "LOW";
+      }
+      if (label in counts) (counts as Record<string, number>)[label]++;
     }
     return counts;
   }, [components]);
 
   const vulnerabilities = cbom.vulnerabilities || [];
   const services = cbom.services || [];
-  const visibleComponents = components.slice(0, 250);
+  // Type filter
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const comp of components) {
+      const t = (comp.type as string) || "library";
+      counts[t] = (counts[t] || 0) + 1;
+    }
+    return counts;
+  }, [components]);
+
+  const filteredComponents = useMemo(() => {
+    return components;
+  }, [components]);
+
+  const pagination = cbom.pagination ?? {
+    total: components.length,
+    filtered: components.length,
+    offset: 0,
+    limit: PAGE_SIZE,
+    loaded: components.length,
+  };
+
+  const handleExportCsv = useCallback(async () => {
+    if (exporting || pagination.total === 0) return;
+    setExporting(true);
+    try {
+      await downloadReport(
+        `/api/cbom.csv${scanId ? `?scan_id=${scanId}` : ""}`,
+        `ecdat-cbom-${report?.scan_id || "latest"}.csv`,
+      );
+      setExportedCount(pagination.total);
+    } finally {
+      setExporting(false);
+    }
+  }, [exporting, pagination.total, report?.scan_id, scanId]);
 
   const metadataRecord = cbom.metadata as Record<string, unknown> | undefined;
   const metadataProperties = readProperties(metadataRecord?.properties);
@@ -169,7 +233,7 @@ export default function CbomPage() {
             className={`button ${view === "components" ? "" : "secondary"}`}
             onClick={() => setView("components")}
           >
-            Components ({components.length})
+            Components ({pagination.total})
           </button>
           {graph && Object.keys(graph).length > 0 && (
             <button
@@ -185,8 +249,41 @@ export default function CbomPage() {
           >
             Raw JSON
           </button>
+          <button
+            className="button secondary"
+            onClick={handleExportCsv}
+            disabled={exporting || pagination.total === 0}
+            title="Export CBOM components as CSV"
+          >
+            {exporting ? "Exporting..." : "Export CSV"}
+          </button>
         </div>
       </section>
+
+      {/* Summary chips */}
+      {!loading && (
+        <section className="cbom-summary" aria-label="CBOM summary">
+          <span className="cbom-summary-chip">
+            <strong>{pagination.total}</strong> component{pagination.total !== 1 ? "s" : ""}
+          </span>
+          {Object.entries(typeCounts).map(([type, count]) => (
+            <span key={type} className="cbom-summary-chip cbom-summary-chip--type">
+              <strong>{count}</strong> {type}
+            </span>
+          ))}
+          {vulnerabilities.length > 0 && (
+            <span className="cbom-summary-chip cbom-summary-chip--vuln">
+              <strong>{vulnerabilities.length}</strong> vuln
+              {vulnerabilities.length !== 1 ? "s" : ""}
+            </span>
+          )}
+          {services.length > 0 && (
+            <span className="cbom-summary-chip">
+              <strong>{services.length}</strong> service{services.length !== 1 ? "s" : ""}
+            </span>
+          )}
+        </section>
+      )}
 
       {loading && view === "components" ? (
         <>
@@ -210,13 +307,40 @@ export default function CbomPage() {
       ) : (
         <>
           <div className="cbom-risk-bar">
-            {(["CRITICAL", "HIGH", "MEDIUM", "LOW"] as const).map((label) => (
-              <span key={label} className={`cbom-risk-chip cbom-risk-${label.toLowerCase()}`}>
-                <span className="cbom-risk-count">{riskDistribution[label]}</span>
-                {label}
-              </span>
-            ))}
+            {(["CRITICAL", "HIGH", "MEDIUM", "LOW"] as const)
+              .filter((label) => riskDistribution[label] > 0)
+              .map((label) => (
+                <span key={label} className={`cbom-risk-chip cbom-risk-${label.toLowerCase()}`}>
+                  <span className="cbom-risk-count">{riskDistribution[label]}</span>
+                  {label}
+                </span>
+              ))}
           </div>
+          {view === "components" && components.length > 0 && (
+            <div className="cbom-search-bar">
+              <input
+                aria-label="Filter components"
+                placeholder="Search algorithm, location, category, or usage..."
+                value={compFilter}
+                onChange={(e) => {
+                  setCompFilter(e.target.value);
+                  setOffset(0);
+                }}
+              />
+              {compFilter && (
+                <button
+                  className="cbom-search-clear"
+                  onClick={() => {
+                    setCompFilter("");
+                    setOffset(0);
+                  }}
+                  aria-label="Clear filter"
+                >
+                  &times;
+                </button>
+              )}
+            </div>
+          )}
           <motion.section
             className="cbom-meta"
             variants={staggerContainer}
@@ -241,15 +365,37 @@ export default function CbomPage() {
                 <span className="cbom-meta-value">{formatDate(timestamp)}</span>
               </motion.div>
             )}
+            {schemaValidation && (
+              <motion.div
+                variants={staggerItem}
+                className={`cbom-meta-card ${schemaValidation.valid ? "cbom-schema-valid" : "cbom-schema-invalid"}`}
+              >
+                <span className="cbom-meta-label">Schema validation</span>
+                <span className="cbom-meta-value">
+                  {schemaValidation.valid ? (
+                    <>Valid CycloneDX</>
+                  ) : (
+                    <span className="cbom-schema-errors">
+                      {schemaValidation.errors.length} issue
+                      {schemaValidation.errors.length !== 1 ? "s" : ""}
+                    </span>
+                  )}
+                </span>
+              </motion.div>
+            )}
           </motion.section>
 
           {view === "components" && (
             <section className="cbom-section">
-              <h2>Components ({components.length})</h2>
-              {components.length > visibleComponents.length && (
-                <div className="callout callout-amber">
-                  Showing the first {visibleComponents.length} components to keep this view
-                  responsive. Raw JSON retains all {components.length} components.
+              <h2>
+                Total {pagination.total.toLocaleString()} · Loaded{" "}
+                {pagination.loaded.toLocaleString()} · Filtered{" "}
+                {pagination.filtered.toLocaleString()} · Exported {exportedCount.toLocaleString()}
+              </h2>
+              {compFilter && filteredComponents.length === 0 && (
+                <div className="empty-table-msg">
+                  <strong>No components match "{compFilter}"</strong>
+                  <span>Try a different search term.</span>
                 </div>
               )}
               {components.length === 0 ? (
@@ -269,7 +415,7 @@ export default function CbomPage() {
                   initial="initial"
                   animate="animate"
                 >
-                  {visibleComponents.map((comp, i) => {
+                  {filteredComponents.map((comp, i) => {
                     const componentProperties = readProperties(comp.properties);
                     const cryptoProperties = comp.cryptoProperties as JsonRecord | undefined;
                     const algorithmProperties = cryptoProperties?.algorithmProperties as
@@ -293,15 +439,21 @@ export default function CbomPage() {
                     const nameVal = (comp.name as string) || `Component ${i + 1}`;
                     const descVal = (comp.description as string) || "";
                     const purlVal = comp.purl as string | undefined;
-                    const confidenceVal = Number(componentProperties["ecdat:confidence"] || 0);
+                    const riskLabel =
+                      componentProperties["ecdat:risk-label"] ||
+                      (() => {
+                        const s = Number(componentProperties["ecdat:risk-score"] || 0);
+                        return s >= 75 ? "CRITICAL" : s >= 50 ? "HIGH" : s >= 25 ? "MEDIUM" : "LOW";
+                      })();
                     let riskClass = "cbom-risk-low";
-                    if (confidenceVal < 0.4) riskClass = "cbom-risk-critical";
-                    else if (confidenceVal < 0.6) riskClass = "cbom-risk-high";
-                    else if (confidenceVal < 0.8) riskClass = "cbom-risk-medium";
+                    if (riskLabel === "CRITICAL") riskClass = "cbom-risk-critical";
+                    else if (riskLabel === "HIGH") riskClass = "cbom-risk-high";
+                    else if (riskLabel === "MEDIUM") riskClass = "cbom-risk-medium";
+                    const compKey = `${(comp.purl as string) || (comp.name as string) || "component"}-${i}`;
                     return (
                       <motion.article
                         className={`cbom-component-card ${riskClass}`}
-                        key={i}
+                        key={compKey}
                         variants={staggerItem}
                       >
                         <div className="cbom-comp-header">
@@ -332,7 +484,7 @@ export default function CbomPage() {
                                     )}
                                   </div>
                                   <div className="cbom-evidence-detail">
-                                    {loc && <span>Location: {loc}</span>}
+                                    {loc && <span title={loc}>Location: {displayPath(loc)}</span>}
                                     {usg && <span>Usage: {usg}</span>}
                                     {lib && <span>Library: {lib}</span>}
                                     {src && <span>Sources: {src.join(", ")}</span>}
@@ -356,6 +508,24 @@ export default function CbomPage() {
                     );
                   })}
                 </motion.div>
+              )}
+              {pagination.filtered > pagination.limit && (
+                <nav aria-label="CBOM component pages">
+                  <button
+                    className="button secondary"
+                    disabled={pagination.offset === 0}
+                    onClick={() => setOffset(Math.max(0, pagination.offset - pagination.limit))}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    className="button secondary"
+                    disabled={pagination.offset + pagination.loaded >= pagination.filtered}
+                    onClick={() => setOffset(pagination.offset + pagination.limit)}
+                  >
+                    Next
+                  </button>
+                </nav>
               )}
             </section>
           )}
@@ -386,12 +556,12 @@ export default function CbomPage() {
             </section>
           )}
 
-          {vulnerabilities.length > 0 && view === "components" && (
+          {vulnerabilities.length > 0 && (
             <section className="cbom-section">
               <h2>Known vulnerabilities</h2>
               <div className="cbom-vuln-list">
                 {(vulnerabilities as Array<Record<string, unknown>>).map((v, i) => (
-                  <div className="cbom-vuln-item" key={i}>
+                  <div className="cbom-vuln-item" key={(v.id as string) || `vuln-${i}`}>
                     <span className="cbom-vuln-id">{(v.id as string) || `VULN-${i}`}</span>
                     <span
                       className={`cbom-vuln-severity sev-${(v.severity as string) || "unknown"}`}
@@ -405,12 +575,12 @@ export default function CbomPage() {
             </section>
           )}
 
-          {services.length > 0 && view === "components" && (
+          {services.length > 0 && (
             <section className="cbom-section">
               <h2>Services</h2>
               <div className="cbom-service-list">
                 {(services as Array<Record<string, unknown>>).map((s, i) => (
-                  <div className="cbom-service-item" key={i}>
+                  <div className="cbom-service-item" key={(s.name as string) || `svc-${i}`}>
                     <strong>{(s.name as string) || `Service ${i + 1}`}</strong>
                     <span>{(s.description as string) || "—"}</span>
                   </div>
@@ -424,12 +594,15 @@ export default function CbomPage() {
   );
 }
 
-function renderGraph(data: Record<string, unknown>): React.ReactNode {
-  const nodes = (data.nodes as Array<Record<string, unknown>>) || [];
-  const edges = (data.edges as Array<{ source: string | number; target: string | number }>) || [];
+function renderGraph(data: import("../types").EvidenceGraphResponse | null): React.ReactNode {
+  if (!data) return <p className="muted">No graph data.</p>;
+  const nodes = data.nodes;
+  const edges = data.edges;
 
   if (nodes.length === 0) {
-    const entries = Object.entries(data).filter(([k]) => k !== "nodes" && k !== "edges");
+    const entries = Object.entries(data as unknown as Record<string, unknown>).filter(
+      ([k]) => k !== "nodes" && k !== "edges",
+    );
     if (entries.length === 0) return <p className="muted">No graph data.</p>;
     return (
       <div className="cbom-graph-raw">
@@ -453,18 +626,19 @@ function renderGraph(data: Record<string, unknown>): React.ReactNode {
     <div className="cbom-graph-visual">
       {nodes.map((node, i) => {
         const deps = edgesBySource.get(String(node.id ?? i)) || [];
+        const nodeKey = String(node.id ?? node.label ?? `node-${i}`);
         return (
-          <div className="cbom-graph-node" key={i}>
+          <div className="cbom-graph-node" key={nodeKey}>
             <div className="cbom-node-card">
               <strong>{(node.label as string) || `Node ${node.id ?? i}`}</strong>
               {node.type ? <span className="cbom-node-type">{node.type as string}</span> : null}
             </div>
             {deps.length > 0 && (
               <div className="cbom-node-deps">
-                {deps.map((d, j) => {
+                {deps.map((d, _j) => {
                   const target = nodeMap.get(String(d.target));
                   return (
-                    <div key={j} className="cbom-dep-edge">
+                    <div key={`${String(d.source)}-${String(d.target)}`} className="cbom-dep-edge">
                       {target ? (target.label as string) || `Node ${d.target}` : `→ ${d.target}`}
                     </div>
                   );

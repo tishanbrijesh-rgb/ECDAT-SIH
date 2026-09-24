@@ -1,0 +1,6 @@
+{
+  "file": "hmacsha256.cs",
+  "expected_assets": [
+    {"algorithm": "HMAC", "usage": "mac", "category": "mac"}
+  ]
+}

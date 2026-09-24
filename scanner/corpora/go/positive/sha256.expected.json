@@ -1,0 +1,6 @@
+{
+  "file": "sha256.go",
+  "expected_assets": [
+    {"algorithm": "SHA-256", "usage": "hashing", "category": "hash"}
+  ]
+}

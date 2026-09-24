@@ -1,0 +1,1110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ECDAT Implemented Architecture</title>
+<style>
+  @page { size: A4; margin: 17mm 16mm 18mm; }
+  * { box-sizing: border-box; }
+  html { color: #111827; font-family: "Segoe UI", Arial, sans-serif; font-size: 10pt; line-height: 1.48; }
+  body { margin: 0 auto; max-width: 186mm; background: white; }
+  .cover { min-height: 258mm; display: flex; flex-direction: column; justify-content: center; page-break-after: always; }
+  .eyebrow { color: #075985; font-size: 9pt; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 18mm; }
+  .cover h1 { font-size: 34pt; line-height: 1.06; margin: 0 0 8mm; max-width: 155mm; }
+  .cover .subtitle { font-size: 16pt; line-height: 1.35; color: #334155; max-width: 145mm; margin-bottom: 26mm; }
+  .cover dl { display: grid; grid-template-columns: 34mm 1fr; gap: 2mm 6mm; margin: 0; font-size: 10.5pt; }
+  .cover dt { font-weight: 700; color: #0f172a; }
+  .cover dd { margin: 0; color: #475569; }
+  .toc { page-break-after: always; }
+  .toc ol { columns: 2; column-gap: 14mm; padding-left: 6mm; }
+  .toc li { break-inside: avoid; margin: 0 0 2.5mm; }
+  .toc a { color: #0f172a; text-decoration: none; }
+  main > h1, main > p:nth-of-type(-n+3) { display: none; }
+  h1, h2, h3, h4 { color: #000; break-after: avoid; }
+  h1 { font-size: 25pt; line-height: 1.12; }
+  h2 { font-size: 17pt; margin: 10mm 0 4mm; padding-top: 1mm; }
+  h3 { font-size: 12.5pt; margin: 7mm 0 2.5mm; }
+  h4 { font-size: 10.5pt; margin: 5mm 0 2mm; }
+  p { margin: 0 0 3.2mm; orphans: 3; widows: 3; }
+  ul, ol { margin: 0 0 4mm 5mm; padding-left: 5mm; }
+  li { margin-bottom: 1.2mm; }
+  code { font-family: "Cascadia Mono", Consolas, monospace; font-size: .91em; }
+  p code, li code, td code { background: #f1f5f9; padding: .15em .3em; border-radius: 3px; }
+  pre { white-space: pre-wrap; break-inside: avoid; font-size: 8.1pt; line-height: 1.35; padding: 4mm; background: #f8fafc; border: 1px solid #d9e2ec; border-radius: 5px; margin: 3mm 0 5mm; }
+  .diagram-source { color: #0f172a; background: #f8fafc; }
+  .diagram-label { font-size: 8pt; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: .06em; margin-top: 4mm; }
+  table { width: 100%; border-collapse: collapse; margin: 3mm 0 6mm; font-size: 8.3pt; break-inside: auto; }
+  thead { display: table-header-group; }
+  tr { break-inside: avoid; }
+  th, td { border: 1px solid #d9d9d9; padding: 2.2mm 2.4mm; vertical-align: middle; text-align: left; }
+  th { background: #12324a; color: white; font-weight: 700; }
+  tbody tr:nth-child(even) td { background: #f5f9fc; }
+  blockquote { margin: 4mm 0; padding-left: 4mm; border-left: 3px solid #0e7490; color: #334155; }
+  .architecture-figure { margin: 5mm 0 7mm; break-inside: avoid; }
+  .architecture-figure img { width: 100%; height: auto; display: block; }
+  figcaption { margin-top: 2mm; color: #475569; font-size: 8.3pt; }
+  hr { border: 0; margin: 9mm 0 3mm; }
+  a { color: #075985; }
+  @media print {
+    body { max-width: none; }
+    a { color: inherit; text-decoration: none; }
+    h2 { break-before: auto; }
+    .architecture-figure { break-before: auto; }
+  }
+</style>
+</head>
+<body>
+<section class="cover">
+  <div class="eyebrow">System architecture report</div>
+  <h1>ECDAT Implemented Architecture</h1>
+  <div class="subtitle">End to end frontend backend scanner data and deployment architecture</div>
+  <dl>
+    <dt>Repository</dt><dd>ECDAT-SIH</dd>
+    <dt>Snapshot</dt><dd>20 September 2026</dd>
+    <dt>Application</dt><dd>Enterprise Cryptographic Discovery and Analysis Tool</dd>
+    <dt>Coverage</dt><dd>Frontend, API, scanner, data model, security, deployment, operations, and verification</dd>
+  </dl>
+</section>
+<section class="toc">
+  <h1>Contents</h1>
+  <ol><li><a href="#executive-summary">Executive summary</a></li><li><a href="#1-system-context">1 System context</a></li><li><a href="#2-repository-structure-and-ownership">2 Repository structure and ownership</a></li><li><a href="#3-runtime-topology">3 Runtime topology</a></li><li><a href="#4-frontend-architecture">4 Frontend architecture</a></li><li><a href="#5-backend-application-architecture">5 Backend application architecture</a></li><li><a href="#6-end-to-end-scan-lifecycle">6 End to end scan lifecycle</a></li><li><a href="#7-scanner-architecture">7 Scanner architecture</a></li><li><a href="#8-correlation-confidence-and-risk">8 Correlation confidence and risk</a></li><li><a href="#9-persistence-architecture">9 Persistence architecture</a></li><li><a href="#10-read-models-reports-and-exports">10 Read models reports and exports</a></li><li><a href="#11-progress-observability-and-operations">11 Progress observability and operations</a></li><li><a href="#12-security-architecture">12 Security architecture</a></li><li><a href="#13-configuration-architecture">13 Configuration architecture</a></li><li><a href="#14-build-test-and-release-architecture">14 Build test and release architecture</a></li><li><a href="#15-architectural-constraints-and-extension-points">15 Architectural constraints and extension points</a></li><li><a href="#16-startup-and-shutdown-flow">16 Startup and shutdown flow</a></li><li><a href="#17-source-of-truth-map">17 Source of truth map</a></li><li><a href="#18-architecture-conclusion">18 Architecture conclusion</a></li></ol>
+</section>
+<main><h1 id="ecdat-implemented-architecture">ECDAT Implemented Architecture</h1><p><strong>End to end frontend backend scanner data and deployment architecture</strong><br><strong>Repository:</strong> <code>ECDAT-SIH</code><br><strong>Architecture snapshot:</strong> 20 September 2026<br><strong>System version:</strong> FastAPI application <code>1.0.0</code></p>
+<h2 id="executive-summary">Executive summary</h2><p>ECDAT is a local-first cryptographic discovery and assurance platform. A React web console accepts an authenticated repository scan request, a FastAPI control plane validates and durably records it, and a supervised child process scans a read-only local repository. The scanner collects Python AST, multi-language rule, dependency-manifest, and X.509 evidence. The backend correlates that evidence into logical cryptographic operations, computes confidence and post-quantum migration risk, persists the results, and exposes dashboards, inventory, evidence graphs, CBOM, risk reports, evaluation metrics, CSV exports, and live scan progress.</p>
+<p>The implemented system is intentionally bounded. It supports one active scanner worker per API server process, uses a database-backed dispatch record and lease rather than an external message broker, scans paths visible to the backend host, and uses configured HMAC-signed demo sessions rather than enterprise SSO. Local development defaults to SQLite. Docker Compose uses PostgreSQL 16, a FastAPI container, an Nginx-hosted React container, a migration job, and a read-only repository mount.</p>
+<p>This document describes the code that exists in the current working tree. Future architecture described in planning files is not presented as implemented behavior.</p>
+<h2 id="1-system-context">1 System context</h2><figure class="architecture-figure"><img src="architecture-assets/ecdat-current.architecture.visual-check.2048x1320.light.png" alt="ECDAT implemented architecture"><figcaption>Figure 1. Implemented ECDAT runtime and evidence path.</figcaption></figure>
+<p>The main runtime path is:</p>
+<div class="diagram-label">Architecture flow specification</div><pre class="diagram-source"><code>flowchart LR
+    A[Security analyst] --&gt;|HTTPS| W[React and Nginx]
+    W --&gt;|Bearer REST and SSE| F[FastAPI control plane]
+    F --&gt;|job plus outbox| D[(SQL database)]
+    F --&gt;|background dispatch| S[Supervisor]
+    S --&gt;|isolated subprocess| X[Scanner worker]
+    X --&gt; C[Collectors]
+    C --&gt; R[Correlation]
+    R --&gt; Q[Confidence and risk]
+    Q --&gt;|transactional persistence| D
+    D --&gt; O[Read models and exports]
+    O --&gt; W</code></pre><h3 id="1-1-implemented-technology-stack">1.1 Implemented technology stack</h3><table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Implemented technology</th>
+<th>Primary responsibility</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Browser application</td>
+<td>React 18, TypeScript, React Router, Recharts, Framer Motion</td>
+<td>Authentication shell, scan workflow, inventory, analysis, exports</td>
+</tr>
+<tr>
+<td>Static serving and reverse proxy</td>
+<td>Nginx unprivileged image</td>
+<td>Serve compiled SPA, proxy <code>/api/</code>, security headers, disable SSE buffering</td>
+</tr>
+<tr>
+<td>API control plane</td>
+<td>FastAPI, Pydantic, Uvicorn</td>
+<td>Validation, authentication, authorization, job control, queries, reports</td>
+</tr>
+<tr>
+<td>Persistence</td>
+<td>SQLAlchemy and Alembic</td>
+<td>Jobs, dispatch state, leases, failures, findings, audits, revoked sessions</td>
+</tr>
+<tr>
+<td>Local database</td>
+<td>SQLite</td>
+<td>Single-machine development and tests</td>
+</tr>
+<tr>
+<td>Compose database</td>
+<td>PostgreSQL 16</td>
+<td>Durable container deployment storage</td>
+</tr>
+<tr>
+<td>Scanner</td>
+<td>Python static analysis</td>
+<td>Repository inventory, bounded reads, evidence collection and redaction</td>
+</tr>
+<tr>
+<td>Worker isolation</td>
+<td>Supervised Python subprocess</td>
+<td>Run repository-controlled parsing without API credentials</td>
+</tr>
+<tr>
+<td>Quality system</td>
+<td>Pytest, Vitest, Playwright, axe-core, Ruff, mypy, ESLint, Prettier</td>
+<td>Unit, integration, contract, accuracy, accessibility, and end-to-end checks</td>
+</tr>
+</tbody></table>
+<h2 id="2-repository-structure-and-ownership">2 Repository structure and ownership</h2><pre class="code-block"><code>ECDAT-SIH/
+├── dashboard/                 React SPA and Nginx production image
+│   ├── src/App.tsx            Authentication shell and route composition
+│   ├── src/api/client.ts      Session-aware REST, streaming, and downloads
+│   ├── src/pages/             User-facing workflows
+│   ├── src/components/        Shared presentation and assurance components
+│   └── e2e/                   Playwright browser scenarios
+├── backend/                   FastAPI control plane
+│   ├── main.py                App, middleware, router wiring, health/readiness
+│   ├── routers/               HTTP commands, queries, streams, and exports
+│   ├── services/              Admission, worker supervision, analysis, scoring
+│   ├── models/                SQLAlchemy persistence model
+│   ├── schemas/               Pydantic request and response contracts
+│   ├── middleware/            Rate limiting and database retry helpers
+│   └── scan_worker.py         Credential-minimized subprocess entry point
+├── scanner/                   Repository discovery engine
+│   ├── main.py                Inventory, budgets, collector orchestration
+│   ├── collectors/            AST, rules, dependency, certificate collectors
+│   ├── rules/                 Versioned crypto pattern registry
+│   ├── models/                In-memory evidence record
+│   ├── corpus/ and corpora/   Labeled benchmark and holdout material
+│   └── redaction.py           Evidence sanitization
+├── alembic/                   Schema migration chain through revision 0008
+├── scripts/                   Seeding, evaluation, calibration, validation
+├── tests/                     Cross-layer and scanner regression tests
+├── docker-compose.yml         PostgreSQL, migration, API, and dashboard
+└── .github/workflows/         CI and scheduled benchmark pipelines</code></pre><p>The browser never scans files directly. The FastAPI process owns policy and job control. The child worker owns parsing and produces a bounded JSON artifact. The control plane owns final scoring and transactional persistence.</p>
+<h2 id="3-runtime-topology">3 Runtime topology</h2><h3 id="3-1-local-development-mode">3.1 Local development mode</h3><ul>
+<li>Vite serves the dashboard on port <code>3000</code> and proxies <code>/api</code> to <code>localhost:8000</code>.</li>
+<li>Uvicorn serves <code>backend.main:app</code> on port <code>8000</code>.</li>
+<li>SQLAlchemy uses <code>sqlite:///./ecdat.db</code> unless <code>DATABASE_URL</code> is set.</li>
+<li>The operator must configure signed-session credentials and either allowed scan roots or the explicit local unrestricted-scan switch.</li>
+<li>The scanner runs as a child of the API process, not as a separate daemon.</li>
+</ul>
+<h3 id="3-2-docker-compose-mode">3.2 Docker Compose mode</h3><table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Image or build</th>
+<th>Network exposure</th>
+<th>Storage and trust behavior</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>db</code></td>
+<td><code>postgres:16-alpine</code></td>
+<td><code>127.0.0.1:5432</code></td>
+<td>Named <code>pgdata</code> volume and health check</td>
+</tr>
+<tr>
+<td><code>migrate</code></td>
+<td>Backend image</td>
+<td>Internal only</td>
+<td>Runs <code>alembic upgrade head</code> before API startup</td>
+</tr>
+<tr>
+<td><code>backend</code></td>
+<td>Python 3.11 slim</td>
+<td><code>127.0.0.1:8000</code></td>
+<td>Non-root, read-only filesystem, <code>/tmp</code> tmpfs, all capabilities dropped</td>
+</tr>
+<tr>
+<td><code>dashboard</code></td>
+<td>Node build plus unprivileged Nginx</td>
+<td><code>127.0.0.1:3000</code></td>
+<td>Static SPA, same-origin API proxy, response security headers</td>
+</tr>
+</tbody></table>
+<p>The Compose backend receives <code>./test-repo</code> as <code>/test-repo:ro</code> and limits scans to that root. The container is capped at 1 GiB memory, 2 CPUs, 256 processes, and a bounded open-file limit.</p>
+<h3 id="3-3-request-routing">3.3 Request routing</h3><p>In development, Vite proxies <code>/api</code>. In Compose, Nginx serves the SPA and proxies <code>/api/</code> to <code>backend:8000</code>. Nginx disables proxy buffering for progress streams and allows up to 360 seconds for the proxied response. Direct API URLs remain possible through <code>VITE_API_URL</code>, but the default is same-origin traffic.</p>
+<h2 id="4-frontend-architecture">4 Frontend architecture</h2><h3 id="4-1-application-shell-and-authentication-state">4.1 Application shell and authentication state</h3><p><code>dashboard/src/App.tsx</code> is the browser composition root. It restores a session, displays the login page when signed out, listens for session-expiry events, renders navigation and account controls, and lazy-loads most pages. A global error boundary contains rendering failures, and the toast provider carries transient feedback.</p>
+<p><code>dashboard/src/api/client.ts</code> is the sole HTTP boundary. It:</p>
+<ul>
+<li>stores the access token, role, and expiry in memory and <code>sessionStorage</code>;</li>
+<li>validates local expiry and restores identity through <code>GET /api/auth/me</code>;</li>
+<li>attaches <code>Authorization: Bearer &lt;token&gt;</code> to authenticated calls;</li>
+<li>clears the session and dispatches <code>ecdat-session-expired</code> after a 401 or timer expiry;</li>
+<li>converts 403 responses to a permission message;</li>
+<li>implements authenticated fetch streaming for SSE because native <code>EventSource</code> cannot attach the bearer header;</li>
+<li>creates browser downloads for server exports and client-built CSV files.</li>
+</ul>
+<p>The browser uses role state only to hide or disable write affordances. The API remains the authorization authority.</p>
+<h3 id="4-2-route-map">4.2 Route map</h3><table>
+<thead>
+<tr>
+<th>Browser route</th>
+<th>Page</th>
+<th>Main backend dependencies</th>
+<th>User outcome</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/</code></td>
+<td>Dashboard</td>
+<td>Summary, evaluation, scans, filtered assets, risk text export</td>
+<td>Overall exposure and recent scan status</td>
+</tr>
+<tr>
+<td><code>/assets</code></td>
+<td>AssetsPage</td>
+<td>Paginated and filtered assets</td>
+<td>Search, sort, select, and export inventory</td>
+</tr>
+<tr>
+<td><code>/assets/:id</code></td>
+<td>AssetDetail</td>
+<td>Asset detail and asset patch</td>
+<td>Inspect evidence and edit business risk context</td>
+</tr>
+<tr>
+<td><code>/scan</code></td>
+<td>ScanPage</td>
+<td>Create scan, scan list, scan detail, SSE</td>
+<td>Start and monitor a repository scan</td>
+</tr>
+<tr>
+<td><code>/scans/:id</code></td>
+<td>ScanDetailPage</td>
+<td>Scan detail, assets, scans, SSE</td>
+<td>Review lifecycle, coverage, failures, and findings</td>
+</tr>
+<tr>
+<td><code>/reports</code></td>
+<td>RiskReport</td>
+<td>Risk report, evaluation, CSV export</td>
+<td>Prioritized PQC migration view</td>
+</tr>
+<tr>
+<td><code>/cbom</code></td>
+<td>CbomPage</td>
+<td>CBOM, evidence graph, risk report, CSV export</td>
+<td>Cryptographic bill of materials</td>
+</tr>
+<tr>
+<td><code>/evidence-graph</code></td>
+<td>EvidenceGraphPage</td>
+<td>Evidence graph</td>
+<td>Explore evidence-to-asset support links</td>
+</tr>
+<tr>
+<td><code>*</code></td>
+<td>NotFound</td>
+<td>None</td>
+<td>Recover from an unknown route</td>
+</tr>
+</tbody></table>
+<h3 id="4-3-frontend-data-behavior">4.3 Frontend data behavior</h3><ul>
+<li>Pages use React hooks and local state; there is no external global state library.</li>
+<li>URL search parameters preserve scan selection and several filters.</li>
+<li>Dashboard and report visualizations are lazy-loaded to reduce initial bundle cost.</li>
+<li>Asset list filtering and pagination execute on the server. Selected-row CSV creation executes in the browser.</li>
+<li>CBOM and risk CSV exports execute on the server so they can stream the full result set.</li>
+<li>The frontend build enforces JavaScript, CSS, and gzip bundle budgets.</li>
+<li>Accessibility support includes a skip link, focus restoration, keyboard-capable dialogs, reduced-motion support, labeled fields, theme controls, and automated axe checks.</li>
+</ul>
+<h3 id="4-4-current-frontend-contract-note">4.4 Current frontend contract note</h3><p>The scan form sends <code>max_depth</code> and <code>min_size</code>, but the current backend <code>ScanRequest</code> schema accepts only <code>repo_path</code>. Pydantic therefore ignores those extra fields. The controls are present in the browser but do not currently change scanner behavior.</p>
+<h2 id="5-backend-application-architecture">5 Backend application architecture</h2><h3 id="5-1-fastapi-composition-root">5.1 FastAPI composition root</h3><p><code>backend/main.py</code> performs five jobs:</p>
+<ol>
+<li>loads the project <code>.env</code> before modules read environment variables;</li>
+<li>validates the schema revision and optionally creates development tables;</li>
+<li>reconciles expired scan leases and optionally recovers stale jobs;</li>
+<li>installs request ID, slow-request, optional Prometheus, timeout, and CORS middleware;</li>
+<li>mounts authentication, scan, asset, dashboard, output, audit, and observability routers.</li>
+</ol>
+<p>The expected database revision is <code>0008_scan_admission</code>. Readiness checks database connectivity, required tables, migration version, and required columns.</p>
+<h3 id="5-2-middleware-order-and-behavior">5.2 Middleware order and behavior</h3><table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Implementation</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Request identity</td>
+<td><code>RequestIdMiddleware</code></td>
+<td>Accepts a safe <code>X-Request-ID</code> or creates a UUID; returns it in the response</td>
+</tr>
+<tr>
+<td>Slow requests</td>
+<td><code>SlowRequestMiddleware</code></td>
+<td>Emits structured timing logs above a threshold</td>
+</tr>
+<tr>
+<td>Metrics</td>
+<td>Optional Prometheus middleware</td>
+<td>Counts requests and observes duration when enabled</td>
+</tr>
+<tr>
+<td>Timeout</td>
+<td><code>TimeoutMiddleware</code></td>
+<td>Cancels request processing and returns 504 after the configured deadline</td>
+</tr>
+<tr>
+<td>CORS</td>
+<td>FastAPI CORS middleware</td>
+<td>Allows configured origins, rejects wildcard origins in production settings</td>
+</tr>
+<tr>
+<td>Validation safety</td>
+<td>Custom 422 handler</td>
+<td>Returns field location, type, and generic message without reflecting secrets</td>
+</tr>
+<tr>
+<td>Rate limiting</td>
+<td>Decorators on login and scan creation</td>
+<td>Rolling-window client and identity limits with trusted-proxy handling</td>
+</tr>
+</tbody></table>
+<h3 id="5-3-authentication-and-rbac">5.3 Authentication and RBAC</h3><p>The implemented identity system uses configured users and one-hour HMAC-SHA256 signed bearer sessions.</p>
+<pre class="code-block"><code>login credentials
+  -&gt; constant-time password comparison
+  -&gt; payload {sub, role, exp, sid}
+  -&gt; URL-safe base64 payload plus HMAC signature
+  -&gt; browser sessionStorage
+  -&gt; Authorization bearer header
+  -&gt; signature, expiry, account-role, and revocation checks
+  -&gt; Principal(subject, role, session_id, expires_at)</code></pre><p>Roles are <code>admin</code>, <code>security_analyst</code>, <code>auditor</code>, and <code>viewer</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th align="center">Admin</th>
+<th align="center">Security analyst</th>
+<th align="center">Auditor</th>
+<th align="center">Viewer</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Read scans, assets, dashboard, and outputs</td>
+<td align="center">Yes</td>
+<td align="center">Yes</td>
+<td align="center">Yes</td>
+<td align="center">Yes</td>
+</tr>
+<tr>
+<td>Create or cancel scans</td>
+<td align="center">Yes</td>
+<td align="center">Yes</td>
+<td align="center">No</td>
+<td align="center">No</td>
+</tr>
+<tr>
+<td>Edit asset risk context</td>
+<td align="center">Yes</td>
+<td align="center">Yes</td>
+<td align="center">No</td>
+<td align="center">No</td>
+</tr>
+<tr>
+<td>Read audit history</td>
+<td align="center">Yes</td>
+<td align="center">No</td>
+<td align="center">Yes</td>
+<td align="center">No</td>
+</tr>
+<tr>
+<td>Purge retained audit events</td>
+<td align="center">Yes</td>
+<td align="center">No</td>
+<td align="center">No</td>
+<td align="center">No</td>
+</tr>
+<tr>
+<td>Read admin operational metrics</td>
+<td align="center">Yes</td>
+<td align="center">No</td>
+<td align="center">No</td>
+<td align="center">No</td>
+</tr>
+</tbody></table>
+<p>An optional role header exists only for explicit local/test use and cannot be enabled in production. Session revocation is backed by the database so all API replicas sharing that database can reject a revoked session.</p>
+<h3 id="5-4-api-catalog">5.4 API catalog</h3><p>All <code>/api/scan</code>, <code>/api/scans</code>, <code>/api/assets</code>, <code>/api/dashboard</code>, and output routes require authentication through router-level dependencies. Mutation endpoints apply additional write-role checks.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Access</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST</code></td>
+<td><code>/api/auth/login</code></td>
+<td>Public, rate limited</td>
+<td>Issue signed session</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/auth/me</code></td>
+<td>Authenticated</td>
+<td>Validate session and return role</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/scan</code></td>
+<td>Admin or security analyst</td>
+<td>Validate path, persist job and dispatch, wake dispatcher</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/scans/{id}/cancel</code></td>
+<td>Admin or security analyst</td>
+<td>Persist cancellation request and signal local worker</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/scans</code></td>
+<td>Authenticated</td>
+<td>Paginated scan history with <code>X-Total-Count</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/scans/{id}</code></td>
+<td>Authenticated</td>
+<td>Scan metrics, blind spots, and structured failures</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/scans/{id}/events</code></td>
+<td>Authenticated</td>
+<td>SSE progress stream polled from durable job state</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/assets</code></td>
+<td>Authenticated</td>
+<td>Latest or selected scan inventory with filters and pagination</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/assets/{id}</code></td>
+<td>Authenticated</td>
+<td>Full asset and evidence detail</td>
+</tr>
+<tr>
+<td><code>PATCH</code></td>
+<td><code>/api/assets/{id}</code></td>
+<td>Admin or security analyst</td>
+<td>Update context and recompute risk in one transaction</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/dashboard/summary</code></td>
+<td>Authenticated</td>
+<td>Aggregate counts, coverage, confidence, and risk distribution</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/cbom</code></td>
+<td>Authenticated</td>
+<td>Paginated CBOM JSON</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/cbom.csv</code></td>
+<td>Authenticated</td>
+<td>Complete streaming CBOM CSV</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/reports/risk</code></td>
+<td>Authenticated</td>
+<td>Paginated migration-priority JSON</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/reports/risk.csv</code></td>
+<td>Authenticated</td>
+<td>Complete streaming risk CSV</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/reports/risk.txt</code></td>
+<td>Authenticated</td>
+<td>Complete text risk report</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/evidence-graph</code></td>
+<td>Authenticated</td>
+<td>Bounded evidence graph with truncation metadata</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/evaluation</code></td>
+<td>Authenticated</td>
+<td>Ground-truth precision, recall, F1, and metadata accuracy</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/calibration</code></td>
+<td>Authenticated route in output router</td>
+<td>Confidence bands and calibration metrics</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/audit-logs</code></td>
+<td>Admin or auditor</td>
+<td>Paginated attributed audit history</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>/api/audit-logs/retention/purge</code></td>
+<td>Admin</td>
+<td>Delete old rows and append a purge audit event</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/admin/metrics</code></td>
+<td>Admin</td>
+<td>In-process scan performance percentiles</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/metrics</code></td>
+<td>Admin, conditional</td>
+<td>Prometheus exposition when enabled</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/health</code></td>
+<td>Public</td>
+<td>Process liveness and version</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/ready</code></td>
+<td>Public</td>
+<td>Configuration, database, and schema readiness</td>
+</tr>
+</tbody></table>
+<h2 id="6-end-to-end-scan-lifecycle">6 End to end scan lifecycle</h2><div class="diagram-label">Architecture flow specification</div><pre class="diagram-source"><code>sequenceDiagram
+    participant U as Analyst
+    participant W as React client
+    participant A as FastAPI
+    participant D as SQL database
+    participant S as Supervisor
+    participant X as Worker subprocess
+    participant C as Scanner pipeline
+
+    U-&gt;&gt;W: Submit repository path
+    W-&gt;&gt;A: POST /api/scan
+    A-&gt;&gt;A: Authenticate role and validate allowed root
+    A-&gt;&gt;D: Commit scan_job plus scan_dispatch
+    A--&gt;&gt;W: scan_id and started
+    A-&gt;&gt;S: Background dispatch wake-up
+    S-&gt;&gt;D: Claim dispatch and acquire lease
+    S-&gt;&gt;X: Start minimal-environment child process
+    X-&gt;&gt;C: Inventory and collect evidence
+    C--&gt;&gt;X: Findings plus measured coverage
+    X--&gt;&gt;S: Atomic bounded result.json
+    S-&gt;&gt;D: Persist findings and terminal metrics
+    W-&gt;&gt;A: GET authenticated SSE stream
+    A-&gt;&gt;D: Poll durable scan status
+    A--&gt;&gt;W: Progress and terminal event</code></pre><h3 id="6-1-admission-and-durable-acceptance">6.1 Admission and durable acceptance</h3><ol>
+<li>The API verifies a signed session and requires a write role.</li>
+<li><code>resolve_repository</code> rejects null bytes, parent traversal, overlong paths, missing paths, non-directories, and paths outside configured roots.</li>
+<li><code>enqueue_scan</code> creates <code>scan_jobs(status=&quot;queued&quot;)</code> and a matching <code>scan_dispatches(state=&quot;pending&quot;)</code> in one commit.</li>
+<li>The public response returns <code>scan_id</code> and <code>status: started</code> after durable acceptance.</li>
+<li>A FastAPI background task performs the process-local dispatcher wake-up.</li>
+</ol>
+<p>The database record is durable, but the dispatcher is not a continuously running external queue consumer. A process failure between commit and background wake-up can leave pending work for operational recovery.</p>
+<h3 id="6-2-claim-and-lease">6.2 Claim and lease</h3><p>The dispatcher reserves the single process-local slot, atomically claims an eligible dispatch row, acquires a scan lease, marks the job running, and starts supervision. Dispatch and lease TTLs are the scan timeout plus a 60-second grace period. Heartbeats renew both ownership records. An expired claim can be reclaimed, and startup reconciles expired leases.</p>
+<h3 id="6-3-worker-isolation">6.3 Worker isolation</h3><p>The supervisor launches <code>python -m backend.scan_worker &lt;repo&gt; &lt;result&gt;</code> in a new process group. Its environment is allowlisted and excludes database URLs, user credentials, token secrets, and other control-plane secrets. <code>HOME</code> and temporary-directory variables point to a job-specific temporary workspace.</p>
+<p>On Windows, cancellation and timeout use <code>taskkill /T /F</code>; on POSIX they terminate the process group, escalate to <code>SIGKILL</code> if necessary, and wait for confirmed exit. Standard input, output, and error are detached from the API process.</p>
+<p>The worker performs analysis without database access, serializes one bounded JSON object to a temporary file, and atomically renames it to <code>result.json</code>. The supervisor rejects a missing or oversized artifact before parsing.</p>
+<h3 id="6-4-cancellation-timeout-and-terminal-states">6.4 Cancellation timeout and terminal states</h3><div class="diagram-label">Architecture flow specification</div><pre class="diagram-source"><code>stateDiagram-v2
+    [*] --&gt; queued: job and dispatch committed
+    queued --&gt; running: dispatch and lease claimed
+    queued --&gt; cancelled: cancellation before execution
+    running --&gt; completed: result transaction committed
+    running --&gt; cancelled: cancellation observed
+    running --&gt; timed_out: supervisor deadline reached
+    running --&gt; failed: worker, lease, artifact, or persistence failure
+    queued --&gt; failed: stale recovery or dispatch failure
+    completed --&gt; [*]
+    cancelled --&gt; [*]
+    timed_out --&gt; [*]
+    failed --&gt; [*]</code></pre><p>Cancellation is stored in <code>scan_dispatches.cancellation_requested_at</code>, which makes it visible across API replicas. The local control object also carries a threading event for fast local interruption. Terminal cleanup updates the job, closes the dispatch claim, records audit context where possible, and releases the lease.</p>
+<h3 id="6-5-idempotent-result-delivery">6.5 Idempotent result delivery</h3><p>Each dispatch has a <code>version</code>. <code>persist_scan_result</code> locks the job row and compares that version to <code>scan_jobs.result_version</code>. A duplicate or older delivery returns the already stored result summary instead of creating duplicate assets. Active-state checks prevent results from overwriting terminal jobs.</p>
+<h2 id="7-scanner-architecture">7 Scanner architecture</h2><h3 id="7-1-inventory-and-scope">7.1 Inventory and scope</h3><p><code>scanner/main.py</code> performs one shared repository inventory. The collector registry is the source of truth for both “file is in scope” and “which handlers process it,” preventing coverage and dispatch from drifting apart.</p>
+<p>Default excluded directories are <code>.git</code>, <code>node_modules</code>, <code>dist</code>, <code>build</code>, <code>__pycache__</code>, and common tool caches. The <code>source</code> profile also excludes <code>.venv</code>, <code>venv</code>, and <code>env</code>; the <code>environment</code> profile includes those environment directories. Linked directories are not followed. Linked files, oversized files, unreadable files, parse errors, and certificate errors become structured failure records.</p>
+<p>The scanner enforces:</p>
+<ul>
+<li>maximum inventory file count;</li>
+<li>maximum bytes per file;</li>
+<li>maximum evidence count;</li>
+<li>optional elapsed-duration budget;</li>
+<li>optional process-memory budget;</li>
+<li>bounded worker-result bytes.</li>
+</ul>
+<p>Coverage is <code>successfully processed supported files / supported files</code>. It is not a claim of detection completeness.</p>
+<h3 id="7-2-collector-registry">7.2 Collector registry</h3><table>
+<thead>
+<tr>
+<th>Collector</th>
+<th>Inputs</th>
+<th>Evidence semantics</th>
+<th>Parser version</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Python AST</td>
+<td><code>.py</code></td>
+<td>Imports are declared capability; resolved call sites are observed operations</td>
+<td><code>ast-v3</code></td>
+</tr>
+<tr>
+<td>Rule collector</td>
+<td><code>.py</code>, <code>.java</code>, <code>.js</code>, <code>.ts</code>, <code>.c</code>, <code>.cpp</code>, <code>.go</code>, <code>.cs</code>, <code>.rs</code></td>
+<td>Auditable JSON-registry matches after comment and string handling</td>
+<td><code>rule-v1</code></td>
+</tr>
+<tr>
+<td>Dependency collector</td>
+<td><code>requirements.txt</code>, <code>pom.xml</code>, <code>package-lock.json</code>, <code>Gemfile.lock</code>, <code>go.sum</code>, <code>Cargo.lock</code></td>
+<td>Package capability, direct/transitive metadata where available</td>
+<td><code>dep-v1</code></td>
+</tr>
+<tr>
+<td>Certificate collector</td>
+<td><code>.crt</code>, <code>.pem</code>, <code>.cer</code></td>
+<td>X.509 key, signature, validity, EKU, SAN, and usage metadata</td>
+<td><code>cert-v2</code></td>
+</tr>
+</tbody></table>
+<p>Python files can produce both AST and rule evidence. Exact dependency filenames take priority, then extension handlers are added without duplicate collector names.</p>
+<h3 id="7-3-evidence-record">7.3 Evidence record</h3><p>The in-memory scanner record carries algorithm, category, source, file location, evidence detail, base confidence, usage, library, protocol, key size, evidence kind, parser version, source span, and confidence reasons. Evidence is redacted before it crosses the scanner boundary and again before persistence or API serialization.</p>
+<p>Important evidence kinds are:</p>
+<ul>
+<li><code>observed_operation</code>: a source operation such as a resolved call or rule-backed invocation;</li>
+<li><code>configured_protocol</code>: configuration showing a protocol is enabled;</li>
+<li><code>declared_capability</code>: an import or dependency that can provide cryptography;</li>
+<li><code>artifact_metadata</code>: cryptographic properties of a certificate or artifact;</li>
+<li><code>unknown</code>: evidence that cannot be assigned a stronger semantic class.</li>
+</ul>
+<h2 id="8-correlation-confidence-and-risk">8 Correlation confidence and risk</h2><h3 id="8-1-correlation">8.1 Correlation</h3><p>The default correlator is operation-aware v2. It groups evidence using component, algorithm, usage, evidence kind, location, and an operation anchor. It produces a stable logical asset ID, merges supporting sources, retains source-specific confidence, and only reports a cryptographic conflict when incompatible algorithms occur in the same operation/category context.</p>
+<p>Optional correlator v3 is enabled with <code>ECDAT_CORRELATOR_VERSION=v3</code>. It uses file spans and semantic anchors, links nearby cross-collector evidence, records moved-line notes, and preserves ambiguous matches instead of silently merging them.</p>
+<h3 id="8-2-confidence">8.2 Confidence</h3><p><code>score_finding</code> combines the strongest source evidence, multi-source corroboration, and conflict penalties. It returns both the numeric score and human-readable reasons. Persisted assets retain collector parser versions and source confidence reasons so results remain explainable.</p>
+<p>Confidence bands are versioned and loaded from <code>calibration_params.json</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Band</th>
+<th align="right">Default range</th>
+<th>Interpretation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>High</td>
+<td align="right">0.85 to 1.00</td>
+<td>Strong and consistent evidence</td>
+</tr>
+<tr>
+<td>Medium</td>
+<td align="right">0.60 to below 0.85</td>
+<td>Reliable single-source or typical-operation evidence</td>
+</tr>
+<tr>
+<td>Low</td>
+<td align="right">0.40 to below 0.60</td>
+<td>Weak signal or declared capability</td>
+</tr>
+<tr>
+<td>Uncertain</td>
+<td align="right">0.00 to below 0.40</td>
+<td>Indirect or insufficient evidence</td>
+</tr>
+</tbody></table>
+<p>Brier score and expected calibration error are stored with the calibration version when available.</p>
+<h3 id="8-3-risk-model">8.3 Risk model</h3><p>The risk engine separates technical evidence from business context. It considers:</p>
+<ul>
+<li>whether the algorithm is quantum vulnerable;</li>
+<li>whether evidence proves confirmed use or only capability;</li>
+<li>business criticality and data sensitivity;</li>
+<li>data lifetime, migration time, and threat horizon;</li>
+<li>exposure and migration effort;</li>
+<li>confidence band and context provenance.</li>
+</ul>
+<p>It returns a 0-100 priority score, <code>CRITICAL/HIGH/MEDIUM/LOW</code> label, explainable reasons, a use-case-aware migration recommendation, a hybrid-transition flag, quantum-vulnerability status, and provenance for each risk-context input.</p>
+<p>Asset updates change only approved context fields. The API recomputes risk and writes the updated asset plus its attributed audit event in one database transaction.</p>
+<h2 id="9-persistence-architecture">9 Persistence architecture</h2><div class="diagram-label">Architecture flow specification</div><pre class="diagram-source"><code>erDiagram
+    SCAN_JOBS ||--|| SCAN_DISPATCHES : owns
+    SCAN_JOBS ||--o| SCAN_LEASES : claimed_by
+    SCAN_JOBS ||--o{ SCAN_FAILURES : records
+    SCAN_JOBS ||--o{ CRYPTO_ASSETS : produces
+    AUDIT_LOGS }o--|| PRINCIPAL : attributes
+    REVOKED_SESSIONS }o--|| PRINCIPAL : denies</code></pre><h3 id="9-1-tables">9.1 Tables</h3><table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Architectural purpose</th>
+<th>Important fields</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>scan_jobs</code></td>
+<td>User-visible scan lifecycle and metrics</td>
+<td>status, timestamps, result version, coverage, duration, collector stats, blind spots</td>
+</tr>
+<tr>
+<td><code>scan_dispatches</code></td>
+<td>Durable admission/outbox and cancellation state</td>
+<td>version, state, claim owner/expiry, heartbeat, attempts, cancellation time</td>
+</tr>
+<tr>
+<td><code>scan_leases</code></td>
+<td>Exclusive active worker ownership</td>
+<td>worker ID, acquired/expiry times, released flag</td>
+</tr>
+<tr>
+<td><code>scan_failures</code></td>
+<td>Structured per-file processing failures</td>
+<td>relative path, reason, timestamp</td>
+</tr>
+<tr>
+<td><code>crypto_assets</code></td>
+<td>Correlated evidence-backed finding and derived risk</td>
+<td>logical ID, algorithm, evidence, confidence, risk context, priority, provenance</td>
+</tr>
+<tr>
+<td><code>audit_logs</code></td>
+<td>Attributed security-sensitive event history</td>
+<td>subject, role, session ID, action, resource, details, timestamp</td>
+</tr>
+<tr>
+<td><code>revoked_sessions</code></td>
+<td>Cross-replica signed-session deny list</td>
+<td>session ID, subject, expiry, revocation time</td>
+</tr>
+</tbody></table>
+<p>Foreign keys use cascade deletion from scan jobs to dependent findings, failures, leases, and dispatch records. SQLite connections explicitly enable foreign-key enforcement. PostgreSQL is used in Compose. Alembic is the deployment schema authority.</p>
+<h3 id="9-2-persistence-transaction-boundaries">9.2 Persistence transaction boundaries</h3><ul>
+<li>Scan job and dispatch record are committed together.</li>
+<li>Final results, scan metrics, and structured failures are committed together.</li>
+<li>Asset context changes and audit attribution are committed together.</li>
+<li>Audit retention deletion and its audit event are committed together.</li>
+<li>Failed result persistence rolls back the complete transaction.</li>
+</ul>
+<h2 id="10-read-models-reports-and-exports">10 Read models reports and exports</h2><h3 id="10-1-dashboard-summary">10.1 Dashboard summary</h3><p>The dashboard reads the selected completed scan or the latest completed scan. It aggregates total assets, critical/high count, confidence average, coverage, blind spots, risk distribution, quantum-vulnerable count, conflicts, confirmed-use count, capability-only count, collector statistics, and latest scan ID.</p>
+<h3 id="10-2-inventory-and-detail">10.2 Inventory and detail</h3><p>The asset list supports scan selection, text search, risk filter, quantum filter, priority/confidence/algorithm sorting, offset pagination, and a filtered total count. The detail response carries sanitized evidence, spans, parser versions, confidence reasons, risk reasons, and editable business context.</p>
+<h3 id="10-3-cbom">10.3 CBOM</h3><p>CBOM output identifies the scan and repository, includes coverage and blind spots, groups component and algorithm information, and exposes both paginated JSON and a complete streaming CSV. Stable UUID generation uses logical asset identity rather than database row order.</p>
+<h3 id="10-4-risk-report">10.4 Risk report</h3><p>The risk report ranks assets by priority, carries calibration metadata, explains confidence interpretation and risk reasons, and provides migration candidates. Interactive JSON is paginated. CSV and text downloads intentionally export the complete result set.</p>
+<h3 id="10-5-evidence-graph">10.5 Evidence graph</h3><p>The evidence graph creates asset nodes and supporting-source nodes. It applies explicit asset, node, and edge limits and returns <code>truncation</code> metadata containing configured limits, returned counts, total assets, and reasons. The UI can therefore distinguish a complete graph from a bounded preview.</p>
+<h3 id="10-6-evaluation">10.6 Evaluation</h3><p>When the scanned repository contains <code>ground_truth.json</code>, evaluation measures operation-level true positives, false positives, false negatives, precision, recall, F1, usage accuracy, key-size accuracy, metadata-pair accuracy, per-source performance, duplicate findings, missed operations, unexpected operations, and certificate accuracy. Without valid ground truth, the API reports evaluation as unavailable rather than inventing metrics.</p>
+<h2 id="11-progress-observability-and-operations">11 Progress observability and operations</h2><h3 id="11-1-sse-progress">11.1 SSE progress</h3><p>The authenticated SSE endpoint polls the durable scan job every 500 milliseconds. It emits only changed payloads and sends a terminal <code>done</code> event for <code>completed</code>, <code>failed</code>, <code>cancelled</code>, or <code>timed_out</code>. Streams also stop on client disconnect or the configured poll limit.</p>
+<p>The worker updates collector progress through the database. The final event includes status, collector statistics, asset count, coverage, duration, and blind spots.</p>
+<h3 id="11-2-logs-and-metrics">11.2 Logs and metrics</h3><ul>
+<li>Structured logs carry request IDs and component-specific logger names.</li>
+<li>Slow-request middleware records latency outliers.</li>
+<li>In-process scan metrics expose percentile ranks to admins.</li>
+<li>Optional Prometheus middleware records request count and duration and exposes an admin-only <code>/metrics</code> endpoint.</li>
+<li>Health is a lightweight liveness response; readiness validates security configuration and the database schema.</li>
+</ul>
+<h3 id="11-3-audit-trail">11.3 Audit trail</h3><p>Audited events include scan start, cancellation request, scan finish, lease acquisition/release/expiry, asset context updates, and audit retention purge. Newer schema revisions store subject, role, session ID, and expiry rather than only a role string.</p>
+<h2 id="12-security-architecture">12 Security architecture</h2><h3 id="12-1-trust-boundaries">12.1 Trust boundaries</h3><table>
+<thead>
+<tr>
+<th>Boundary</th>
+<th>Controls</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Browser to Nginx/API</td>
+<td>Same-origin proxy, CSP, frame denial, content-type protection, bearer session, CORS allowlist</td>
+</tr>
+<tr>
+<td>API command boundary</td>
+<td>Pydantic validation, generic 422 errors, rate limiting, RBAC, request timeout</td>
+</tr>
+<tr>
+<td>Repository boundary</td>
+<td>Real-path resolution, traversal rejection, allowed-root enforcement, read-only Compose mount</td>
+</tr>
+<tr>
+<td>Worker boundary</td>
+<td>Minimal environment, no API/database credentials, separate process group, bounded time/memory/files/result</td>
+</tr>
+<tr>
+<td>Evidence boundary</td>
+<td>Redaction in scanner, persistence path, and API serialization</td>
+</tr>
+<tr>
+<td>Database boundary</td>
+<td>Migrations, foreign keys, transaction rollback, result-version idempotency, audit attribution</td>
+</tr>
+</tbody></table>
+<h3 id="12-2-secure-defaults">12.2 Secure defaults</h3><p>Production settings fail readiness when token secrets, users, scan roots, or CORS origins are unsafe. Production forbids the demo role header and unrestricted scan roots. Account passwords must be distinct and sufficiently long, and the token secret must differ from account passwords.</p>
+<h3 id="12-3-explicit-non-capabilities">12.3 Explicit non-capabilities</h3><p>The implemented scanner does not perform runtime tracing, packet capture, HSM discovery, cloud KMS inventory, binary reverse engineering, container-image inspection, or automated source rewriting. It does not upload source code to an external service. These are declared blind spots, not silent assumptions.</p>
+<h2 id="13-configuration-architecture">13 Configuration architecture</h2><table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default or requirement</th>
+<th>Architectural effect</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>DATABASE_URL</code></td>
+<td>SQLite local; PostgreSQL in Compose</td>
+<td>Selects persistence backend</td>
+</tr>
+<tr>
+<td><code>ECDAT_ENV</code></td>
+<td><code>local</code>, <code>test</code>, or <code>production</code></td>
+<td>Enables production safety validation</td>
+</tr>
+<tr>
+<td><code>ECDAT_TOKEN_SECRET</code></td>
+<td>Required, 32+ characters</td>
+<td>HMAC session signing</td>
+</tr>
+<tr>
+<td><code>ECDAT_USERS_JSON</code></td>
+<td>Required account map</td>
+<td>Local identity and role source</td>
+</tr>
+<tr>
+<td><code>ECDAT_CORS_ORIGINS</code></td>
+<td>Localhost defaults</td>
+<td>Browser origin allowlist</td>
+</tr>
+<tr>
+<td><code>ECDAT_ALLOWED_SCAN_ROOTS</code></td>
+<td>Required in production</td>
+<td>Repository trust boundary</td>
+</tr>
+<tr>
+<td><code>ECDAT_ALLOW_UNRESTRICTED_SCAN_ROOTS</code></td>
+<td><code>false</code></td>
+<td>Explicit local-only escape hatch</td>
+</tr>
+<tr>
+<td><code>ECDAT_ALLOW_ROLE_HEADER</code></td>
+<td><code>false</code></td>
+<td>Explicit local/test auth fallback</td>
+</tr>
+<tr>
+<td><code>ECDAT_REQUEST_TIMEOUT</code></td>
+<td>120 seconds</td>
+<td>API request deadline</td>
+</tr>
+<tr>
+<td><code>ECDAT_SCAN_TIMEOUT_SECONDS</code></td>
+<td>300 seconds</td>
+<td>Supervisor deadline and lease basis</td>
+</tr>
+<tr>
+<td><code>ECDAT_MAX_FILE_BYTES</code></td>
+<td>8 MiB</td>
+<td>Per-file scan limit</td>
+</tr>
+<tr>
+<td><code>ECDAT_MAX_SCAN_FILES</code></td>
+<td>100000</td>
+<td>Repository inventory limit</td>
+</tr>
+<tr>
+<td><code>ECDAT_MAX_EVIDENCE</code></td>
+<td>100000</td>
+<td>Evidence cardinality limit</td>
+</tr>
+<tr>
+<td><code>ECDAT_MAX_WORKER_RESULT_BYTES</code></td>
+<td>32 MiB</td>
+<td>Worker artifact boundary</td>
+</tr>
+<tr>
+<td><code>ECDAT_SCAN_DURATION_BUDGET_MS</code></td>
+<td>0, disabled</td>
+<td>Optional scanner-internal duration budget</td>
+</tr>
+<tr>
+<td><code>ECDAT_SCAN_MEMORY_BUDGET_MB</code></td>
+<td>512 MiB</td>
+<td>Scanner memory budget</td>
+</tr>
+<tr>
+<td><code>ECDAT_SCAN_PROFILE</code></td>
+<td><code>source</code></td>
+<td>Source versus environment inventory policy</td>
+</tr>
+<tr>
+<td><code>ECDAT_CORRELATOR_VERSION</code></td>
+<td><code>v2</code></td>
+<td>Selects operation v2 or span-aware v3</td>
+</tr>
+<tr>
+<td><code>ECDAT_RECOVER_STALE_JOBS</code></td>
+<td><code>false</code></td>
+<td>Applies startup stale-job recovery when enabled</td>
+</tr>
+<tr>
+<td><code>ECDAT_AUTO_CREATE_TABLES</code></td>
+<td><code>false</code></td>
+<td>Development schema creation and stamping</td>
+</tr>
+<tr>
+<td><code>ECDAT_ENABLE_PROMETHEUS</code></td>
+<td><code>false</code></td>
+<td>Metrics middleware and endpoint</td>
+</tr>
+<tr>
+<td><code>ECDAT_TRUSTED_PROXIES</code></td>
+<td>Empty</td>
+<td>Controls trusted forwarded client identity</td>
+</tr>
+</tbody></table>
+<h2 id="14-build-test-and-release-architecture">14 Build test and release architecture</h2><h3 id="14-1-continuous-integration">14.1 Continuous integration</h3><p>The main CI workflow contains independent jobs for:</p>
+<ul>
+<li>Python linting and incremental type checking;</li>
+<li>frontend formatting, linting, and TypeScript checking;</li>
+<li>backend and scanner tests with coverage;</li>
+<li>benchmark arithmetic and precision regressions;</li>
+<li>labeled corpus evaluation;</li>
+<li>calibration dataset verification;</li>
+<li>frontend unit tests;</li>
+<li>production frontend build and bundle budgets;</li>
+<li>API contract tests;</li>
+<li>performance budget tests;</li>
+<li>schema generation and validation;</li>
+<li>axe-core accessibility checks;</li>
+<li>Playwright end-to-end browser workflows.</li>
+</ul>
+<p>A scheduled weekly benchmark workflow reevaluates corpora, runs regression tests, refreshes calibration artifacts, and compares overall precision against a baseline.</p>
+<h3 id="14-2-test-boundaries">14.2 Test boundaries</h3><p>The codebase contains backend route/service tests, scanner discovery and accuracy regressions, database migration tests, worker-isolation and lifecycle tests, frontend component/page tests, and full-browser tests. Controlled corpora and holdout manifests make detector behavior reproducible.</p>
+<h2 id="15-architectural-constraints-and-extension-points">15 Architectural constraints and extension points</h2><h3 id="15-1-current-constraints">15.1 Current constraints</h3><ol>
+<li><strong>Single active scan per API process.</strong> The <code>_active</code> control slot rejects another local scan with HTTP 409.</li>
+<li><strong>No independent dispatcher service.</strong> Durable dispatch state exists, but normal wake-up is a FastAPI background task.</li>
+<li><strong>Host-visible repository paths.</strong> Intake is a local path; there is no Git provider clone, archive upload, or immutable snapshot service.</li>
+<li><strong>Local signed-session identity.</strong> Enterprise OIDC, SSO, MFA, and tenant mapping are not implemented.</li>
+<li><strong>Database-polled progress.</strong> SSE is fed by half-second database polling rather than a broker or event stream.</li>
+<li><strong>Process-local rate-limit and performance state.</strong> Horizontal replicas do not share those in-memory counters.</li>
+<li><strong>Evidence graph is intentionally bounded.</strong> Large scans return explicit truncation metadata.</li>
+<li><strong>Frontend scan tuning mismatch.</strong> <code>max_depth</code> and <code>min_size</code> are not represented in the backend request contract.</li>
+</ol>
+<h3 id="15-2-natural-extension-seams">15.2 Natural extension seams</h3><table>
+<thead>
+<tr>
+<th>Desired evolution</th>
+<th>Existing seam</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>External queue and worker pool</td>
+<td><code>scan_dispatches</code>, lease service, result versioning, worker JSON contract</td>
+</tr>
+<tr>
+<td>Provider-based repository intake</td>
+<td><code>resolve_repository</code> boundary and worker repository argument</td>
+</tr>
+<tr>
+<td>Enterprise SSO</td>
+<td><code>current_role</code> and <code>Principal</code> dependency boundary</td>
+</tr>
+<tr>
+<td>Multi-tenant storage</td>
+<td>SQLAlchemy models, audit principal, router query filters</td>
+</tr>
+<tr>
+<td>Additional detectors</td>
+<td><code>CollectorRegistry</code>, normalized <code>CryptoAsset</code>, versioned parser metadata</td>
+</tr>
+<tr>
+<td>New correlator</td>
+<td><code>ECDAT_CORRELATOR_VERSION</code> selection and normalized evidence contract</td>
+</tr>
+<tr>
+<td>Object storage exports</td>
+<td>Output router boundary and streaming download client</td>
+</tr>
+<tr>
+<td>Shared operational telemetry</td>
+<td>Prometheus adapter and structured logging layer</td>
+</tr>
+</tbody></table>
+<h2 id="16-startup-and-shutdown-flow">16 Startup and shutdown flow</h2><h3 id="16-1-startup">16.1 Startup</h3><ol>
+<li>Load <code>.env</code> without overriding existing environment variables.</li>
+<li>Build typed settings; retain a safe degraded boot path so readiness can return 503.</li>
+<li>Inspect the Alembic revision.</li>
+<li>Optionally create and stamp a development schema.</li>
+<li>Optionally recover stale jobs.</li>
+<li>Reconcile expired scan leases.</li>
+<li>Start serving health, readiness, auth, and application routes.</li>
+</ol>
+<h3 id="16-2-normal-shutdown-behavior">16.2 Normal shutdown behavior</h3><p>The application does not host a permanent queue consumer. Active scan cleanup is primarily owned by the supervisor <code>finally</code> path, which terminates the process tree, marks terminal status when appropriate, finalizes dispatch state, and releases the lease. If the API process dies abruptly, TTL-based lease and dispatch recovery provide the durable recovery seam.</p>
+<h2 id="17-source-of-truth-map">17 Source of truth map</h2><table>
+<thead>
+<tr>
+<th>Architectural subject</th>
+<th>Primary source files</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Browser routes and session shell</td>
+<td><code>dashboard/src/App.tsx</code></td>
+</tr>
+<tr>
+<td>Browser API contract</td>
+<td><code>dashboard/src/api/client.ts</code>, <code>dashboard/src/types.ts</code></td>
+</tr>
+<tr>
+<td>Page behavior</td>
+<td><code>dashboard/src/pages/*.tsx</code></td>
+</tr>
+<tr>
+<td>Reverse proxy and headers</td>
+<td><code>dashboard/nginx.conf</code></td>
+</tr>
+<tr>
+<td>API composition and readiness</td>
+<td><code>backend/main.py</code>, <code>backend/readiness.py</code>, <code>backend/settings.py</code></td>
+</tr>
+<tr>
+<td>Authentication and audit principal</td>
+<td><code>backend/security.py</code>, <code>backend/routers/auth.py</code>, <code>backend/routers/audit.py</code></td>
+</tr>
+<tr>
+<td>Scan admission and SSE</td>
+<td><code>backend/routers/scan.py</code>, <code>backend/services/scan_control.py</code></td>
+</tr>
+<tr>
+<td>Worker and pipeline boundary</td>
+<td><code>backend/scan_worker.py</code>, <code>backend/services/scanner_runner.py</code></td>
+</tr>
+<tr>
+<td>Inventory and collectors</td>
+<td><code>scanner/main.py</code>, <code>scanner/collectors/registry.py</code>, <code>scanner/collectors/*.py</code></td>
+</tr>
+<tr>
+<td>Correlation</td>
+<td><code>backend/services/correlator.py</code>, <code>backend/services/correlator_v3.py</code></td>
+</tr>
+<tr>
+<td>Confidence calibration and risk</td>
+<td><code>backend/services/confidence.py</code>, <code>backend/services/calibration.py</code>, <code>backend/services/risk_engine.py</code></td>
+</tr>
+<tr>
+<td>Database schema</td>
+<td><code>backend/models/*.py</code>, <code>alembic/versions/*.py</code></td>
+</tr>
+<tr>
+<td>Query and export models</td>
+<td><code>backend/routers/assets.py</code>, <code>dashboard.py</code>, <code>outputs.py</code>, <code>observability.py</code></td>
+</tr>
+<tr>
+<td>Deployment</td>
+<td><code>docker-compose.yml</code>, <code>backend/Dockerfile</code>, <code>dashboard/Dockerfile</code></td>
+</tr>
+<tr>
+<td>Verification</td>
+<td><code>.github/workflows/*.yml</code>, <code>tests/</code>, <code>backend/tests/</code>, <code>dashboard/src/**/*.test.tsx</code>, <code>dashboard/e2e/</code></td>
+</tr>
+</tbody></table>
+<h2 id="18-architecture-conclusion">18 Architecture conclusion</h2><p>The implemented ECDAT design has a clear control plane and data plane split. FastAPI owns policy, durable job state, identity, and persistence. A credential-minimized subprocess owns repository parsing. Evidence moves through explicit collection, correlation, confidence, and risk stages before it becomes a persisted asset. The React application consumes stable read models rather than reproducing analysis logic in the browser.</p>
+<p>The strongest production-oriented elements already present are durable admission records, expiring worker leases, idempotent result versions, explainable evidence and risk provenance, read-only deployment mounts, bounded worker artifacts, migration-aware readiness, and broad automated verification. The main scaling boundary is orchestration: dispatch wake-up, concurrency, rate limits, and progress delivery remain local to an API process. The existing contracts make an external queue and isolated worker pool a contained future evolution rather than a redesign of the evidence model.</p>
+<hr>
+<h3 id="generated-architecture-artifacts">Generated architecture artifacts</h3><ul>
+<li>Interactive architecture diagram: <code>docs/architecture-assets/ecdat-current.architecture.html</code></li>
+<li>Validated diagram specification: <code>docs/architecture-assets/ecdat-current.architecture.json</code></li>
+<li>Browser evidence: <code>docs/architecture-assets/ecdat-current.architecture.visual-check.json</code></li>
+</ul>
+</main>
+</body>
+</html>

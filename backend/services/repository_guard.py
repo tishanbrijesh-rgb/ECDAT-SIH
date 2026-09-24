@@ -6,8 +6,21 @@ from pathlib import Path
 
 from fastapi import HTTPException
 
+_MAX_PATH_LENGTH = 4096
+
+
+def _reject_traversal(raw_path: str) -> None:
+    """Reject null bytes and path-traversal sequences in the raw input."""
+    if "\x00" in raw_path:
+        raise HTTPException(400, "Repository path contains invalid characters")
+    if ".." in raw_path.split(os.sep):
+        raise HTTPException(400, "Repository path must not contain parent-directory traversals")
+    if len(raw_path) > _MAX_PATH_LENGTH:
+        raise HTTPException(400, "Repository path exceeds maximum allowed length")
+
 
 def resolve_repository(raw_path: str) -> str:
+    _reject_traversal(raw_path)
     if raw_path == "/test-repo" and not Path(raw_path).is_dir():
         raw_path = str(Path(__file__).resolve().parents[2] / "test-repo")
     try:

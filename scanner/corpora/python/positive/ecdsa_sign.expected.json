@@ -1,0 +1,7 @@
+{
+  "file": "ecdsa_sign.py",
+  "expected_assets": [
+    {"algorithm": "ECDSA", "usage": "signature", "category": "signature"},
+    {"algorithm": "SHA-256", "usage": "hashing", "category": "hash"}
+  ]
+}

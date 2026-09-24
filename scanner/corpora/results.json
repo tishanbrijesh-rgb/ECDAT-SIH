@@ -1,0 +1,1272 @@
+{
+  "schema_version": 1,
+  "corpus_name": "phase4-frozen",
+  "evaluated_at": "2026-09-12",
+  "overall": {
+    "macro_precision": 0.9024,
+    "macro_recall": 0.9756,
+    "macro_f1": 0.9187,
+    "micro_precision": 0.8571,
+    "micro_recall": 0.96,
+    "micro_f1": 0.9057,
+    "total_true_positives": 48,
+    "total_false_positives": 8,
+    "total_false_negatives": 2,
+    "negative_accuracy": 1.0,
+    "negative_correct": 12,
+    "negative_total": 12,
+    "gates_passed": true,
+    "gate_failures": []
+  },
+  "per_language": {
+    "c": {
+      "macro_precision": 0.75,
+      "macro_recall": 1.0,
+      "macro_f1": 0.8334,
+      "micro_precision": 0.6667,
+      "micro_recall": 1.0,
+      "micro_f1": 0.8,
+      "total_true_positives": 4,
+      "total_false_positives": 2,
+      "total_false_negatives": 0,
+      "negative_accuracy": 0.0,
+      "negative_correct": 0,
+      "negative_total": 0,
+      "case_count": 5,
+      "positive_cases": 4,
+      "negative_cases": 1
+    },
+    "csharp": {
+      "macro_precision": 0.8333,
+      "macro_recall": 1.0,
+      "macro_f1": 0.8889,
+      "micro_precision": 0.75,
+      "micro_recall": 1.0,
+      "micro_f1": 0.8571,
+      "total_true_positives": 3,
+      "total_false_positives": 1,
+      "total_false_negatives": 0,
+      "negative_accuracy": 0.0,
+      "negative_correct": 0,
+      "negative_total": 0,
+      "case_count": 4,
+      "positive_cases": 3,
+      "negative_cases": 1
+    },
+    "go": {
+      "macro_precision": 0.8571,
+      "macro_recall": 1.0,
+      "macro_f1": 0.9048,
+      "micro_precision": 0.8,
+      "micro_recall": 1.0,
+      "micro_f1": 0.8889,
+      "total_true_positives": 8,
+      "total_false_positives": 2,
+      "total_false_negatives": 0,
+      "negative_accuracy": 0.0,
+      "negative_correct": 0,
+      "negative_total": 0,
+      "case_count": 8,
+      "positive_cases": 7,
+      "negative_cases": 1
+    },
+    "java": {
+      "macro_precision": 1.0,
+      "macro_recall": 0.9375,
+      "macro_f1": 0.9583,
+      "micro_precision": 1.0,
+      "micro_recall": 0.9,
+      "micro_f1": 0.9474,
+      "total_true_positives": 9,
+      "total_false_positives": 0,
+      "total_false_negatives": 1,
+      "negative_accuracy": 0.0,
+      "negative_correct": 0,
+      "negative_total": 0,
+      "case_count": 11,
+      "positive_cases": 8,
+      "negative_cases": 3
+    },
+    "javascript": {
+      "macro_precision": 0.9167,
+      "macro_recall": 1.0,
+      "macro_f1": 0.9444,
+      "micro_precision": 0.8571,
+      "micro_recall": 1.0,
+      "micro_f1": 0.9231,
+      "total_true_positives": 6,
+      "total_false_positives": 1,
+      "total_false_negatives": 0,
+      "negative_accuracy": 0.0,
+      "negative_correct": 0,
+      "negative_total": 0,
+      "case_count": 8,
+      "positive_cases": 6,
+      "negative_cases": 2
+    },
+    "python": {
+      "macro_precision": 0.9231,
+      "macro_recall": 0.9615,
+      "macro_f1": 0.9231,
+      "micro_precision": 0.9,
+      "micro_recall": 0.9474,
+      "micro_f1": 0.9231,
+      "total_true_positives": 18,
+      "total_false_positives": 2,
+      "total_false_negatives": 1,
+      "negative_accuracy": 0.0,
+      "negative_correct": 0,
+      "negative_total": 0,
+      "case_count": 17,
+      "positive_cases": 13,
+      "negative_cases": 4
+    }
+  },
+  "cases": [
+    {
+      "id": "c-no_crypto",
+      "language": "c",
+      "type": "negative",
+      "family": "unknown",
+      "path": "cpp/negative/no_crypto.c",
+      "findings_count": 0,
+      "expected": [],
+      "found": [],
+      "true_positives": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "c-openssl_aes",
+      "language": "c",
+      "type": "positive",
+      "family": "unknown",
+      "path": "cpp/positive/openssl_aes.c",
+      "findings_count": 5,
+      "expected": [
+        "AES"
+      ],
+      "found": [
+        "AES"
+      ],
+      "true_positives": [
+        "AES"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "c-openssl_ecdsa",
+      "language": "c",
+      "type": "positive",
+      "family": "unknown",
+      "path": "cpp/positive/openssl_ecdsa.c",
+      "findings_count": 11,
+      "expected": [
+        "ECDSA"
+      ],
+      "found": [
+        "ECDSA",
+        "SHA-256"
+      ],
+      "true_positives": [
+        "ECDSA"
+      ],
+      "false_positives": [
+        "SHA-256"
+      ],
+      "false_negatives": [],
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1": 0.6667
+    },
+    {
+      "id": "c-openssl_hmac",
+      "language": "c",
+      "type": "positive",
+      "family": "unknown",
+      "path": "cpp/positive/openssl_hmac.c",
+      "findings_count": 2,
+      "expected": [
+        "HMAC"
+      ],
+      "found": [
+        "HMAC",
+        "SHA-256"
+      ],
+      "true_positives": [
+        "HMAC"
+      ],
+      "false_positives": [
+        "SHA-256"
+      ],
+      "false_negatives": [],
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1": 0.6667
+    },
+    {
+      "id": "c-openssl_sha",
+      "language": "c",
+      "type": "positive",
+      "family": "unknown",
+      "path": "cpp/positive/openssl_sha.c",
+      "findings_count": 3,
+      "expected": [
+        "SHA-256"
+      ],
+      "found": [
+        "SHA-256"
+      ],
+      "true_positives": [
+        "SHA-256"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "cs-no_crypto",
+      "language": "csharp",
+      "type": "negative",
+      "family": "unknown",
+      "path": "csharp/negative/no_crypto.cs",
+      "findings_count": 0,
+      "expected": [],
+      "found": [],
+      "true_positives": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "cs-aes_create",
+      "language": "csharp",
+      "type": "positive",
+      "family": "unknown",
+      "path": "csharp/positive/aes_create.cs",
+      "findings_count": 6,
+      "expected": [
+        "AES"
+      ],
+      "found": [
+        "AES"
+      ],
+      "true_positives": [
+        "AES"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "cs-hmacsha256",
+      "language": "csharp",
+      "type": "positive",
+      "family": "unknown",
+      "path": "csharp/positive/hmacsha256.cs",
+      "findings_count": 4,
+      "expected": [
+        "HMAC"
+      ],
+      "found": [
+        "HMAC",
+        "SHA-256"
+      ],
+      "true_positives": [
+        "HMAC"
+      ],
+      "false_positives": [
+        "SHA-256"
+      ],
+      "false_negatives": [],
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1": 0.6667
+    },
+    {
+      "id": "cs-rsa_create",
+      "language": "csharp",
+      "type": "positive",
+      "family": "unknown",
+      "path": "csharp/positive/rsa_create.cs",
+      "findings_count": 6,
+      "expected": [
+        "RSA"
+      ],
+      "found": [
+        "RSA"
+      ],
+      "true_positives": [
+        "RSA"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "go-no_crypto",
+      "language": "go",
+      "type": "negative",
+      "family": "unknown",
+      "path": "go/negative/no_crypto.go",
+      "findings_count": 0,
+      "expected": [],
+      "found": [],
+      "true_positives": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "go-aes_gcm",
+      "language": "go",
+      "type": "positive",
+      "family": "unknown",
+      "path": "go/positive/aes_gcm.go",
+      "findings_count": 7,
+      "expected": [
+        "AES",
+        "SHA-256"
+      ],
+      "found": [
+        "AES",
+        "SHA-256"
+      ],
+      "true_positives": [
+        "AES",
+        "SHA-256"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "go-chacha20",
+      "language": "go",
+      "type": "positive",
+      "family": "unknown",
+      "path": "go/positive/chacha20.go",
+      "findings_count": 4,
+      "expected": [
+        "ChaCha20"
+      ],
+      "found": [
+        "ChaCha20"
+      ],
+      "true_positives": [
+        "ChaCha20"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "go-ecdh",
+      "language": "go",
+      "type": "positive",
+      "family": "unknown",
+      "path": "go/positive/ecdh.go",
+      "findings_count": 5,
+      "expected": [
+        "ECDH"
+      ],
+      "found": [
+        "ECDH"
+      ],
+      "true_positives": [
+        "ECDH"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "go-ed25519",
+      "language": "go",
+      "type": "positive",
+      "family": "unknown",
+      "path": "go/positive/ed25519.go",
+      "findings_count": 7,
+      "expected": [
+        "Ed25519"
+      ],
+      "found": [
+        "Ed25519"
+      ],
+      "true_positives": [
+        "Ed25519"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "go-hmac",
+      "language": "go",
+      "type": "positive",
+      "family": "unknown",
+      "path": "go/positive/hmac.go",
+      "findings_count": 4,
+      "expected": [
+        "HMAC"
+      ],
+      "found": [
+        "HMAC",
+        "SHA-256"
+      ],
+      "true_positives": [
+        "HMAC"
+      ],
+      "false_positives": [
+        "SHA-256"
+      ],
+      "false_negatives": [],
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1": 0.6667
+    },
+    {
+      "id": "go-sha256",
+      "language": "go",
+      "type": "positive",
+      "family": "unknown",
+      "path": "go/positive/sha256.go",
+      "findings_count": 6,
+      "expected": [
+        "SHA-256"
+      ],
+      "found": [
+        "SHA-256",
+        "SHA-512"
+      ],
+      "true_positives": [
+        "SHA-256"
+      ],
+      "false_positives": [
+        "SHA-512"
+      ],
+      "false_negatives": [],
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1": 0.6667
+    },
+    {
+      "id": "go-tls",
+      "language": "go",
+      "type": "positive",
+      "family": "unknown",
+      "path": "go/positive/tls.go",
+      "findings_count": 3,
+      "expected": [
+        "TLS"
+      ],
+      "found": [
+        "TLS"
+      ],
+      "true_positives": [
+        "TLS"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "ja-static_import",
+      "language": "java",
+      "type": "positive",
+      "family": "unknown",
+      "path": "java/aliases/static_import.java",
+      "findings_count": 2,
+      "expected": [
+        "SHA-256"
+      ],
+      "found": [
+        "SHA-256"
+      ],
+      "true_positives": [
+        "SHA-256"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "ja-comment_only",
+      "language": "java",
+      "type": "negative",
+      "family": "unknown",
+      "path": "java/negative/comment_only.java",
+      "findings_count": 0,
+      "expected": [],
+      "found": [],
+      "true_positives": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "ja-declaration_only",
+      "language": "java",
+      "type": "negative",
+      "family": "unknown",
+      "path": "java/negative/declaration_only.java",
+      "findings_count": 0,
+      "expected": [],
+      "found": [],
+      "true_positives": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "ja-no_crypto",
+      "language": "java",
+      "type": "negative",
+      "family": "unknown",
+      "path": "java/negative/no_crypto.java",
+      "findings_count": 0,
+      "expected": [],
+      "found": [],
+      "true_positives": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "ja-aes_cbc",
+      "language": "java",
+      "type": "positive",
+      "family": "unknown",
+      "path": "java/positive/aes_cbc.java",
+      "findings_count": 3,
+      "expected": [
+        "AES"
+      ],
+      "found": [
+        "AES"
+      ],
+      "true_positives": [
+        "AES"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "ja-aes_gcm",
+      "language": "java",
+      "type": "positive",
+      "family": "unknown",
+      "path": "java/positive/aes_gcm.java",
+      "findings_count": 2,
+      "expected": [
+        "AES"
+      ],
+      "found": [
+        "AES"
+      ],
+      "true_positives": [
+        "AES"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "ja-ecdsa",
+      "language": "java",
+      "type": "positive",
+      "family": "unknown",
+      "path": "java/positive/ecdsa.java",
+      "findings_count": 4,
+      "expected": [
+        "ECDSA",
+        "SHA-256"
+      ],
+      "found": [
+        "ECDSA"
+      ],
+      "true_positives": [
+        "ECDSA"
+      ],
+      "false_positives": [],
+      "false_negatives": [
+        "SHA-256"
+      ],
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1": 0.6667
+    },
+    {
+      "id": "ja-hmac",
+      "language": "java",
+      "type": "positive",
+      "family": "unknown",
+      "path": "java/positive/hmac.java",
+      "findings_count": 2,
+      "expected": [
+        "HMAC"
+      ],
+      "found": [
+        "HMAC"
+      ],
+      "true_positives": [
+        "HMAC"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "ja-rsa_oaep",
+      "language": "java",
+      "type": "positive",
+      "family": "unknown",
+      "path": "java/positive/rsa_oaep.java",
+      "findings_count": 3,
+      "expected": [
+        "RSA"
+      ],
+      "found": [
+        "RSA"
+      ],
+      "true_positives": [
+        "RSA"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "ja-sha256",
+      "language": "java",
+      "type": "positive",
+      "family": "unknown",
+      "path": "java/positive/sha256.java",
+      "findings_count": 1,
+      "expected": [
+        "SHA-256"
+      ],
+      "found": [
+        "SHA-256"
+      ],
+      "true_positives": [
+        "SHA-256"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "ja-bouncy_castle_wrapper",
+      "language": "java",
+      "type": "positive",
+      "family": "unknown",
+      "path": "java/wrappers/bouncy_castle_wrapper.java",
+      "findings_count": 5,
+      "expected": [
+        "AES",
+        "RSA"
+      ],
+      "found": [
+        "AES",
+        "RSA"
+      ],
+      "true_positives": [
+        "AES",
+        "RSA"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "ja-no_crypto",
+      "language": "javascript",
+      "type": "negative",
+      "family": "unknown",
+      "path": "javascript/negative/no_crypto.js",
+      "findings_count": 0,
+      "expected": [],
+      "found": [],
+      "true_positives": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "ja-string_refs",
+      "language": "javascript",
+      "type": "negative",
+      "family": "unknown",
+      "path": "javascript/negative/string_refs.js",
+      "findings_count": 0,
+      "expected": [],
+      "found": [],
+      "true_positives": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "ja-hash_sha256",
+      "language": "javascript",
+      "type": "positive",
+      "family": "unknown",
+      "path": "javascript/positive/hash_sha256.js",
+      "findings_count": 5,
+      "expected": [
+        "SHA-256"
+      ],
+      "found": [
+        "SHA-256"
+      ],
+      "true_positives": [
+        "SHA-256"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "ja-node_crypto_aes",
+      "language": "javascript",
+      "type": "positive",
+      "family": "unknown",
+      "path": "javascript/positive/node_crypto_aes.js",
+      "findings_count": 2,
+      "expected": [
+        "AES"
+      ],
+      "found": [
+        "AES"
+      ],
+      "true_positives": [
+        "AES"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "ja-node_crypto_hmac",
+      "language": "javascript",
+      "type": "positive",
+      "family": "unknown",
+      "path": "javascript/positive/node_crypto_hmac.js",
+      "findings_count": 3,
+      "expected": [
+        "HMAC"
+      ],
+      "found": [
+        "HMAC",
+        "SHA-256"
+      ],
+      "true_positives": [
+        "HMAC"
+      ],
+      "false_positives": [
+        "SHA-256"
+      ],
+      "false_negatives": [],
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1": 0.6667
+    },
+    {
+      "id": "ja-rsa_keygen",
+      "language": "javascript",
+      "type": "positive",
+      "family": "unknown",
+      "path": "javascript/positive/rsa_keygen.js",
+      "findings_count": 1,
+      "expected": [
+        "RSA"
+      ],
+      "found": [
+        "RSA"
+      ],
+      "true_positives": [
+        "RSA"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "ja-tls_connect",
+      "language": "javascript",
+      "type": "positive",
+      "family": "unknown",
+      "path": "javascript/positive/tls_connect.js",
+      "findings_count": 1,
+      "expected": [
+        "TLS"
+      ],
+      "found": [
+        "TLS"
+      ],
+      "true_positives": [
+        "TLS"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "ja-webcrypto_encrypt",
+      "language": "javascript",
+      "type": "positive",
+      "family": "unknown",
+      "path": "javascript/positive/webcrypto_encrypt.js",
+      "findings_count": 1,
+      "expected": [
+        "AES"
+      ],
+      "found": [
+        "AES"
+      ],
+      "true_positives": [
+        "AES"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "py-from_import",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/aliases/from_import.py",
+      "findings_count": 6,
+      "expected": [
+        "AES",
+        "HMAC",
+        "SHA-256"
+      ],
+      "found": [
+        "AES",
+        "HMAC",
+        "SHA-256"
+      ],
+      "true_positives": [
+        "AES",
+        "HMAC",
+        "SHA-256"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "py-import_alias",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/aliases/import_alias.py",
+      "findings_count": 6,
+      "expected": [
+        "AES"
+      ],
+      "found": [
+        "AES"
+      ],
+      "true_positives": [
+        "AES"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "py-comment_only",
+      "language": "python",
+      "type": "negative",
+      "family": "unknown",
+      "path": "python/negative/comment_only.py",
+      "findings_count": 0,
+      "expected": [],
+      "found": [],
+      "true_positives": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "py-no_crypto",
+      "language": "python",
+      "type": "negative",
+      "family": "unknown",
+      "path": "python/negative/no_crypto.py",
+      "findings_count": 0,
+      "expected": [],
+      "found": [],
+      "true_positives": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "py-shadowed_imports",
+      "language": "python",
+      "type": "negative",
+      "family": "unknown",
+      "path": "python/negative/shadowed_imports.py",
+      "findings_count": 0,
+      "expected": [],
+      "found": [],
+      "true_positives": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "py-string_literals",
+      "language": "python",
+      "type": "negative",
+      "family": "unknown",
+      "path": "python/negative/string_literals.py",
+      "findings_count": 0,
+      "expected": [],
+      "found": [],
+      "true_positives": [],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "py-aes_cbc",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/positive/aes_cbc.py",
+      "findings_count": 9,
+      "expected": [
+        "AES"
+      ],
+      "found": [
+        "AES",
+        "RNG"
+      ],
+      "true_positives": [
+        "AES"
+      ],
+      "false_positives": [
+        "RNG"
+      ],
+      "false_negatives": [],
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1": 0.6667
+    },
+    {
+      "id": "py-aes_gcm",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/positive/aes_gcm.py",
+      "findings_count": 7,
+      "expected": [
+        "AES"
+      ],
+      "found": [
+        "AES",
+        "RNG"
+      ],
+      "true_positives": [
+        "AES"
+      ],
+      "false_positives": [
+        "RNG"
+      ],
+      "false_negatives": [],
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1": 0.6667
+    },
+    {
+      "id": "py-chacha20",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/positive/chacha20.py",
+      "findings_count": 3,
+      "expected": [
+        "ChaCha20"
+      ],
+      "found": [
+        "ChaCha20"
+      ],
+      "true_positives": [
+        "ChaCha20"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "py-ecdsa_sign",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/positive/ecdsa_sign.py",
+      "findings_count": 2,
+      "expected": [
+        "ECDSA",
+        "SHA-256"
+      ],
+      "found": [
+        "ECDSA",
+        "SHA-256"
+      ],
+      "true_positives": [
+        "ECDSA",
+        "SHA-256"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "py-ed25519",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/positive/ed25519.py",
+      "findings_count": 5,
+      "expected": [
+        "Ed25519"
+      ],
+      "found": [
+        "Ed25519"
+      ],
+      "true_positives": [
+        "Ed25519"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "py-fernet",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/positive/fernet.py",
+      "findings_count": 2,
+      "expected": [
+        "AES"
+      ],
+      "found": [
+        "AES"
+      ],
+      "true_positives": [
+        "AES"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "py-hmac_sha256",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/positive/hmac_sha256.py",
+      "findings_count": 1,
+      "expected": [
+        "HMAC",
+        "SHA-256"
+      ],
+      "found": [
+        "HMAC"
+      ],
+      "true_positives": [
+        "HMAC"
+      ],
+      "false_positives": [],
+      "false_negatives": [
+        "SHA-256"
+      ],
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1": 0.6667
+    },
+    {
+      "id": "py-pbkdf2",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/positive/pbkdf2.py",
+      "findings_count": 5,
+      "expected": [
+        "PBKDF2",
+        "SHA-256"
+      ],
+      "found": [
+        "PBKDF2",
+        "SHA-256"
+      ],
+      "true_positives": [
+        "PBKDF2",
+        "SHA-256"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "py-tls_ssl",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/positive/tls_ssl.py",
+      "findings_count": 3,
+      "expected": [
+        "TLS"
+      ],
+      "found": [
+        "TLS"
+      ],
+      "true_positives": [
+        "TLS"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "py-constant_propagation",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/wrappers/constant_propagation.py",
+      "findings_count": 5,
+      "expected": [
+        "PBKDF2",
+        "SHA-256"
+      ],
+      "found": [
+        "PBKDF2",
+        "SHA-256"
+      ],
+      "true_positives": [
+        "PBKDF2",
+        "SHA-256"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "py-custom_wrapper",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/wrappers/custom_wrapper.py",
+      "findings_count": 2,
+      "expected": [
+        "AES"
+      ],
+      "found": [
+        "AES"
+      ],
+      "true_positives": [
+        "AES"
+      ],
+      "false_positives": [],
+      "false_negatives": [],
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    }
+  ]
+}

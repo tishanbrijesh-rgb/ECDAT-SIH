@@ -1,0 +1,8 @@
+{
+  "purpose": "Mixed risk control for dashboard and migration-priority demonstration",
+  "expected_algorithms": ["AES", "RSA", "ECDSA", "MD5", "SHA-1"],
+  "classical_weakness": ["MD5", "SHA-1"],
+  "quantum_vulnerable": ["RSA", "ECDSA"],
+  "modern_symmetric": ["AES"],
+  "scope": "mixed_operations.py"
+}

@@ -7,6 +7,8 @@
     {"component": "app-py", "algorithm": "SHA-256"},
     {"component": "app-py", "algorithm": "SHA-512"},
     {"component": "app-py", "algorithm": "RNG"},
+    {"component": "app-py", "algorithm": "HMAC"},
+    {"component": "app-py", "algorithm": "PBKDF2"},
     {"component": "app-java", "algorithm": "AES"},
     {"component": "app-java", "algorithm": "RSA"},
     {"component": "app-java", "algorithm": "ECDSA"},

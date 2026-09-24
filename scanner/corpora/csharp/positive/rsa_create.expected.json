@@ -1,0 +1,6 @@
+{
+  "file": "rsa_create.cs",
+  "expected_assets": [
+    {"algorithm": "RSA", "usage": "encryption", "category": "encryption"}
+  ]
+}

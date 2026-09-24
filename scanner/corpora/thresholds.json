@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "description": "Corpus evaluation thresholds. Failing any gate causes CI to fail.",
+  "gates": {
+    "micro_precision": {
+      "minimum": 0.75,
+      "description": "Minimum micro-average precision across all positive cases. Milestone 1 target: 75%."
+    },
+    "macro_precision": {
+      "minimum": 0.70,
+      "description": "Minimum macro-average precision across per-language averages."
+    },
+    "micro_recall": {
+      "minimum": 0.95,
+      "description": "Minimum micro-average recall. Cannot drop below 95% without suppressing legitimate findings."
+    },
+    "negative_accuracy": {
+      "minimum": 0.9167,
+      "description": "Negative-case accuracy must not fall below current 91.67% (11/12)."
+    },
+    "maximum_regression": {
+      "micro_precision": 0.05,
+      "micro_recall": 0.02,
+      "negative_accuracy": 0.05,
+      "description": "Maximum allowed regression from the previous baseline stored in results.json."
+    }
+  },
+  "enforcement": {
+    "fail_closed": true,
+    "description": "Do not default missing metrics to a passing value. Missing or malformed results fail the gate."
+  }
+}

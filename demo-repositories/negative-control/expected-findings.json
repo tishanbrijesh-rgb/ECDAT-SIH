@@ -1,0 +1,6 @@
+{
+  "purpose": "Negative control for comments, strings and algorithm-named symbols",
+  "expected_algorithms": [],
+  "expected_finding_count": 0,
+  "scope": "configuration.py"
+}

@@ -1,0 +1,6 @@
+{
+  "file": "node_crypto_hmac.js",
+  "expected_assets": [
+    {"algorithm": "HMAC", "usage": "mac", "category": "mac"}
+  ]
+}

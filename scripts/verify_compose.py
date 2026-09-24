@@ -4,9 +4,9 @@ Requires Docker Compose >=2.24.4 and free localhost ports 18080/18081.
 Never targets the regular ECDAT Compose project or its database volume.
 """
 from __future__ import annotations
+
 import json
 import os
-from pathlib import Path
 import secrets
 import shutil
 import subprocess
@@ -15,6 +15,7 @@ import time
 import urllib.error
 import urllib.request
 import uuid
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 

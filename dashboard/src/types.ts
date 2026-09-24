@@ -20,6 +20,10 @@ export interface CryptoAsset {
     reasons?: string[];
     conflicting_operations?: string[];
   };
+  evidence_kind?: string;
+  evidence_quality?: string;
+  confirmed_use?: boolean;
+  capability_only?: boolean;
   confidence: number;
   conflict: boolean;
   quantum_vulnerable: boolean;
@@ -39,6 +43,7 @@ export interface CryptoAsset {
   migration_effort: string;
   risk_reasons: string[];
   hybrid_recommended: boolean;
+  risk_context_provenance: Record<string, string>;
   created_at: string;
 }
 export interface ScanJob {
@@ -55,7 +60,7 @@ export interface ScanJob {
   failed_files: number;
   coverage_pct: number;
   duration_ms: number;
-  collector_stats: Record<string, number>;
+  collector_stats: Record<string, number | string>;
   blind_spots: string[];
   failures?: ScanFailure[];
 }
@@ -74,7 +79,8 @@ export interface DashboardSummary {
   quantum_vulnerable_count: number;
   conflict_count: number;
   latest_scan_id: number | null;
-  collector_stats: Record<string, number>;
+  collector_stats: Record<string, number | string>;
+  confidence_distribution?: Record<string, number>;
 }
 export interface Evaluation {
   available: boolean;
@@ -122,7 +128,7 @@ export interface CbomEntry {
   bom_format?: string;
   spec_version?: string;
   serial_number?: string;
-  metadata?: { timestamp?: string };
+  metadata?: Record<string, unknown>;
   components?: CbomComponent[];
   vulnerabilities?: unknown[];
   dependencies?: unknown[];
@@ -136,6 +142,13 @@ export interface CbomComponent {
   purl?: string;
   description?: string;
   hashes?: unknown[];
+  properties?: Array<{ name: string; value: string }>;
+  riskScore?: number;
+  riskLabel?: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+  quantumVulnerable?: boolean;
+  keySize?: number | null;
+  protocol?: string;
+  migrationRecommendation?: string;
   evidence?: {
     algorithm?: string;
     category?: string;
@@ -150,4 +163,32 @@ export interface CbomComponent {
 export interface ScanDetail extends ScanJob {
   assets: CryptoAsset[];
   assets_total: number;
+  summary: DashboardSummary;
+}
+
+// ── Evidence graph ──────────────────────────────────────────────────────────────
+export type GraphNodeType = "asset" | "evidence";
+
+export interface GraphNode {
+  id: string;
+  type: GraphNodeType;
+  label: string;
+  logical_asset_id?: string;
+  operation_anchor?: string | null;
+  confidence?: number | null;
+  priority_score?: number | null;
+  priority_label?: string | null;
+  quantum_vulnerable?: boolean | null;
+}
+
+export interface GraphEdge {
+  source: string;
+  target: string;
+  relation: string;
+}
+
+export interface EvidenceGraphResponse {
+  scan_id: number;
+  nodes: GraphNode[];
+  edges: GraphEdge[];
 }

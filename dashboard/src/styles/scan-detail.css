@@ -1,141 +1,114 @@
-/* ── Scan detail page ─────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════
+   ECDAT Scan Detail — Scan detail page specific styles
+   Generic scan styles live in components.css.
+   Generic status badges live in components.css.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Scan Detail Facts ────────────────────────────────────────────── */
 .scan-detail-facts {
   display: grid;
   gap: 0;
 }
+
 .scan-fact {
   display: grid;
-  grid-template-columns: 110px 1fr;
-  gap: 12px;
-  align-items: baseline;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--line);
-  transition: background var(--transition-fast);
+  grid-template-columns: 160px 1fr;
+  gap: var(--sp-3);
+  padding: 6px 8px;
+  margin: -6px -8px;
+  border-radius: var(--radius-xs);
+  transition: background 100ms ease;
 }
-.scan-fact:last-child {
-  border-bottom: none;
+
+.scan-fact:hover {
+  background: var(--color-bg-2);
 }
+
 .scan-fact-label {
-  font-size: 11px;
-  font-weight: 700;
+  color: var(--color-stone);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
+  letter-spacing: var(--tracking-wide);
+  padding-top: 1px;
 }
+
 .scan-fact-value {
-  font:
-    600 13px Manrope,
-    system-ui,
-    sans-serif;
-  color: var(--text);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+  color: var(--color-text);
   word-break: break-word;
 }
+
+/* ── Scan Risk Rows ───────────────────────────────────────────────── */
 .scan-risk-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--line);
-  transition: background var(--transition-fast);
+  padding: var(--sp-3) var(--sp-3);
+  border-bottom: 1px solid var(--color-rule);
+  transition:
+    background var(--transition-fast),
+    transform 100ms ease;
 }
+
 .scan-risk-row:last-child {
   border-bottom: none;
 }
+
 .scan-risk-row:hover {
-  background: var(--surface-alt);
+  background: var(--color-surface-alt);
+  transform: translateX(3px);
 }
+
+[data-theme="dark"] .scan-risk-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
 .scan-risk-count {
-  font:
-    800 22px Manrope,
-    system-ui,
-    sans-serif;
-  color: var(--text);
+  font-size: 22px;
+  font-weight: var(--weight-black);
+  color: var(--color-text);
 }
-.status {
-  display: inline-block;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  padding: 5px 12px;
-  border-radius: 99px;
-  background: var(--surface-alt);
-  border: 1px solid var(--line);
-  letter-spacing: 0.04em;
-  transition: box-shadow var(--transition-fast);
-}
-.status-completed {
-  background: var(--teal-wash);
-  color: var(--teal);
-  border-color: rgba(20, 184, 166, 0.2);
-}
-.status-failed {
-  background: var(--red-wash);
-  color: var(--red);
-  border-color: rgba(239, 68, 68, 0.2);
-}
-.status-running {
-  background: var(--indigo-wash);
-  color: var(--indigo);
-  border-color: rgba(91, 111, 230, 0.2);
-  animation: pulse-status 2s ease-in-out infinite;
-}
-.status-cancelled,
-.status-timed_out {
-  background: var(--amber-wash);
-  color: var(--amber);
-  border-color: rgba(245, 158, 11, 0.2);
-}
+
+/* ── Scan Failures ────────────────────────────────────────────────── */
 .scan-failures {
-  border-color: rgba(239, 68, 68, 0.2);
+  border: 1px solid color-mix(in srgb, var(--color-red) 20%, transparent);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
 }
+
 .scan-failure-list {
-  display: grid;
-  gap: 0;
+  list-style: none;
   margin: 0;
   padding: 0;
-  list-style: none;
 }
+
 .scan-failure-list li {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--line);
-  transition: background var(--transition-fast);
-}
-.scan-failure-list li:last-child {
-  border-bottom: 0;
-}
-.scan-failure-list li:hover {
-  background: var(--surface-alt);
-}
-
-/* ── Tier 2: Scan detail micro-interactions ───────────────────── */
-.scan-fact {
-  transition: background 100ms ease;
-  border-radius: var(--radius-xs);
-  padding: 6px 8px;
-  margin: -6px -8px;
-}
-.scan-fact:hover {
-  background: var(--bg-2);
-}
-
-.scan-risk-row {
-  transition: transform 100ms ease;
-}
-.scan-risk-row:hover {
-  transform: translateX(3px);
-}
-
-.scan-failure-list li {
+  gap: var(--sp-4);
+  padding: var(--sp-3) var(--sp-3);
+  border-bottom: 1px solid var(--color-rule);
+  font-size: var(--text-sm);
+  color: var(--color-text-soft);
   transition:
     background 80ms ease,
     transform 80ms ease;
 }
+
+.scan-failure-list li:last-child {
+  border-bottom: none;
+}
+
 .scan-failure-list li:hover {
+  background: var(--color-surface-alt);
   transform: translateX(2px);
+}
+
+[data-theme="dark"] .scan-failure-list li:hover {
+  background: rgba(255, 255, 255, 0.03);
 }
 
 @media (max-width: 480px) {

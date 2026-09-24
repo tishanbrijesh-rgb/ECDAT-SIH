@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
     environment:
       POSTGRES_USER: ecdat
       POSTGRES_PASSWORD: ${ECDAT_DB_PASSWORD:?Configure ECDAT_DB_PASSWORD}
@@ -19,6 +19,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     environment:
+      ECDAT_ENV: production
       DATABASE_URL: postgresql://ecdat:${ECDAT_DB_PASSWORD:?Configure ECDAT_DB_PASSWORD}@db:5432/ecdat
       SCANNER_PATH: /app
       ECDAT_ALLOWED_SCAN_ROOTS: /test-repo
@@ -28,11 +29,27 @@ services:
       ECDAT_MAX_FILE_BYTES: ${ECDAT_MAX_FILE_BYTES:-8388608}
       ECDAT_AUTO_CREATE_TABLES: "false"
       ECDAT_MAX_SCAN_FILES: ${ECDAT_MAX_SCAN_FILES:-100000}
+      ECDAT_MAX_WORKER_RESULT_BYTES: ${ECDAT_MAX_WORKER_RESULT_BYTES:-33554432}
+      ECDAT_LOG_DIR: /tmp/ecdat-logs
       ECDAT_USERS_JSON: ${ECDAT_USERS_JSON:?Configure ECDAT_USERS_JSON}
       ECDAT_TOKEN_SECRET: ${ECDAT_TOKEN_SECRET:?Configure ECDAT_TOKEN_SECRET}
     volumes:
       - ./scanner:/app/scanner:ro
       - ./test-repo:/test-repo:ro
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=256m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 1g
+    cpus: 2.0
+    ulimits:
+      nofile:
+        soft: 1024
+        hard: 2048
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
@@ -69,6 +86,17 @@ services:
       dockerfile: dashboard/Dockerfile
     ports:
       - "127.0.0.1:3000:3000"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=32m
+      - /var/cache/nginx:rw,noexec,nosuid,nodev,size=32m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 256m
+    cpus: 0.5
     depends_on:
       backend:
         condition: service_healthy

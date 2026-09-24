@@ -4,10 +4,9 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-from scanner.main import scan_with_metrics
 from backend.services.correlator import correlate
 from backend.services.evaluation import evaluate_assets
-
+from scanner.main import scan_with_metrics
 
 CASES = [
     ("hash.py", "import hashlib\nhashlib.sha256(b'data')\n", {"SHA-256"}),
@@ -128,6 +127,16 @@ class PrecisionTests(unittest.TestCase):
                        'const text = `Cipher.getInstance("AES")`;'):
             findings, _ = self.scan_fixture(source, "example.java")
             self.assertEqual(findings, [])
+
+    def test_algorithm_named_constants_are_not_observed_operations(self):
+        for source, filename in (
+            ("ECDSA = object()", "example.py"),
+            ("const ECDSA = configuration;", "example.js"),
+            ("static final String ECDSA = configuredValue;", "Example.java"),
+        ):
+            with self.subTest(filename=filename):
+                findings, _ = self.scan_fixture(source, filename)
+                self.assertEqual(findings, [])
 
     def test_empty_scope_does_not_claim_full_coverage(self):
         findings, metrics = self.scan_fixture("plain text", "readme.txt")

@@ -1,488 +1,144 @@
-/* ── Dark mode — full black palette ─────────────────────────── */
-[data-theme="dark"] {
-  --page: #050505;
-  --surface: #0c0c0c;
-  --surface-alt: #141414;
-  --panel-2: #1a1a1a;
-  --bg-2: #0f0f0f;
-  --rule: #1f1f1f;
-  --rule-heavy: #2a2a2a;
-  --text: #d4d4d4;
-  --text-soft: #a3a3a3;
-  --ink: #f5f5f5;
-  --stone: #737373;
-  --stone-light: #525252;
-  --forest: #2d5a3f;
-  --forest-bright: #3d7a54;
-  --teal: #0d9488;
-  --teal-bright: #14b8a6;
-  --teal-wash: rgba(20, 184, 166, 0.06);
-  --amber: #d4a43a;
-  --amber-wash: rgba(245, 158, 11, 0.06);
-  --red: #ef4444;
-  --red-wash: rgba(239, 68, 68, 0.06);
-  --indigo: #5b6fe6;
-  --indigo-wash: rgba(91, 111, 230, 0.06);
-}
+/* ═══════════════════════════════════════════════════════════════════
+   Dark Theme Enhancements — Visual effects not covered by tokens
+   Core dark values (surfaces, text, accents) are in tokens.css.
+   Component-level color/border/background overrides are handled
+   by the token system. This file retains only enhancement effects:
+   glows, gradients, box-shadows, and special contrast colors.
+   ═══════════════════════════════════════════════════════════════════ */
 
-[data-theme="dark"] body {
-  background: var(--page);
-  color: var(--text);
-}
-
-[data-theme="dark"] h1 {
-  color: var(--ink);
-}
-[data-theme="dark"] h2,
-[data-theme="dark"] h3 {
-  color: var(--text);
-}
-[data-theme="dark"] a {
-  color: var(--teal-bright);
-}
-
-/* Topbar */
-[data-theme="dark"] .topbar {
-  background: var(--surface);
-  border-color: var(--rule);
-  box-shadow: var(--shadow-sm);
-}
-[data-theme="dark"] .topbar nav a {
-  color: var(--stone);
-}
-[data-theme="dark"] .topbar nav a:hover,
-[data-theme="dark"] .topbar nav a.active {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text);
-}
+/* ── Topbar ──────────────────────────────────────────────────────── */
 [data-theme="dark"] .topbar nav a.active::after {
-  background: var(--teal-bright);
+  background: var(--color-teal-bright);
   box-shadow: 0 0 8px rgba(20, 184, 166, 0.25);
 }
-[data-theme="dark"] .topbar .brand small {
-  color: var(--stone-light);
-}
-[data-theme="dark"] .topbar .brand {
-  color: var(--text);
-}
-[data-theme="dark"] .theme-toggle {
-  background: var(--surface-alt);
-  border-color: var(--rule);
-  color: var(--text);
-}
-[data-theme="dark"] .theme-toggle:hover {
-  background: var(--panel-2);
-  border-color: var(--teal-bright);
-}
 
-/* Panels */
-[data-theme="dark"] .panel {
-  background: var(--surface);
-  border-color: var(--rule);
-}
-[data-theme="dark"] .panel-title p,
-[data-theme="dark"] .panel-title span {
-  color: var(--stone);
-}
-
-/* Stat cards */
-[data-theme="dark"] .stat {
-  background: var(--surface);
-  border-color: var(--rule);
-  box-shadow: var(--shadow-sm);
-}
-[data-theme="dark"] .stat strong {
-  color: var(--text);
-}
-[data-theme="dark"] .stat:hover {
-  border-color: var(--rule-heavy);
-  box-shadow: var(--shadow-sm);
-}
-
-/* Buttons */
-[data-theme="dark"] .button {
-  background: var(--forest);
-  color: #f5f5f5;
-}
-[data-theme="dark"] .button:hover:not(:disabled) {
-  background: var(--forest-bright);
-}
-[data-theme="dark"] .button.secondary {
-  background: var(--surface-alt);
-  color: var(--text);
-  border-color: var(--rule);
-}
-[data-theme="dark"] .button.secondary:hover {
-  background: var(--panel-2);
-  border-color: var(--rule-heavy);
-}
-
-/* Tables */
-[data-theme="dark"] .table-wrap {
-  background: var(--surface);
-  border-color: var(--rule);
-}
-[data-theme="dark"] .table-wrap thead {
-  background: var(--surface-alt);
-}
+/* ── Table depth ─────────────────────────────────────────────────── */
 [data-theme="dark"] .table-wrap th {
-  color: var(--stone);
   box-shadow:
-    0 1px 0 var(--rule),
+    0 1px 0 var(--color-rule),
     0 2px 4px rgba(0, 0, 0, 0.3);
 }
-[data-theme="dark"] .table-wrap td {
-  border-bottom-color: var(--rule);
-  color: var(--text);
-}
-[data-theme="dark"] .table-wrap tbody tr:hover {
-  background: rgba(255, 255, 255, 0.03);
-}
+
 [data-theme="dark"] .table-wrap tbody tr:hover td:first-child {
-  border-left-color: var(--teal-bright);
-}
-[data-theme="dark"] .table-wrap td:first-child {
-  border-left-color: transparent;
-}
-[data-theme="dark"] .path {
-  background: var(--surface-alt);
-  color: var(--stone-light);
+  border-left-color: var(--color-teal-bright);
 }
 
-/* Scan card */
-[data-theme="dark"] .scan-card {
-  background: var(--surface);
-  border-color: var(--rule);
-}
-[data-theme="dark"] .progress-track {
-  background: var(--bg-2);
-  border-color: var(--rule);
+/* ── Panel depth ─────────────────────────────────────────────────── */
+[data-theme="dark"] .panel {
+  background: linear-gradient(180deg, var(--color-bg-2) 0%, var(--color-bg) 100%);
+  border-color: rgba(255, 255, 255, 0.04);
 }
 
-/* Asset detail */
-[data-theme="dark"] .asset-hero {
-  background: var(--surface);
-  border-color: var(--rule);
-  box-shadow: var(--shadow-md);
+/* ── Button glow ─────────────────────────────────────────────────── */
+[data-theme="dark"] .button:hover:not(:disabled) {
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.4),
+    0 0 14px rgba(45, 212, 167, 0.06);
 }
-[data-theme="dark"] .risk-stack {
-  background: var(--bg-2);
-  border-color: var(--rule);
+
+/* ── Stat card hover ─────────────────────────────────────────────── */
+[data-theme="dark"] .stat:hover {
+  box-shadow:
+    var(--shadow-md),
+    0 0 0 1px var(--color-rule-heavy);
 }
-[data-theme="dark"] .risk-stack > span {
-  color: var(--stone-light);
+
+/* ── CBOM glows ──────────────────────────────────────────────────── */
+[data-theme="dark"] .cbom-component-card:hover {
+  box-shadow:
+    var(--shadow-md),
+    0 0 0 1px var(--color-rule-heavy);
 }
+
+[data-theme="dark"] .cbom-component-card.cbom-risk-critical::before {
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.25);
+}
+
+[data-theme="dark"] .cbom-component-card.cbom-risk-high::before {
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
+}
+
+[data-theme="dark"] .cbom-component-card.cbom-risk-medium::before {
+  box-shadow: 0 0 12px rgba(212, 164, 58, 0.25);
+}
+
+[data-theme="dark"] .cbom-component-card.cbom-risk-low::before {
+  box-shadow: 0 0 12px rgba(20, 184, 166, 0.2);
+}
+
+/* ── MOSCA ───────────────────────────────────────────────────────── */
 [data-theme="dark"] .mosca {
-  background: var(--teal-wash);
   border-color: rgba(20, 184, 166, 0.15);
 }
+
 [data-theme="dark"] .mosca::before {
-  background: var(--teal);
+  background: var(--color-teal);
 }
-[data-theme="dark"] .mosca small {
-  color: var(--stone);
-}
+
 [data-theme="dark"] .mosca .mosca-threat-note {
-  color: var(--teal-bright);
+  color: var(--color-teal-bright);
 }
-[data-theme="dark"] .mosca-warning {
-  background: var(--amber-wash);
-  border-color: rgba(245, 158, 11, 0.15);
-}
+
 [data-theme="dark"] .mosca-warning::before {
-  background: var(--amber);
+  background: var(--color-amber);
 }
 
-/* Recommendation panel */
-[data-theme="dark"] .recommendation {
-  background: var(--surface);
-  border-color: var(--rule);
-}
-[data-theme="dark"] .recommendation > div:last-child {
-  background: var(--surface-alt);
-  border-left-color: var(--rule);
-}
-[data-theme="dark"] .recommendation li {
-  color: var(--stone);
-}
-
-/* Callouts */
-[data-theme="dark"] .callout {
-  border-color: rgba(239, 68, 68, 0.2);
-}
-[data-theme="dark"] .callout-amber {
-  background: var(--amber-wash);
-  border-color: rgba(245, 158, 11, 0.15);
-}
-[data-theme="dark"] .callout-teal {
-  background: var(--teal-wash);
-  border-color: rgba(20, 184, 166, 0.15);
-}
-
-/* Status badges */
-[data-theme="dark"] .status {
-  background: var(--surface-alt);
-  border-color: var(--rule);
-  color: var(--text);
-}
-[data-theme="dark"] .status-running {
-  animation: pulse-status-dark 2s ease-in-out infinite;
-}
-
-/* Confidence bar */
-[data-theme="dark"] .confidence-bar .track {
-  background: var(--bg-2);
-  border-color: var(--rule);
-}
-
-/* Evidence details */
-[data-theme="dark"] .evidence-details {
-  background: var(--surface-alt);
-  border-color: var(--rule);
-}
-[data-theme="dark"] .evidence-details pre {
-  color: var(--text-soft);
-}
-
-/* CBOM dark */
-[data-theme="dark"] .cbom-meta-card {
-  background: var(--surface);
-  border-color: var(--rule);
-}
-[data-theme="dark"] .cbom-component-card {
-  background: var(--surface);
-  border-color: var(--rule);
-}
-[data-theme="dark"] .cbom-evidence-item {
-  border-bottom-color: var(--rule);
-}
-[data-theme="dark"] .cbom-comp-type {
-  background: rgba(61, 122, 84, 0.12);
-  color: var(--forest-bright);
-}
-[data-theme="dark"] .cbom-node-card {
-  background: var(--surface);
-  border-color: var(--rule);
-}
-[data-theme="dark"] .cbom-vuln-item {
-  background: var(--surface);
-  border-color: var(--rule);
-}
-[data-theme="dark"] .cbom-service-item {
-  background: var(--surface);
-  border-color: var(--rule);
-}
-[data-theme="dark"] .cbom-graph-raw {
-  background: var(--surface-alt);
-  border-color: var(--rule);
-}
-[data-theme="dark"] .cbom-purl {
-  background: var(--surface-alt);
-  color: var(--stone-light);
-}
-[data-theme="dark"] .cbom-hash {
-  background: var(--surface-alt);
-  color: var(--stone);
-}
-[data-theme="dark"] .cbom-node-type {
-  background: rgba(61, 122, 84, 0.12);
-  color: var(--forest-bright);
-}
-[data-theme="dark"] .cbom-dep-edge {
-  color: var(--stone);
-}
-[data-theme="dark"] .cbom-raw-json {
-  background: var(--surface-alt);
-  border-color: var(--rule);
-}
-
-/* Scan detail dark */
-[data-theme="dark"] .scan-fact {
-  border-bottom-color: var(--rule);
-}
-[data-theme="dark"] .scan-fact-label {
-  color: var(--stone);
-}
-[data-theme="dark"] .scan-fact-value {
-  color: var(--text);
-}
-[data-theme="dark"] .scan-risk-row {
-  border-bottom-color: var(--rule);
-}
-[data-theme="dark"] .scan-risk-row:hover {
-  background: rgba(255, 255, 255, 0.03);
-}
-[data-theme="dark"] .scan-risk-count {
-  color: var(--text);
-}
-[data-theme="dark"] .scan-failure-list li {
-  border-bottom-color: var(--rule);
-}
-[data-theme="dark"] .scan-failure-list li:hover {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-/* Login dark */
-[data-theme="dark"] .login-shell {
-  background: var(--page);
-}
-[data-theme="dark"] .login-card {
-  background: var(--surface);
-  border-color: var(--rule);
-  box-shadow: var(--shadow-lg);
-}
-[data-theme="dark"] .login-card h1 {
-  color: var(--ink);
-}
-[data-theme="dark"] .login-card > p {
-  color: var(--stone);
-}
-[data-theme="dark"] .login-hint {
-  background: var(--surface-alt);
-  color: var(--stone);
-  border-color: var(--rule);
-}
-[data-theme="dark"] .login-hint strong {
-  color: var(--text);
-}
-[data-theme="dark"] .login-hint code {
-  background: var(--bg-2);
-  border-color: var(--rule);
-}
-[data-theme="dark"] .login-error {
-  background: var(--red-wash);
-  border-color: rgba(239, 68, 68, 0.2);
-  color: var(--red);
-}
-[data-theme="dark"] input,
-[data-theme="dark"] select,
-[data-theme="dark"] textarea {
-  background: var(--surface-alt);
-  color: var(--text);
-  border-color: var(--rule);
-}
-[data-theme="dark"] input::placeholder {
-  color: var(--stone);
-}
-[data-theme="dark"] .float-field--active label,
-[data-theme="dark"] .float-field input:focus {
-  color: var(--teal-bright);
-}
-[data-theme="dark"] .float-field input:focus,
-[data-theme="dark"] .float-field--active input {
-  border-color: var(--forest-bright);
-  background: var(--surface-alt);
-}
-
-/* Misc dark */
-[data-theme="dark"] .brand-mark {
-  box-shadow: var(--shadow-sm);
-}
-[data-theme="dark"] footer {
-  color: var(--stone);
-}
-[data-theme="dark"] .empty-hero {
-  color: var(--stone);
-}
-[data-theme="dark"] .empty-hero .eyebrow {
-  color: var(--forest-bright);
-}
-[data-theme="dark"] .empty-table-msg strong {
-  color: var(--text-soft);
-}
-[data-theme="dark"] .empty-table-msg span {
-  color: var(--stone-light);
-}
-[data-theme="dark"] .empty-state h1 {
-  color: var(--text);
-}
-[data-theme="dark"] .empty-state p {
-  color: var(--stone);
-}
-[data-theme="dark"] .empty-state .button {
-  background: var(--forest);
-  color: #f5f5f5;
-}
-[data-theme="dark"] .state {
-  color: var(--stone);
-}
-[data-theme="dark"] .state h1 {
-  color: var(--text);
-}
-[data-theme="dark"] .skip-link {
-  background: var(--forest);
-  color: #f5f5f5;
-}
-[data-theme="dark"] .privacy-chip {
-  background: var(--surface-alt);
-  border-color: var(--rule);
-  color: var(--stone);
-}
-[data-theme="dark"] .toolbar {
-  background: var(--surface);
-  border-color: var(--rule);
-}
-[data-theme="dark"] .toolbar input,
-[data-theme="dark"] .toolbar select {
-  background: var(--surface-alt);
-  color: var(--text);
-  border-color: var(--rule);
-}
-[data-theme="dark"] .pagination-bar {
-  background: var(--surface);
-  border-color: var(--rule);
-  color: var(--stone);
-}
-[data-theme="dark"] .tone-red {
-  border-left-color: var(--red);
-}
-[data-theme="dark"] .tone-amber {
-  border-left-color: var(--amber);
-}
-[data-theme="dark"] .tone-teal {
-  border-left-color: var(--teal-bright);
-}
-[data-theme="dark"] .tone-violet {
-  border-left-color: #7c3aed;
-}
-[data-theme="dark"] .blind {
-  background: var(--amber-wash);
-  border-color: rgba(245, 158, 11, 0.15);
-}
-[data-theme="dark"] .gap-list div {
-  border-color: rgba(245, 158, 11, 0.12);
-}
-[data-theme="dark"] mark {
-  background: var(--amber-wash);
-  color: var(--amber);
-}
-[data-theme="dark"] .filter-bar {
-  background: var(--surface);
-  border-color: var(--rule);
-}
-[data-theme="dark"] .filter-bar label {
-  color: var(--stone);
-}
-[data-theme="dark"] .page-size-select {
-  background: var(--surface-alt);
-  color: var(--text);
-  border-color: var(--rule);
-}
-[data-theme="dark"] .skeleton-card {
-  background: var(--surface-alt);
-  border-color: var(--rule);
-  box-shadow: var(--shadow-sm);
-}
-[data-theme="dark"] .error-boundary-card {
-  background: var(--surface);
-  border-color: var(--rule);
-  box-shadow: var(--shadow-md);
-}
+/* ── Scan filter banner ──────────────────────────────────────────── */
 [data-theme="dark"] .scan-filter-banner {
   background: rgba(91, 111, 230, 0.08);
   border-color: rgba(91, 111, 230, 0.2);
 }
 
+/* ── Callout contrast ────────────────────────────────────────────── */
+[data-theme="dark"] .callout-error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+}
+
+[data-theme="dark"] .callout-amber {
+  background: rgba(245, 158, 11, 0.1);
+  color: #fcd34d;
+}
+
+[data-theme="dark"] .callout-success {
+  background: rgba(20, 184, 166, 0.1);
+  color: #2dd4a7;
+}
+
+/* ── Typography lift ─────────────────────────────────────────────── */
+[data-theme="dark"] .muted {
+  color: var(--color-muted);
+}
+
+[data-theme="dark"] small {
+  color: var(--color-muted);
+}
+
+[data-theme="dark"] .eyebrow {
+  color: var(--color-teal-bright);
+}
+
+/* ── Page background atmosphere ──────────────────────────────────── */
+[data-theme="dark"] main {
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(20, 184, 166, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(91, 111, 230, 0.03) 0%, transparent 50%),
+    var(--color-page);
+}
+
+/* ── Login focus colors ──────────────────────────────────────────── */
+[data-theme="dark"] .float-field--active label,
+[data-theme="dark"] .float-field input:focus {
+  color: var(--color-teal-bright);
+}
+
+[data-theme="dark"] .float-field input:focus,
+[data-theme="dark"] .float-field--active input {
+  border-color: var(--color-forest-bright);
+  background: var(--color-surface-alt);
+}
+
+/* ── Status pulse animation ──────────────────────────────────────── */
 @keyframes pulse-status-dark {
   0%,
   100% {
@@ -493,78 +149,11 @@
   }
 }
 
-/* Dark mode — typography lift */
-[data-theme="dark"] .muted {
-  color: #8a8a8a;
-}
-[data-theme="dark"] small {
-  color: #8a8a8a;
-}
-[data-theme="dark"] .eyebrow {
-  color: #2dd4a7;
+[data-theme="dark"] .status-running {
+  animation: pulse-status-dark 2s ease-in-out infinite;
 }
 
-/* Dark mode — panel depth */
-[data-theme="dark"] .panel {
-  background: linear-gradient(180deg, #0f0f0f 0%, #0a0a0a 100%);
-  border-color: rgba(255, 255, 255, 0.04);
-}
-
-/* Dark mode — button glow */
-[data-theme="dark"] .button:hover:not(:disabled) {
-  box-shadow:
-    0 3px 8px rgba(0, 0, 0, 0.4),
-    0 0 14px rgba(45, 212, 167, 0.06);
-}
-
-/* Dark mode — callout contrast */
-[data-theme="dark"] .callout-error {
-  background: rgba(239, 68, 68, 0.1);
-  color: #fca5a5;
-}
-[data-theme="dark"] .callout-amber {
-  background: rgba(245, 158, 11, 0.1);
-  color: #fcd34d;
-}
-[data-theme="dark"] .callout-success {
-  background: rgba(20, 184, 166, 0.1);
-  color: #2dd4a7;
-}
-
-/* Dark mode — CBOM component card glows */
-[data-theme="dark"] .cbom-component-card:hover {
-  box-shadow:
-    var(--shadow-md),
-    0 0 0 1px var(--rule-heavy);
-}
-[data-theme="dark"] .cbom-component-card.cbom-risk-critical::before {
-  box-shadow: 0 0 12px rgba(239, 68, 68, 0.25);
-}
-[data-theme="dark"] .cbom-component-card.cbom-risk-high::before {
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
-}
-[data-theme="dark"] .cbom-component-card.cbom-risk-medium::before {
-  box-shadow: 0 0 12px rgba(212, 164, 58, 0.25);
-}
-[data-theme="dark"] .cbom-component-card.cbom-risk-low::before {
-  box-shadow: 0 0 12px rgba(20, 184, 166, 0.2);
-}
-
-/* Dark mode — stat card gradient border glow */
-[data-theme="dark"] .stat:hover {
-  box-shadow:
-    var(--shadow-md),
-    0 0 0 1px var(--rule-heavy);
-}
-
-/* Dark mode — risk badge */
+/* ── Risk badge border ───────────────────────────────────────────── */
 [data-theme="dark"] .risk-badge {
-  border-color: var(--rule);
-}
-
-/* Dark mode — page background noise */
-[data-theme="dark"] main {
-  background:
-    radial-gradient(ellipse at 20% 0%, rgba(20, 184, 166, 0.03) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 100%, rgba(91, 111, 230, 0.03) 0%, transparent 50%), var(--page);
+  border-color: var(--color-rule);
 }

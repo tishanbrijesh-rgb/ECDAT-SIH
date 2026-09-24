@@ -10,9 +10,10 @@ import unittest
 from pathlib import Path
 
 from alembic.config import Config
-from alembic import command
 from alembic.script import ScriptDirectory
-from sqlalchemy import create_engine, inspect, text, pool
+from sqlalchemy import create_engine, inspect, pool, text
+
+from alembic import command
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -117,7 +118,7 @@ class TestMigrations(unittest.TestCase):
     def test_downgrade_removes_scan_failures(self):
         """Downgrading through 0002 removes scan_failures but keeps base tables."""
         self._upgrade("head")
-        self._downgrade("-3")
+        self._downgrade("69254661dfed")
         insp = self._inspect()
         self.assertNotIn("scan_failures", insp.get_table_names())
         self.assertIn("scan_jobs", insp.get_table_names())
@@ -174,6 +175,28 @@ class TestMigrations(unittest.TestCase):
             count = conn.execute(text("SELECT COUNT(*) FROM scan_failures")).scalar()
         self.assertEqual(1, count)
 
+    def test_0007_adds_and_backfills_audit_principal_columns(self):
+        self._upgrade("0006_provenance")
+        with self._engine.begin() as conn:
+            conn.execute(text("""
+                INSERT INTO audit_logs (actor_role, action, resource, details)
+                VALUES ('admin', 'legacy.event', 'asset:1', '{}')
+            """))
+
+        self._upgrade("0007_audit_principal")
+
+        columns = {column["name"] for column in self._inspect().get_columns("audit_logs")}
+        self.assertTrue(
+            {"actor_subject", "actor_session_id", "actor_expires_at"}.issubset(columns)
+        )
+        self.assertIn("revoked_sessions", self._inspect().get_table_names())
+        with self._engine.connect() as conn:
+            row = conn.execute(text("""
+                SELECT actor_subject, actor_session_id, actor_expires_at
+                FROM audit_logs
+            """)).one()
+        self.assertEqual(("legacy-role:admin", "legacy", None), tuple(row))
+
     # ── migration graph ─────────────────────────────────────────────────────
 
     def test_linear_migration_graph(self):
@@ -181,7 +204,7 @@ class TestMigrations(unittest.TestCase):
         script = ScriptDirectory.from_config(_make_config(self.db_url))
         # walk_revisions() returns newest-to-oldest; reverse to oldest-first.
         revs = list(reversed(list(script.walk_revisions())))
-        self.assertEqual(4, len(revs))
+        self.assertEqual(8, len(revs))
         prev = None
         for rev in revs:
             self.assertEqual(prev, rev.down_revision,

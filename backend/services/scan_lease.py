@@ -12,6 +12,8 @@ import socket
 import threading
 from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import update
+
 from backend.logging_config import get_logger
 from backend.security import record_audit
 
@@ -24,7 +26,7 @@ _LEASE_TTL = timedelta(
 _LEASE_TABLE = "scan_leases"
 
 
-def _worker_id() -> str:
+def worker_identity() -> str:
     return f"{socket.gethostname()}-{threading.get_native_id()}"
 
 
@@ -32,14 +34,23 @@ def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def acquire_lease(db_session, scan_id: int) -> bool:
+def acquire_lease(
+    db_session,
+    scan_id: int,
+    *,
+    worker_id: str | None = None,
+    now: datetime | None = None,
+    ttl: timedelta | None = None,
+) -> bool:
     """Try to claim an exclusive lease on *scan_id*.
 
     Returns True if the lease was acquired, False if another worker holds it
     or the job is already finished.
     """
     from backend.models.scan_lease import ScanLeaseDB
-    now = _utc_now()
+    now = now or _utc_now()
+    ttl = ttl or _LEASE_TTL
+    owner = worker_id or worker_identity()
     # Reconcile any expired leases for this job before attempting claim.
     expired = (
         db_session.query(ScanLeaseDB)
@@ -57,9 +68,9 @@ def acquire_lease(db_session, scan_id: int) -> bool:
         return False
     lease = ScanLeaseDB(
         scan_job_id=scan_id,
-        worker_id=_worker_id(),
+        worker_id=owner,
         acquired_at=now,
-        expires_at=now + _LEASE_TTL,
+        expires_at=now + ttl,
         released=False,
     )
     db_session.add(lease)
@@ -72,14 +83,41 @@ def acquire_lease(db_session, scan_id: int) -> bool:
     return True
 
 
-def release_lease(db_session, scan_id: int) -> None:
+def heartbeat_lease(
+    db_session,
+    scan_id: int,
+    worker_id: str,
+    now: datetime | None = None,
+    ttl: timedelta | None = None,
+) -> bool:
+    """Extend a live lease only when the caller still owns it."""
+    from backend.models.scan_lease import ScanLeaseDB
+
+    heartbeat_at = now or _utc_now()
+    lease_ttl = ttl or _LEASE_TTL
+    result = db_session.execute(
+        update(ScanLeaseDB)
+        .where(
+            ScanLeaseDB.scan_job_id == scan_id,
+            ScanLeaseDB.worker_id == worker_id,
+            ScanLeaseDB.released.is_(False),
+            ScanLeaseDB.expires_at >= heartbeat_at,
+        )
+        .values(expires_at=heartbeat_at + lease_ttl)
+    )
+    return result.rowcount == 1
+
+
+def release_lease(db_session, scan_id: int, worker_id: str | None = None) -> None:
     """Release the lease on *scan_id* if this worker still holds it."""
     from backend.models.scan_lease import ScanLeaseDB
-    lease = (
-        db_session.query(ScanLeaseDB)
-        .filter(ScanLeaseDB.scan_job_id == scan_id, ScanLeaseDB.released.is_(False))
-        .first()
+    query = db_session.query(ScanLeaseDB).filter(
+        ScanLeaseDB.scan_job_id == scan_id,
+        ScanLeaseDB.released.is_(False),
     )
+    if worker_id is not None:
+        query = query.filter(ScanLeaseDB.worker_id == worker_id)
+    lease = query.first()
     if lease is not None:
         lease.released = True
         lease.worker_id = ""

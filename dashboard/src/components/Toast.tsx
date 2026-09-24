@@ -118,7 +118,7 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
       }}
     >
       {children}
-      <div className="toast-container" aria-label="Notifications">
+      <div className="toast-container">
         {toasts.map((t) => {
           const now = Date.now();
           const remaining = Math.max(0, t.expiresAt - now);

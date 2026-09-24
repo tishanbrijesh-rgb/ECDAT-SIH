@@ -1,72 +1,135 @@
 """Dependency-light unit and API integration tests for the ECDAT prototype."""
+# ruff: noqa: I001
 from __future__ import annotations
 
-import os
 import json
+import os
 import secrets
-import shutil
 import tempfile
 import unittest
-from unittest.mock import patch
 from pathlib import Path
+from unittest.mock import patch
 
+from tests.integration_env import PASSWORD as _TEST_PASSWORD
+from tests.integration_env import ROOT as _TEST_ROOT
 
-_TEST_ROOT = Path(tempfile.mkdtemp(prefix="ecdat-tests-"))
-os.environ["DATABASE_URL"] = f"sqlite:///{(_TEST_ROOT / 'test.db').as_posix()}"
-_TEST_PASSWORD = secrets.token_urlsafe(24)
-os.environ["ECDAT_USERS_JSON"] = json.dumps({"analyst": {"role": "security_analyst", "password": _TEST_PASSWORD}})
-os.environ["ECDAT_TOKEN_SECRET"] = secrets.token_urlsafe(48)
-# Existing legacy-mode regression cases opt in explicitly; secure cases override.
-os.environ["ECDAT_ALLOW_ROLE_HEADER"] = "true"
+from fastapi.testclient import TestClient
 
-from fastapi.testclient import TestClient  # noqa: E402
-
-from backend.main import app  # noqa: E402
-from backend.db import engine  # noqa: E402
-from backend.services.confidence import SOURCE_STRENGTH, score_finding  # noqa: E402
-from backend.services.risk_engine import assess_risk  # noqa: E402
-from backend.services.repository_guard import resolve_repository  # noqa: E402
-from scanner.main import scan_with_metrics  # noqa: E402
-
-
+from backend.db import engine
+from backend.main import app
+from backend.services.confidence import (
+    EVIDENCE_KIND_STRENGTH,
+    score_finding,
+)
+from backend.services.repository_guard import resolve_repository
+from backend.services.risk_engine import assess_risk
+from backend.services.scanner_runner import _finding_provenance
+from scanner.main import scan_with_metrics
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 TEST_REPOSITORY = PROJECT_ROOT / "test-repo"
 
 
 class ConfidenceTests(unittest.TestCase):
-    def test_single_source_matches_source_strength(self) -> None:
-        for source, strength in SOURCE_STRENGTH.items():
-            with self.subTest(source=source):
-                self.assertEqual(score_finding({"sources": [source]})["confidence"], strength)
+    def test_finding_provenance_preserves_collector_metadata(self) -> None:
+        finding = {
+            "evidence_list": [{
+                "parser_version": "ast-v3",
+                "confidence_reasons": [{"source": "ast", "note": "resolved call"}],
+            }],
+        }
 
-    def test_agreeing_source_bonus_is_capped(self) -> None:
-        for count, bonus in ((2, 0.08), (3, 0.16), (4, 0.20), (5, 0.20), (6, 0.20)):
+        parser_version, reasons = _finding_provenance(finding)
+
+        self.assertEqual(parser_version, "ast-v3")
+        self.assertEqual(reasons, [{"source": "ast", "note": "resolved call"}])
+
+    def test_single_evidence_kind_scores_correctly(self) -> None:
+        for kind, strength in EVIDENCE_KIND_STRENGTH.items():
+            with self.subTest(evidence_kind=kind):
+                self.assertEqual(
+                    score_finding({"evidence_list": [{"evidence": {"evidence_kind": kind}}]})["confidence"],
+                    strength,
+                )
+
+    def test_agreeing_evidence_kind_bonus_is_capped(self) -> None:
+        for count, expected_bonus in ((2, 0.08), (3, 0.16), (4, 0.20), (5, 0.20), (6, 0.20)):
             with self.subTest(count=count):
-                sources = list(SOURCE_STRENGTH)[:count]
+                kinds = list(EVIDENCE_KIND_STRENGTH)[:count]
+                strengths = [EVIDENCE_KIND_STRENGTH[k] for k in kinds]
+                avg = sum(strengths) / len(strengths)
+                bonus = min(0.20, 0.08 * max(0, count - 1))
+                expected = min(1.0, round(avg + bonus, 4))
                 result = score_finding({
-                    "sources": sources,
-                    "confidence_by_source": {source: 0.4 for source in sources},
+                    "evidence_list": [{"evidence": {"evidence_kind": kind}} for kind in kinds],
                 })
-                self.assertAlmostEqual(result["confidence"], 0.4 + bonus)
+                self.assertAlmostEqual(result["confidence"], expected)
 
     def test_conflict_subtracts_point_two(self) -> None:
-        finding = {"sources": ["binary", "dep"]}
-        agreeing = score_finding(finding)["confidence"]
-        conflicting = score_finding({**finding, "conflict": True})["confidence"]
+        agreeing = score_finding({
+            "evidence_list": [
+                {"evidence": {"evidence_kind": "observed_operation"}},
+                {"evidence": {"evidence_kind": "configured_protocol"}},
+            ],
+        })["confidence"]
+        conflicting = score_finding({
+            "evidence_list": [
+                {"evidence": {"evidence_kind": "observed_operation"}},
+                {"evidence": {"evidence_kind": "configured_protocol"}},
+            ],
+            "conflict": True,
+        })["confidence"]
         self.assertAlmostEqual(conflicting, agreeing - 0.20)
 
     def test_final_score_is_clamped(self) -> None:
-        for strength, conflict, expected in ((0.05, True, 0.0), (1.0, False, 1.0)):
-            with self.subTest(expected=expected):
-                result = score_finding({
-                    "sources": ["binary", "dep"],
-                    "confidence_by_source": {"binary": strength, "dep": strength},
-                    "conflict": conflict,
-                })
-                self.assertEqual(result["confidence"], expected)
+        # Max possible with all 5 evidence kinds: avg(0.90+0.85+0.65+0.50+0.30) + 0.20 = 0.84
+        all_kinds = list(EVIDENCE_KIND_STRENGTH.keys())
+        result = score_finding({
+            "evidence_list": [{"evidence": {"evidence_kind": kind}} for kind in all_kinds],
+        })
+        self.assertEqual(result["confidence"], 0.84)
+        # Single high-confidence kind
+        single = score_finding({
+            "evidence_list": [{"evidence": {"evidence_kind": "observed_operation"}}],
+        })
+        self.assertAlmostEqual(single["confidence"], 0.90)
+        # Conflict subtracts 0.20 from the score before clamping
+        no_conflict_unknown = score_finding({
+            "evidence_list": [{"evidence": {"evidence_kind": "unknown"}}],
+        })
+        with_conflict_unknown = score_finding({
+            "evidence_list": [{"evidence": {"evidence_kind": "unknown"}}],
+            "conflict": True,
+        })
+        self.assertAlmostEqual(with_conflict_unknown["confidence"], no_conflict_unknown["confidence"] - 0.20)
+        self.assertAlmostEqual(with_conflict_unknown["confidence"], 0.10)  # 0.30 - 0.20
+        # Low score with conflict stays above floor
+        with_conflict_artifact = score_finding({
+            "evidence_list": [{"evidence": {"evidence_kind": "artifact_metadata"}}],
+            "conflict": True,
+        })
+        self.assertAlmostEqual(with_conflict_artifact["confidence"], 0.30)  # 0.50 - 0.20
 
 
 class RiskEngineTests(unittest.TestCase):
+    def test_confirmed_use_carries_higher_penalty_than_capability_only(self) -> None:
+        confirmed = assess_risk({"algorithm": "RSA", "usage": "encryption", "evidence_kind": "observed_operation"})
+        capability = assess_risk({"algorithm": "RSA", "usage": "encryption", "evidence_kind": "declared_capability"})
+        self.assertGreater(confirmed["priority_score"], capability["priority_score"])
+        self.assertTrue(confirmed["confirmed_use"])
+        self.assertFalse(confirmed["capability_only"])
+        self.assertFalse(capability["confirmed_use"])
+        self.assertTrue(capability["capability_only"])
+
+    def test_evidence_kind_returns_vulnerability_note(self) -> None:
+        for kind, label in (("observed_operation", "confirmed use of"),
+                            ("configured_protocol", "confirmed use of"),
+                            ("declared_capability", "capability-only exposure to"),
+                            ("artifact_metadata", "capability-only exposure to"),
+                            ("unknown", "evidence of")):
+            with self.subTest(kind=kind):
+                result = assess_risk({"algorithm": "ECDSA", "usage": "signature", "evidence_kind": kind})
+                self.assertIn(label, result["risk_reasons"][0])
+
     def test_deprecated_hashes_require_replacement_without_pqc_hybrid(self) -> None:
         for algorithm in ("SHA-1", "MD5"):
             for effort in ("low", "medium", "high", "critical"):
@@ -123,8 +186,7 @@ class ScannerTests(unittest.TestCase):
     def test_progress_preserves_controlled_evidence(self):
         updates = []
         evidence, metrics = scan_with_metrics(str(TEST_REPOSITORY), updates.append)
-        # Binding-aware hash calls replace lexical duplicates and declarations.
-        self.assertEqual(sum(map(len, evidence.values())), 69)
+        self.assertEqual(sum(map(len, evidence.values())), 79)
         self.assertEqual(updates[0]["_files_processed"], 0)
         self.assertEqual(updates[-1]["_files_processed"], metrics["in_scope_files"])
         self.assertEqual(updates[-1]["_files_total"], metrics["in_scope_files"])
@@ -184,6 +246,11 @@ class ApiIntegrationTests(unittest.TestCase):
     def tearDownClass(cls) -> None:
         cls.client_context.__exit__(None, None, None)
 
+    def test_request_id_rejects_unbounded_client_value(self):
+        response = self.client.get("/health", headers={"X-Request-ID": "x" * 1024})
+
+        self.assertLessEqual(len(response.headers["X-Request-ID"]), 128)
+
     def test_dashboard_scan_filter_rejects_incomplete_snapshots(self):
         from backend.db import SessionLocal
         from backend.models.scan_job import ScanJobDB
@@ -231,6 +298,11 @@ class ApiIntegrationTests(unittest.TestCase):
                     quantum_vulnerable=quantum,
                     priority_score=score,
                     priority_label=label,
+                    evidence_kind="observed_operation",
+                    parser_version="test-v1",
+                    confirmed_use=True,
+                    capability_only=False,
+                    span={"file": location, "line_start": 1, "line_end": 1},
                 ))
             db.commit()
 
@@ -238,25 +310,25 @@ class ApiIntegrationTests(unittest.TestCase):
             base = f"/api/assets?scan_job_id={scan_id}"
             unpaginated = self.client.get(base)
             self.assertEqual(unpaginated.status_code, 200)
-            self.assertEqual(len(unpaginated.json()), 5)
+            self.assertEqual(len(unpaginated.json()["items"]), 5)
             self.assertEqual(unpaginated.headers["X-Total-Count"], "5")
             cors = self.client.get(base, headers={"Origin": "http://localhost:3000"})
             self.assertIn("X-Total-Count", cors.headers["Access-Control-Expose-Headers"])
 
             page = self.client.get(base + "&limit=2&offset=1&sort=priority")
-            self.assertEqual([item["algorithm"] for item in page.json()], ["ECDSA", "SHA-1"])
+            self.assertEqual([item["algorithm"] for item in page.json()["items"]], ["ECDSA", "SHA-1"])
             self.assertEqual(page.headers["X-Total-Count"], "5")
 
             searched = self.client.get(base + "&q=openssl&sort=algorithm")
-            self.assertEqual([item["algorithm"] for item in searched.json()], ["ECDSA", "RSA"])
+            self.assertEqual([item["algorithm"] for item in searched.json()["items"]], ["ECDSA", "RSA"])
             self.assertEqual(searched.headers["X-Total-Count"], "2")
 
             filtered = self.client.get(base + "&risk=HIGH&quantum=true&sort=confidence")
-            self.assertEqual([item["algorithm"] for item in filtered.json()], ["ECDSA"])
+            self.assertEqual([item["algorithm"] for item in filtered.json()["items"]], ["ECDSA"])
             self.assertEqual(filtered.headers["X-Total-Count"], "1")
 
             non_quantum = self.client.get(base + "&quantum=false")
-            self.assertEqual(len(non_quantum.json()), 3)
+            self.assertEqual(len(non_quantum.json()["items"]), 3)
             for query in ("limit=0", "limit=201", "offset=-1", "scan_job_id=0",
                           "risk=URGENT", "sort=unknown", "q=", "q=%20%20"):
                 with self.subTest(query=query):
@@ -283,9 +355,9 @@ class ApiIntegrationTests(unittest.TestCase):
                 self.assertIn("RuntimeError", str(job["blind_spots"]))
 
     def test_progress_is_persisted_while_running(self):
-        from backend.services.scanner_runner import run_scan
         from backend.db import SessionLocal
         from backend.models.scan_job import ScanJobDB
+        from backend.services.scanner_runner import run_scan
         with SessionLocal() as db:
             job = ScanJobDB(repo_path=str(TEST_REPOSITORY), status="queued")
             db.add(job)
@@ -333,8 +405,9 @@ class ApiIntegrationTests(unittest.TestCase):
                 self.assertEqual(self.client.post("/api/auth/login", json={"username": "analyst", "password": _TEST_PASSWORD}).status_code, 503)
 
     def test_secure_defaults_and_viewer_cannot_write(self):
-        from backend.security import current_role, issue_demo_token
         from fastapi import HTTPException
+
+        from backend.security import current_role, issue_demo_token
         with patch.dict(os.environ):
             os.environ.pop("ECDAT_ALLOW_ROLE_HEADER", None)
             with self.assertRaises(HTTPException) as error:
@@ -351,8 +424,8 @@ class ApiIntegrationTests(unittest.TestCase):
                 self.assertEqual(self.client.get("/api/assets", headers=headers).status_code, 401)
 
     def test_redaction_and_mixed_key_sizes(self):
-        from scanner.redaction import redact_evidence
         from backend.services.correlator import correlate
+        from scanner.redaction import redact_evidence
         safe = redact_evidence({"snippet": 'AES.new(key); password="canary"', "raw_line": "private", "line": 5})
         self.assertEqual(safe, {"snippet": "[REDACTED]", "raw_line": "[REDACTED]", "line": 5})
         from backend.schemas.asset import AssetResponse
@@ -374,7 +447,7 @@ class ApiIntegrationTests(unittest.TestCase):
         with patch("backend.services.scanner_runner.scan_with_metrics", return_value=({"mixed": records}, metrics)):
             from backend.services.scanner_runner import run_scan
             scan_id = run_scan(str(TEST_REPOSITORY))["scan_id"]
-        assets = self.client.get(f"/api/assets?scan_job_id={scan_id}").json()
+        assets = self.client.get(f"/api/assets?scan_job_id={scan_id}").json()["items"]
         self.assertEqual(len(assets), 3)
         self.assertEqual({a["usage"] for a in assets}, {"signature", "encryption", "unknown"})
         priorities = self.client.get(f"/api/reports/risk?scan_id={scan_id}").json()["migration_priorities"]
@@ -425,15 +498,15 @@ class ApiIntegrationTests(unittest.TestCase):
         first_id = first.json()["scan_id"]
         self.assertEqual(self.client.get(f"/api/scans/{first_id}").json()["status"], "completed")
 
-        assets = self.client.get("/api/assets").json()
+        assets = self.client.get("/api/assets?limit=200").json()["items"]
         summary = self.client.get("/api/dashboard/summary").json()
-        # Operation-v2 retains separate locations/usages rather than 15 broad pairs.
-        self.assertEqual(len(assets), 61)
-        self.assertEqual(len({a["logical_asset_id"] for a in assets}), 61)
+        # Operation-v2 retains operation-level findings while removing broad
+        # package capabilities contradicted by stronger source evidence.
+        self.assertEqual(len({a["logical_asset_id"] for a in assets}), 68)
         self.assertTrue(all(a["evidence_json"]["correlation_version"] == "operation-v2" for a in assets))
-        self.assertEqual(summary["total_assets"], 61)
+        self.assertEqual(summary["total_assets"], 68)
         self.assertEqual(summary["coverage_pct"], 100.0)
-        self.assertEqual(summary["quantum_vulnerable_count"], 29)
+        self.assertEqual(summary["quantum_vulnerable_count"], 31)
         self.assertEqual(summary["conflict_count"], 2)
 
         evaluation = self.client.get("/api/evaluation").json()
@@ -441,12 +514,12 @@ class ApiIntegrationTests(unittest.TestCase):
         self.assertEqual(evaluation["recall"], 1.0)
         self.assertEqual(evaluation["f1"], 1.0)
         self.assertEqual(evaluation["granularity"], "component_algorithm")
-        self.assertEqual(evaluation["found"], 15)
-        self.assertEqual(evaluation["operation_findings"], 61)
+        self.assertEqual(evaluation["found"], 17)
+        self.assertEqual(evaluation["operation_findings"], 68)
         components = self.client.get("/api/cbom").json()["components"]
         priorities = self.client.get("/api/reports/risk").json()["migration_priorities"]
-        self.assertEqual(len(components), 61)
-        self.assertEqual(len(priorities), 61)
+        self.assertEqual(len(components), 68)
+        self.assertEqual(len(priorities), 68)
         by_id = {a["logical_asset_id"]: a for a in assets}
         for item in priorities:
             original = by_id[item["logical_asset_id"]]
@@ -457,7 +530,7 @@ class ApiIntegrationTests(unittest.TestCase):
         self.assertGreater(len(graph["edges"]), 0)
         self.assertEqual(self.client.get("/api/reports/risk.txt").status_code, 200)
 
-        rsa = next(asset for asset in assets if asset["algorithm"] == "RSA" and asset["usage"] == "encryption")
+        rsa = next(asset for asset in assets if asset["algorithm"] == "RSA" and asset["evidence_json"].get("evidence_kind") == "observed_operation")
         updated = self.client.patch(
             f"/api/assets/{rsa['id']}",
             json={
@@ -489,17 +562,16 @@ class ApiIntegrationTests(unittest.TestCase):
         second_id = second.json()["scan_id"]
         latest_summary = self.client.get("/api/dashboard/summary").json()
         self.assertEqual(latest_summary["latest_scan_id"], second_id)
-        self.assertEqual(latest_summary["total_assets"], 61)
-        latest_assets = self.client.get("/api/assets").json()
-        self.assertEqual(len(latest_assets), 61)
+        self.assertEqual(latest_summary["total_assets"], 68)
+        latest_assets = self.client.get("/api/assets?limit=200").json()["items"]
+        self.assertEqual(len(latest_assets), summary["total_assets"])
         self.assertEqual({a["logical_asset_id"] for a in latest_assets}, set(by_id))
-        self.assertEqual(len(self.client.get(f"/api/assets?scan_job_id={first_id}").json()), 61)
+        self.assertEqual(self.client.get(f"/api/assets?scan_job_id={first_id}&limit=200").json()["total"], summary["total_assets"])
         self.assertEqual(self.client.get("/api/assets/999999").status_code, 404)
 
 
 def tearDownModule() -> None:
     engine.dispose()
-    shutil.rmtree(_TEST_ROOT, ignore_errors=True)
 
 
 if __name__ == "__main__":

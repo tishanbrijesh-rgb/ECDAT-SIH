@@ -1,0 +1,389 @@
+{
+  "schema_version": 1,
+  "corpus_name": "phase4-frozen",
+  "created": "2026-09-12",
+  "languages": [
+    "python",
+    "java",
+    "javascript",
+    "go",
+    "c",
+    "csharp"
+  ],
+  "total_cases": 53,
+  "positive_cases": 41,
+  "negative_cases": 12,
+  "cases": [
+    {
+      "id": "c-no_crypto",
+      "language": "c",
+      "type": "negative",
+      "family": "unknown",
+      "path": "cpp/negative/no_crypto.c"
+    },
+    {
+      "id": "c-openssl_aes",
+      "language": "c",
+      "type": "positive",
+      "family": "unknown",
+      "path": "cpp/positive/openssl_aes.c"
+    },
+    {
+      "id": "c-openssl_ecdsa",
+      "language": "c",
+      "type": "positive",
+      "family": "unknown",
+      "path": "cpp/positive/openssl_ecdsa.c"
+    },
+    {
+      "id": "c-openssl_hmac",
+      "language": "c",
+      "type": "positive",
+      "family": "unknown",
+      "path": "cpp/positive/openssl_hmac.c"
+    },
+    {
+      "id": "c-openssl_sha",
+      "language": "c",
+      "type": "positive",
+      "family": "unknown",
+      "path": "cpp/positive/openssl_sha.c"
+    },
+    {
+      "id": "cs-no_crypto",
+      "language": "csharp",
+      "type": "negative",
+      "family": "unknown",
+      "path": "csharp/negative/no_crypto.cs"
+    },
+    {
+      "id": "cs-aes_create",
+      "language": "csharp",
+      "type": "positive",
+      "family": "unknown",
+      "path": "csharp/positive/aes_create.cs"
+    },
+    {
+      "id": "cs-hmacsha256",
+      "language": "csharp",
+      "type": "positive",
+      "family": "unknown",
+      "path": "csharp/positive/hmacsha256.cs"
+    },
+    {
+      "id": "cs-rsa_create",
+      "language": "csharp",
+      "type": "positive",
+      "family": "unknown",
+      "path": "csharp/positive/rsa_create.cs"
+    },
+    {
+      "id": "go-no_crypto",
+      "language": "go",
+      "type": "negative",
+      "family": "unknown",
+      "path": "go/negative/no_crypto.go"
+    },
+    {
+      "id": "go-aes_gcm",
+      "language": "go",
+      "type": "positive",
+      "family": "unknown",
+      "path": "go/positive/aes_gcm.go"
+    },
+    {
+      "id": "go-chacha20",
+      "language": "go",
+      "type": "positive",
+      "family": "unknown",
+      "path": "go/positive/chacha20.go"
+    },
+    {
+      "id": "go-ecdh",
+      "language": "go",
+      "type": "positive",
+      "family": "unknown",
+      "path": "go/positive/ecdh.go"
+    },
+    {
+      "id": "go-ed25519",
+      "language": "go",
+      "type": "positive",
+      "family": "unknown",
+      "path": "go/positive/ed25519.go"
+    },
+    {
+      "id": "go-hmac",
+      "language": "go",
+      "type": "positive",
+      "family": "unknown",
+      "path": "go/positive/hmac.go"
+    },
+    {
+      "id": "go-sha256",
+      "language": "go",
+      "type": "positive",
+      "family": "unknown",
+      "path": "go/positive/sha256.go"
+    },
+    {
+      "id": "go-tls",
+      "language": "go",
+      "type": "positive",
+      "family": "unknown",
+      "path": "go/positive/tls.go"
+    },
+    {
+      "id": "ja-static_import",
+      "language": "java",
+      "type": "positive",
+      "family": "unknown",
+      "path": "java/aliases/static_import.java"
+    },
+    {
+      "id": "ja-comment_only",
+      "language": "java",
+      "type": "negative",
+      "family": "unknown",
+      "path": "java/negative/comment_only.java"
+    },
+    {
+      "id": "ja-declaration_only",
+      "language": "java",
+      "type": "negative",
+      "family": "unknown",
+      "path": "java/negative/declaration_only.java"
+    },
+    {
+      "id": "ja-no_crypto",
+      "language": "java",
+      "type": "negative",
+      "family": "unknown",
+      "path": "java/negative/no_crypto.java"
+    },
+    {
+      "id": "ja-aes_cbc",
+      "language": "java",
+      "type": "positive",
+      "family": "unknown",
+      "path": "java/positive/aes_cbc.java"
+    },
+    {
+      "id": "ja-aes_gcm",
+      "language": "java",
+      "type": "positive",
+      "family": "unknown",
+      "path": "java/positive/aes_gcm.java"
+    },
+    {
+      "id": "ja-ecdsa",
+      "language": "java",
+      "type": "positive",
+      "family": "unknown",
+      "path": "java/positive/ecdsa.java"
+    },
+    {
+      "id": "ja-hmac",
+      "language": "java",
+      "type": "positive",
+      "family": "unknown",
+      "path": "java/positive/hmac.java"
+    },
+    {
+      "id": "ja-rsa_oaep",
+      "language": "java",
+      "type": "positive",
+      "family": "unknown",
+      "path": "java/positive/rsa_oaep.java"
+    },
+    {
+      "id": "ja-sha256",
+      "language": "java",
+      "type": "positive",
+      "family": "unknown",
+      "path": "java/positive/sha256.java"
+    },
+    {
+      "id": "ja-bouncy_castle_wrapper",
+      "language": "java",
+      "type": "positive",
+      "family": "unknown",
+      "path": "java/wrappers/bouncy_castle_wrapper.java"
+    },
+    {
+      "id": "ja-no_crypto",
+      "language": "javascript",
+      "type": "negative",
+      "family": "unknown",
+      "path": "javascript/negative/no_crypto.js"
+    },
+    {
+      "id": "ja-string_refs",
+      "language": "javascript",
+      "type": "negative",
+      "family": "unknown",
+      "path": "javascript/negative/string_refs.js"
+    },
+    {
+      "id": "ja-hash_sha256",
+      "language": "javascript",
+      "type": "positive",
+      "family": "unknown",
+      "path": "javascript/positive/hash_sha256.js"
+    },
+    {
+      "id": "ja-node_crypto_aes",
+      "language": "javascript",
+      "type": "positive",
+      "family": "unknown",
+      "path": "javascript/positive/node_crypto_aes.js"
+    },
+    {
+      "id": "ja-node_crypto_hmac",
+      "language": "javascript",
+      "type": "positive",
+      "family": "unknown",
+      "path": "javascript/positive/node_crypto_hmac.js"
+    },
+    {
+      "id": "ja-rsa_keygen",
+      "language": "javascript",
+      "type": "positive",
+      "family": "unknown",
+      "path": "javascript/positive/rsa_keygen.js"
+    },
+    {
+      "id": "ja-tls_connect",
+      "language": "javascript",
+      "type": "positive",
+      "family": "unknown",
+      "path": "javascript/positive/tls_connect.js"
+    },
+    {
+      "id": "ja-webcrypto_encrypt",
+      "language": "javascript",
+      "type": "positive",
+      "family": "unknown",
+      "path": "javascript/positive/webcrypto_encrypt.js"
+    },
+    {
+      "id": "py-from_import",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/aliases/from_import.py"
+    },
+    {
+      "id": "py-import_alias",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/aliases/import_alias.py"
+    },
+    {
+      "id": "py-comment_only",
+      "language": "python",
+      "type": "negative",
+      "family": "unknown",
+      "path": "python/negative/comment_only.py"
+    },
+    {
+      "id": "py-no_crypto",
+      "language": "python",
+      "type": "negative",
+      "family": "unknown",
+      "path": "python/negative/no_crypto.py"
+    },
+    {
+      "id": "py-shadowed_imports",
+      "language": "python",
+      "type": "negative",
+      "family": "unknown",
+      "path": "python/negative/shadowed_imports.py"
+    },
+    {
+      "id": "py-string_literals",
+      "language": "python",
+      "type": "negative",
+      "family": "unknown",
+      "path": "python/negative/string_literals.py"
+    },
+    {
+      "id": "py-aes_cbc",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/positive/aes_cbc.py"
+    },
+    {
+      "id": "py-aes_gcm",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/positive/aes_gcm.py"
+    },
+    {
+      "id": "py-chacha20",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/positive/chacha20.py"
+    },
+    {
+      "id": "py-ecdsa_sign",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/positive/ecdsa_sign.py"
+    },
+    {
+      "id": "py-ed25519",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/positive/ed25519.py"
+    },
+    {
+      "id": "py-fernet",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/positive/fernet.py"
+    },
+    {
+      "id": "py-hmac_sha256",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/positive/hmac_sha256.py"
+    },
+    {
+      "id": "py-pbkdf2",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/positive/pbkdf2.py"
+    },
+    {
+      "id": "py-tls_ssl",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/positive/tls_ssl.py"
+    },
+    {
+      "id": "py-constant_propagation",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/wrappers/constant_propagation.py"
+    },
+    {
+      "id": "py-custom_wrapper",
+      "language": "python",
+      "type": "positive",
+      "family": "unknown",
+      "path": "python/wrappers/custom_wrapper.py"
+    }
+  ]
+}

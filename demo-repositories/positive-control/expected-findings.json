@@ -1,0 +1,6 @@
+{
+  "purpose": "Positive control with known executable API calls",
+  "expected_algorithms": ["AES", "RSA", "ECDSA", "SHA-256", "HMAC"],
+  "expected_unexpected_findings": 0,
+  "scope": "crypto_operations.py"
+}

@@ -1,0 +1,6 @@
+{
+  "file": "tls.go",
+  "expected_assets": [
+    {"algorithm": "TLS", "usage": "tls", "category": "protocol"}
+  ]
+}

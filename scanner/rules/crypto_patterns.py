@@ -1,20 +1,21 @@
 """
-Crypto pattern rules — regex patterns and categories used by the
+Crypto pattern rules - regex patterns and categories used by the
 scanner as a fallback when AST parsing isn't available, and as a
 reference for labeling detected algorithms.
 """
 import json
 import os
+from typing import Any
 
 # Resolve path relative to this file
 _RULES_DIR = os.path.dirname(os.path.abspath(__file__))
 _JSON_PATH = os.path.join(_RULES_DIR, "crypto_patterns.json")
 
 # In-memory cache of loaded rules
-_RULES_CACHE: dict | None = None
+_RULES_CACHE: dict[str, Any] | None = None
 
 
-def load_rules() -> dict:
+def load_rules() -> dict[str, Any]:
     """Load and return the crypto pattern rules from JSON."""
     global _RULES_CACHE
     if _RULES_CACHE is None:
@@ -29,7 +30,7 @@ def get_algorithm_patterns(algorithm: str) -> list[str]:
     entry = rules.get("algorithms", {}).get(algorithm)
     if entry is None:
         return []
-    return entry.get("patterns", [])
+    return [str(p) for p in entry.get("patterns", [])]
 
 
 def get_category(algorithm: str) -> str:
@@ -38,4 +39,4 @@ def get_category(algorithm: str) -> str:
     entry = rules.get("algorithms", {}).get(algorithm)
     if entry is None:
         return "unknown"
-    return entry.get("category", "unknown")
+    return str(entry.get("category", "unknown"))

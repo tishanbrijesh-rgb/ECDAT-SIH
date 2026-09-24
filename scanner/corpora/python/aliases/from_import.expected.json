@@ -1,0 +1,8 @@
+{
+  "file": "from_import.py",
+  "expected_assets": [
+    {"algorithm": "AES", "usage": "encryption", "category": "encryption"},
+    {"algorithm": "HMAC", "usage": "unknown", "category": "mac"},
+    {"algorithm": "SHA-256", "usage": "hashing", "category": "hash"}
+  ]
+}

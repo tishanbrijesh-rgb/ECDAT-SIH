@@ -96,7 +96,10 @@ export const EvidenceChain = memo(function EvidenceChain({ sources, evidenceDeta
       {expanded && totalRecords > 0 && (
         <div id={detailsId} className="evidence-details">
           {evidenceDetails.map((ev, i) => (
-            <EvidenceRecord key={i} record={ev} />
+            <EvidenceRecord
+              key={(ev.algorithm || ev.component || `ev-${i}`) as string}
+              record={ev}
+            />
           ))}
         </div>
       )}

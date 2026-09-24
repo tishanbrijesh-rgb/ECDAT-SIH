@@ -26,6 +26,7 @@ coverage/
 .npm-audit-cache/
 playwright-report/
 test-results/
+.a11y-reports/
 
 # Local configuration and secrets (keep the documented demo template)
 .env
@@ -49,6 +50,7 @@ id_ed25519
 *.sqlite3
 *.sqlite3-*
 *.log
+*.log.*
 .eslintcache
 .runtime/
 tmp/
@@ -68,6 +70,7 @@ Desktop.ini
 .codex/
 .claude/
 .agents/
+.impeccable/
 AGENTS.md
 LOOP.md
 STATE.md

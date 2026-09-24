@@ -1,0 +1,6 @@
+{
+  "file": "custom_wrapper.py",
+  "expected_assets": [
+    {"algorithm": "AES", "usage": "encryption", "category": "encryption"}
+  ]
+}

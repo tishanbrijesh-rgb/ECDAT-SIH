@@ -5,17 +5,30 @@ from pathlib import Path
 from unittest import TestCase
 from unittest.mock import patch
 
+from alembic.config import Config
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
-from alembic import command
-from alembic.config import Config
+from pydantic import ValidationError
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker
 
-from pydantic import ValidationError
+from alembic import command
 
 
 class ReadinessTests(TestCase):
+    def test_expected_schema_revision_matches_alembic_head(self):
+        from alembic.script import ScriptDirectory
+
+        from backend.main import SCHEMA_REVISION
+
+        project_root = Path(__file__).resolve().parent.parent
+        config = Config(str(project_root / "alembic.ini"))
+        config.config_file_name = None
+        config.set_main_option("script_location", str(project_root / "alembic"))
+
+        script = ScriptDirectory.from_config(config)
+        self.assertEqual(script.get_current_head(), SCHEMA_REVISION)
+
     def test_readiness_rejects_database_without_application_schema(self):
         from backend.main import readiness
 

@@ -1,0 +1,7 @@
+{
+  "file": "pbkdf2.py",
+  "expected_assets": [
+    {"algorithm": "PBKDF2", "usage": "key_derivation", "category": "kdf"},
+    {"algorithm": "SHA-256", "usage": "hashing", "category": "hash"}
+  ]
+}

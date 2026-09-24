@@ -17,6 +17,25 @@ def findings(records):
 
 
 class OperationCorrelationTests(unittest.TestCase):
+    def test_dependency_capabilities_do_not_overclaim_when_code_is_observed(self):
+        observed = record("encryption")
+        dependency = {
+            **record("encryption", None),
+            "algorithm": "ML-KEM",
+            "source": "dep",
+            "location": "test-repo/app/requirements.txt",
+            "evidence_kind": "declared_capability",
+            "evidence": {"usage": "key_exchange"},
+        }
+
+        self.assertEqual([item["algorithm"] for item in findings([observed, dependency])], ["RSA"])
+
+    def test_span_anchored_algorithm_disagreement_is_a_conflict(self):
+        first = {**record("encryption", None), "span": {"line_start": 10, "column_start": 4}}
+        second = {**first, "algorithm": "AES"}
+
+        self.assertTrue(all(item["conflict"] for item in findings([first, second])))
+
     def test_distinct_usages_and_unknown_remain_separate(self):
         result = findings([record(u) for u in ("signature", "encryption", "key_establishment", "unknown")])
         self.assertEqual({f["usage"] for f in result}, {"signature", "encryption", "key_establishment", "unknown"})

@@ -1,0 +1,6 @@
+{
+  "file": "tls_connect.js",
+  "expected_assets": [
+    {"algorithm": "TLS", "usage": "tls", "category": "protocol"}
+  ]
+}

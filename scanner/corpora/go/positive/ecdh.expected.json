@@ -1,0 +1,6 @@
+{
+  "file": "ecdh.go",
+  "expected_assets": [
+    {"algorithm": "ECDH", "usage": "key_establishment", "category": "key_exchange"}
+  ]
+}

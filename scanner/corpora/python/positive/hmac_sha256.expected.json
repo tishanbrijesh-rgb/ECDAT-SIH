@@ -1,0 +1,7 @@
+{
+  "file": "hmac_sha256.py",
+  "expected_assets": [
+    {"algorithm": "HMAC", "usage": "mac", "category": "mac"},
+    {"algorithm": "SHA-256", "usage": "hashing", "category": "hash"}
+  ]
+}

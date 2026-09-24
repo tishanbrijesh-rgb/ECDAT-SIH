@@ -1,0 +1,6 @@
+{
+  "file": "chacha20.py",
+  "expected_assets": [
+    {"algorithm": "ChaCha20", "usage": "encryption", "category": "encryption"}
+  ]
+}

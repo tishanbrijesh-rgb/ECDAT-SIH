@@ -1,0 +1,6 @@
+{
+  "file": "openssl_aes.c",
+  "expected_assets": [
+    {"algorithm": "AES", "usage": "encryption", "category": "encryption"}
+  ]
+}

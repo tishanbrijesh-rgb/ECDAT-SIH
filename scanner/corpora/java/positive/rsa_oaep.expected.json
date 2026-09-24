@@ -1,0 +1,6 @@
+{
+  "file": "rsa_oaep.java",
+  "expected_assets": [
+    {"algorithm": "RSA", "usage": "encryption", "category": "encryption"}
+  ]
+}

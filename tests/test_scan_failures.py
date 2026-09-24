@@ -11,8 +11,8 @@ from sqlalchemy.orm import sessionmaker
 
 from backend.db import Base
 from backend.models.scan_job import ScanJobDB
-from backend.routers import scan as scan_router
 from backend.routers import outputs as outputs_router
+from backend.routers import scan as scan_router
 from backend.schemas.asset import ScanJobResponse
 from backend.security import current_role
 from backend.services import scanner_runner

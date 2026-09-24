@@ -248,6 +248,7 @@ class ScanControlTests(unittest.TestCase):
 
     def test_submission_database_failure_releases_slot(self):
         from fastapi import BackgroundTasks
+
         from backend.routers import scan
         with patch.object(scan, 'resolve_repository', return_value=str(self.repo)), \
              patch.object(scan, 'SessionLocal', side_effect=RuntimeError('database unavailable')):
@@ -256,8 +257,9 @@ class ScanControlTests(unittest.TestCase):
         self.assertIsNone(scan_control._active)
 
     def test_cancel_api_auth_roles_and_terminal_states(self):
-        from fastapi import FastAPI, Depends
+        from fastapi import Depends, FastAPI
         from fastapi.testclient import TestClient
+
         from backend.routers import scan
         from backend.security import current_role
         app = FastAPI()

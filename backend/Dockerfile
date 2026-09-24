@@ -1,12 +1,12 @@
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm@sha256:528257d48c1da0dcecc2e725d1ae34498d60c965f1241e39cd6a85a8859bdf84
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-COPY backend/requirements.txt ./backend/requirements.txt
-RUN pip install --no-cache-dir -r backend/requirements.txt
+COPY backend/requirements.lock ./backend/requirements.lock
+RUN pip install --no-cache-dir --require-hashes -r backend/requirements.lock
 
 RUN groupadd --gid 10001 ecdat \
     && useradd --uid 10001 --gid ecdat --no-create-home --shell /usr/sbin/nologin ecdat

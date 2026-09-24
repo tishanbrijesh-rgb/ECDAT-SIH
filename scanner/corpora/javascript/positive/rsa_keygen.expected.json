@@ -1,0 +1,6 @@
+{
+  "file": "rsa_keygen.js",
+  "expected_assets": [
+    {"algorithm": "RSA", "usage": "encryption", "category": "encryption"}
+  ]
+}

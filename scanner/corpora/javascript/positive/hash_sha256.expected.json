@@ -1,0 +1,6 @@
+{
+  "file": "hash_sha256.js",
+  "expected_assets": [
+    {"algorithm": "SHA-256", "usage": "hashing", "category": "hash"}
+  ]
+}

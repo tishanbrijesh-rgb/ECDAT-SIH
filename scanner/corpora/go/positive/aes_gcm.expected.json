@@ -1,0 +1,7 @@
+{
+  "file": "aes_gcm.go",
+  "expected_assets": [
+    {"algorithm": "AES", "usage": "encryption", "category": "encryption"},
+    {"algorithm": "SHA-256", "usage": "hashing", "category": "hash"}
+  ]
+}

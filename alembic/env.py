@@ -1,4 +1,5 @@
 """Alembic migration environment for ECDAT."""
+# ruff: noqa: F401, I001
 from __future__ import annotations
 
 import os
@@ -6,27 +7,29 @@ import sys
 from logging.config import fileConfig
 from pathlib import Path
 
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from alembic import context
 
 # Ensure backend package is importable
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
+load_dotenv(REPO_ROOT / ".env", override=False)
 
-from backend.db import DATABASE_URL, Base  # noqa: E402
-from backend.models.scan_job import ScanJobDB  # noqa: E402
-from backend.models.asset import CryptoAssetDB  # noqa: E402
-from backend.models.audit_log import AuditLogDB  # noqa: E402
+from backend.db import DATABASE_URL, Base
+from backend.models.scan_job import ScanJobDB
+from backend.models.asset import CryptoAssetDB
+from backend.models.audit_log import AuditLogDB
 
 # ScanFailureDB may not exist during baseline migration generation;
 # import it if available so autogenerate can detect new tables.
 try:
-    from backend.models.scan_failure import ScanFailureDB  # noqa: F401, E402
+    from backend.models.scan_failure import ScanFailureDB
 except ImportError:  # pragma: no cover
     ScanFailureDB = None  # type: ignore[assignment,misc]
 
 try:
-    from backend.models.scan_lease import ScanLeaseDB  # noqa: F401, E402
+    from backend.models.scan_lease import ScanLeaseDB
 except ImportError:  # pragma: no cover
     ScanLeaseDB = None  # type: ignore[assignment,misc]
 

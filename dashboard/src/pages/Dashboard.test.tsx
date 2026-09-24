@@ -11,6 +11,8 @@ vi.mock("../api/client", () => ({
   downloadReport: vi.fn(),
   getDashboardSummary: vi.fn(),
   getEvaluation: vi.fn(),
+  getScans: vi.fn(() => Promise.resolve([])),
+  getAssets: vi.fn(() => Promise.resolve({ items: [], total: 0, page: 0, page_size: 0 })),
 }));
 
 vi.mock("../components/RiskDistributionChart", () => ({
@@ -69,6 +71,20 @@ describe("Dashboard", () => {
     expect(
       await screen.findByRole("heading", { name: "Cryptographic assurance overview" }),
     ).toBeInTheDocument();
+    expect(screen.getByText("Avg evidence confidence")).toBeInTheDocument();
+    expect(screen.getByText("Evaluation-corpus precision / recall")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Judge demo path" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /1 Start scan/ })).toHaveAttribute("href", "/scan");
+    expect(screen.getByRole("link", { name: /2 Verify history/ })).toHaveAttribute(
+      "href",
+      "/scans",
+    );
+    expect(screen.getByRole("link", { name: /4 Export CBOM/ })).toHaveAttribute(
+      "href",
+      "/cbom?scan_id=7",
+    );
+    expect(screen.getByText("No Critical or High findings")).toBeInTheDocument();
+    expect(screen.getByText("Not measured")).toBeInTheDocument();
     await act(async () => rejectOld(new Error("Old scan failed")));
     expect(screen.queryByText("Dashboard unavailable")).not.toBeInTheDocument();
   });
