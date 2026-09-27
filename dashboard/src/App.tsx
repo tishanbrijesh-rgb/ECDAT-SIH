@@ -2,6 +2,7 @@
 import { lazy, Suspense, useState, useEffect, useRef, useCallback } from "react";
 import {
   logout,
+  enterPublicDemo,
   canWrite,
   getInitialSessionExpiry,
   hasSession,
@@ -55,9 +56,7 @@ const ScanHistoryPage = lazy(() => import("./pages/ScanHistoryPage"));
 const EvidenceGraphPage = lazy(() => import("./pages/EvidenceGraphPage"));
 
 function AppInner() {
-  const [authState, setAuthState] = useState<"checking" | "signed-in" | "signed-out">(() =>
-    hasSession() ? "checking" : "signed-out",
-  );
+  const [authState, setAuthState] = useState<"checking" | "signed-in" | "signed-out">("checking");
   const [loginMessage, setLoginMessage] = useState(() => getInitialSessionExpiry());
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [accountMenu, setAccountMenu] = useState(false);
@@ -92,9 +91,16 @@ function AppInner() {
   useEffect(() => {
     if (authState !== "checking") return;
     let active = true;
-    void restoreSession().then((restored) => {
-      if (active) setAuthState(restored ? "signed-in" : "signed-out");
-    });
+    void (async () => {
+      if (new URLSearchParams(window.location.search).has("admin")) {
+        logout();
+        if (active) setAuthState("signed-out");
+        return;
+      }
+      const restored = hasSession() && await restoreSession();
+      const entered = restored || await enterPublicDemo();
+      if (active) setAuthState(entered ? "signed-in" : "signed-out");
+    })();
     return () => {
       active = false;
     };

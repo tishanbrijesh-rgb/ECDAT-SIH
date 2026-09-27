@@ -68,13 +68,27 @@ def issue_demo_token(username: str, password: str) -> dict[str, str | int]:
     expected = user.password if user else "invalid-account-password"
     if not hmac.compare_digest(password.encode(), expected.encode()) or user is None:
         raise HTTPException(401, "Invalid demo credentials")
-    role = user.role
+    return _issue_token(username.lower(), user.role, secret)
+
+
+def issue_public_demo_token() -> dict[str, str | int]:
+    """Issue a limited session for the explicitly enabled public demo."""
+    try:
+        settings = get_settings()
+    except SettingsError:
+        raise HTTPException(503, "Authentication configuration is missing or invalid") from None
+    if not settings.public_demo:
+        raise HTTPException(404, "Public demo is unavailable")
+    return _issue_token("public-demo", "security_analyst", settings.token_secret)
+
+
+def _issue_token(username: str, role: str, secret: bytes) -> dict[str, str | int]:
     expires_at = int(time.time()) + 3600
     session_id = secrets.token_urlsafe(18)
     payload = _encode(
         json.dumps(
             {
-                "sub": username.lower(),
+                "sub": username,
                 "role": role,
                 "exp": expires_at,
                 "sid": session_id,
@@ -104,8 +118,12 @@ def role_from_token(token: str) -> Principal:
             or not claims["sid"]
         ):
             raise ValueError("claims")
+        public_demo = claims["sub"] == "public-demo" and get_settings().public_demo
         account = users.get(claims["sub"])
-        if claims["exp"] <= int(time.time()) or claims["role"] not in ROLES or account is None or account.role != claims["role"]:
+        valid_account = (public_demo and claims["role"] == "security_analyst") or (
+            account is not None and account.role == claims["role"]
+        )
+        if claims["exp"] <= int(time.time()) or claims["role"] not in ROLES or not valid_account:
             raise ValueError("expired or invalid role")
         principal = Principal(
             subject=claims["sub"],
@@ -174,9 +192,11 @@ def current_role(
         session_id="demo-header",
     )
 
-def ensure_write_role(role: str) -> None:
+def ensure_write_role(role: str, *, allow_public_demo_scan: bool = False) -> None:
     if role not in {"admin", "security_analyst"}:
         raise HTTPException(403, "This action requires Admin or Security Analyst role")
+    if isinstance(role, Principal) and role.subject == "public-demo" and not allow_public_demo_scan:
+        raise HTTPException(403, "This action is unavailable in the public demo")
 
 def record_audit(
     action: str,

@@ -91,6 +91,15 @@ class SettingsValidationTests(TestCase):
         with self.assertRaisesRegex(SettingsError, "ECDAT_DEMO_PASSWORD"):
             load_settings(environment)
 
+    def test_public_demo_requires_one_scan_root(self) -> None:
+        environment = self.valid_environment()
+        environment["ECDAT_PUBLIC_DEMO"] = "true"
+        self.assertTrue(load_settings(environment).public_demo)
+
+        environment["ECDAT_ALLOWED_SCAN_ROOTS"] = ""
+        with self.assertRaises(SettingsError):
+            load_settings(environment)
+
     def test_invalid_numeric_limit_is_rejected(self) -> None:
         environment = self.valid_environment()
         environment["ECDAT_MAX_EVIDENCE"] = "unbounded"

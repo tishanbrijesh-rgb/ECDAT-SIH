@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, StrictStr, field_validator
 from backend.logging_config import get_logger
 from backend.middleware.rate_limit import _client_ip
 from backend.middleware.rate_limit import limit as rate_limit
-from backend.security import current_role, issue_demo_token
+from backend.security import current_role, issue_demo_token, issue_public_demo_token
 
 logger = get_logger("ecdat.auth")
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
@@ -44,3 +44,9 @@ def login(request: Request, payload: LoginRequest) -> dict[str, str | int]:
 @router.get("/me")
 def me(role: str = Depends(current_role)) -> dict[str, str]:
     return {"role": role, "authentication": "signed-session"}
+
+
+@router.post("/public-demo")
+@rate_limit(threshold=30, window=60)
+def public_demo(request: Request) -> dict[str, str | int]:
+    return issue_public_demo_token()

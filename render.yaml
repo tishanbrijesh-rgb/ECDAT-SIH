@@ -18,6 +18,8 @@ services:
         value: https://ecdat-sih-demo.onrender.com
       - key: ECDAT_ALLOW_ROLE_HEADER
         value: "false"
+      - key: ECDAT_PUBLIC_DEMO
+        value: "true"
       - key: ECDAT_AUTO_CREATE_TABLES
         value: "false"
       - key: ECDAT_TOKEN_SECRET

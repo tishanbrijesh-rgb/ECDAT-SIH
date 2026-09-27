@@ -131,12 +131,29 @@ export async function login(username: string, password: string) {
     "/api/auth/login",
     { username, password },
   );
+  acceptSession(result);
+}
+
+function acceptSession(result: { access_token: string; role: string; expires_at: number }) {
   logout();
   accessToken = result.access_token;
   role = result.role;
   expiresAt = result.expires_at;
   persistSession();
   scheduleExpiry();
+}
+
+export async function enterPublicDemo(): Promise<boolean> {
+  try {
+    const result = await _post<{ access_token: string; role: string; expires_at: number }>(
+      "/api/auth/public-demo",
+      {},
+    );
+    acceptSession(result);
+    return true;
+  } catch {
+    return false;
+  }
 }
 async function authenticatedFetch(path: string, init: RequestInit = {}) {
   const requestToken = accessToken;

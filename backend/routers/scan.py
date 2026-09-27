@@ -122,7 +122,7 @@ def post_scan(
     repo_path = payload.repo_path
     if not repo_path:
         raise HTTPException(400, detail="repo_path is required")
-    ensure_write_role(role)
+    ensure_write_role(role, allow_public_demo_scan=True)
     repo_path = resolve_repository(repo_path)
     db = SessionLocal()
     try:
@@ -143,7 +143,7 @@ def post_scan(
 
 @router.post('/scans/{scan_id}/cancel', status_code=202)
 def cancel_scan(scan_id: int, role: str = Depends(current_role)) -> dict:
-    ensure_write_role(role)
+    ensure_write_role(role, allow_public_demo_scan=True)
     with SessionLocal() as db:
         job = db.get(ScanJobDB, scan_id)
         if job is None:

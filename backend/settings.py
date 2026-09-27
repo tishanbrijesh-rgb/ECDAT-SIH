@@ -26,6 +26,7 @@ _SETTING_NAMES = (
     "ECDAT_TOKEN_SECRET",
     "ECDAT_USERS_JSON",
     "ECDAT_DEMO_PASSWORD",
+    "ECDAT_PUBLIC_DEMO",
     "ECDAT_CORS_ORIGINS",
     "ECDAT_ALLOWED_SCAN_ROOTS",
     "ECDAT_ALLOW_UNRESTRICTED_SCAN_ROOTS",
@@ -60,6 +61,7 @@ class Settings:
     allowed_scan_roots: tuple[Path, ...]
     allow_unrestricted_scan_roots: bool
     allow_role_header: bool
+    public_demo: bool
     request_timeout_seconds: float
     scan_timeout_seconds: int
     max_file_bytes: int
@@ -190,6 +192,9 @@ def load_settings(values: Mapping[str, str]) -> Settings:
     allow_role_header = _boolean(values, "ECDAT_ALLOW_ROLE_HEADER")
     if environment == "production" and allow_role_header:
         raise SettingsError("ECDAT_ALLOW_ROLE_HEADER cannot be enabled in production")
+    public_demo = _boolean(values, "ECDAT_PUBLIC_DEMO")
+    if public_demo and len(roots) != 1:
+        raise SettingsError("ECDAT_PUBLIC_DEMO requires exactly one allowed scan root")
 
     correlator_version = values.get("ECDAT_CORRELATOR_VERSION", "v2").strip().lower()
     if correlator_version not in {"v2", "v3"}:
@@ -203,6 +208,7 @@ def load_settings(values: Mapping[str, str]) -> Settings:
         allowed_scan_roots=roots,
         allow_unrestricted_scan_roots=allow_unrestricted,
         allow_role_header=allow_role_header,
+        public_demo=public_demo,
         request_timeout_seconds=_number(values, "ECDAT_REQUEST_TIMEOUT", 120, 1, 3600),
         scan_timeout_seconds=_integer(values, "ECDAT_SCAN_TIMEOUT_SECONDS", 300, 1, 3600),
         max_file_bytes=_integer(values, "ECDAT_MAX_FILE_BYTES", 8 * 1024 * 1024, 1, 128 * 1024 * 1024),

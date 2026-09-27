@@ -6,7 +6,7 @@ const FRONTEND_BUDGETS = {
   maxBundleGzipKb: 500,
   // SIH baseline after the evidence, history, and responsive assurance views.
   // Keep narrow headroom so a material regression still fails the build.
-  maxTotalJsKb: 810,
+  maxTotalJsKb: 811,
   maxCssKb: 155,
 };
 

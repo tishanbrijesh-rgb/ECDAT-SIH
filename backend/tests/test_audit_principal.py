@@ -19,7 +19,7 @@ from backend.models.asset import CryptoAssetDB
 from backend.models.audit_log import AuditLogDB
 from backend.models.scan_job import ScanJobDB
 from backend.schemas.asset import AssetUpdate
-from backend.security import Principal, current_role, issue_demo_token, role_from_token
+from backend.security import Principal, current_role, ensure_write_role, issue_demo_token, issue_public_demo_token, role_from_token
 from tests.integration_env import PASSWORD
 
 
@@ -43,6 +43,20 @@ def test_signed_session_resolves_to_a_complete_principal(monkeypatch) -> None:
     assert principal.role == "security_analyst"
     assert principal.expires_at > 0
     assert principal.session_id
+
+
+def test_public_demo_session_can_scan_but_cannot_edit_assets(monkeypatch) -> None:
+    monkeypatch.setenv("ECDAT_PUBLIC_DEMO", "true")
+    monkeypatch.setenv("ECDAT_ALLOWED_SCAN_ROOTS", ".")
+    monkeypatch.setenv("ECDAT_ALLOW_UNRESTRICTED_SCAN_ROOTS", "false")
+    monkeypatch.setattr(security, "_is_session_revoked", lambda _session_id: False)
+    token = issue_public_demo_token()["access_token"]
+    principal = role_from_token(str(token))
+    assert principal.subject == "public-demo"
+    ensure_write_role(principal, allow_public_demo_scan=True)
+    with pytest.raises(HTTPException) as error:
+        ensure_write_role(principal)
+    assert error.value.status_code == 403
 
 
 def test_revoked_session_is_rejected_on_next_token_verification(monkeypatch) -> None:
