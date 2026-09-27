@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: ecdat-sih-demo
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile.render
+    healthCheckPath: /ready
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ecdat-sih-demo-db
+          property: connectionString
+      - key: ECDAT_ENV
+        value: production
+      - key: ECDAT_ALLOWED_SCAN_ROOTS
+        value: /app/test-repo
+      - key: ECDAT_CORS_ORIGINS
+        value: https://ecdat-sih-demo.onrender.com
+      - key: ECDAT_ALLOW_ROLE_HEADER
+        value: "false"
+      - key: ECDAT_AUTO_CREATE_TABLES
+        value: "false"
+      - key: ECDAT_TOKEN_SECRET
+        generateValue: true
+      - key: ECDAT_USERS_JSON
+        sync: false
+databases:
+  - name: ecdat-sih-demo-db
+    plan: free
+    databaseName: ecdat
+    user: ecdat
+    ipAllowList: []

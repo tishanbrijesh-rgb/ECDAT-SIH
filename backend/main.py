@@ -306,7 +306,25 @@ async def lifespan(_app: FastAPI):
     except Exception:
         logger.exception("Startup lease reconciliation failed")
 
-    yield
+    async def scan_watchdog():
+        from backend.services.scan_control import reconcile_abandoned_scans
+
+        while True:
+            try:
+                await asyncio.to_thread(reconcile_abandoned_scans)
+            except Exception:
+                logger.exception("Scan watchdog reconciliation failed")
+            await asyncio.sleep(10)
+
+    watchdog = asyncio.create_task(scan_watchdog())
+    try:
+        yield
+    finally:
+        watchdog.cancel()
+        try:
+            await watchdog
+        except asyncio.CancelledError:
+            pass
 
 
 app = FastAPI(
