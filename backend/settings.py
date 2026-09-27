@@ -25,6 +25,7 @@ _SETTING_NAMES = (
     "ECDAT_ENV",
     "ECDAT_TOKEN_SECRET",
     "ECDAT_USERS_JSON",
+    "ECDAT_DEMO_PASSWORD",
     "ECDAT_CORS_ORIGINS",
     "ECDAT_ALLOWED_SCAN_ROOTS",
     "ECDAT_ALLOW_UNRESTRICTED_SCAN_ROOTS",
@@ -131,6 +132,13 @@ def _users(values: Mapping[str, str], secret: str) -> Mapping[str, UserAccount]:
         raise SettingsError("ECDAT account passwords must be distinct")
     if secret in passwords:
         raise SettingsError("ECDAT_TOKEN_SECRET must differ from account passwords")
+    demo_password = values.get("ECDAT_DEMO_PASSWORD", "")
+    if demo_password:
+        if "demo" in accounts:
+            raise SettingsError("ECDAT demo account is configured more than once")
+        if len(demo_password) < 16 or demo_password == secret or demo_password in passwords:
+            raise SettingsError("ECDAT_DEMO_PASSWORD must be unique and at least 16 characters")
+        accounts["demo"] = UserAccount(role="security_analyst", password=demo_password)
     return MappingProxyType(accounts)
 
 

@@ -80,6 +80,17 @@ class SettingsValidationTests(TestCase):
         with self.assertRaisesRegex(SettingsError, "invalid role"):
             load_settings(environment)
 
+    def test_optional_demo_login_can_scan_without_replacing_admin(self) -> None:
+        environment = self.valid_environment()
+        environment["ECDAT_DEMO_PASSWORD"] = "separate-demo-secret-2026"
+        settings = load_settings(environment)
+        self.assertEqual("security_analyst", settings.users["demo"].role)
+        self.assertIn("analyst", settings.users)
+
+        environment["ECDAT_DEMO_PASSWORD"] = "short"
+        with self.assertRaisesRegex(SettingsError, "ECDAT_DEMO_PASSWORD"):
+            load_settings(environment)
+
     def test_invalid_numeric_limit_is_rejected(self) -> None:
         environment = self.valid_environment()
         environment["ECDAT_MAX_EVIDENCE"] = "unbounded"
