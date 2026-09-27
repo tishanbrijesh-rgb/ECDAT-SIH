@@ -9,7 +9,7 @@ import {
   restoreSession,
   SESSION_EXPIRED,
 } from "./api/client";
-import { NavLink, Route, Routes, useSearchParams, useLocation } from "react-router-dom";
+import { NavLink, Route, Routes, useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { MotionConfig, AnimatePresence, motion } from "framer-motion";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastProvider, useToast } from "./components/Toast";
@@ -55,6 +55,16 @@ const ScanDetailPage = lazy(() => import("./pages/ScanDetailPage"));
 const ScanHistoryPage = lazy(() => import("./pages/ScanHistoryPage"));
 const EvidenceGraphPage = lazy(() => import("./pages/EvidenceGraphPage"));
 
+function ScanSignInGate() {
+  return (
+    <section className="state" aria-labelledby="scan-sign-in-heading">
+      <h1 id="scan-sign-in-heading">Sign in to run a scan</h1>
+      <p>Evaluators can explore the dashboard, inventory, reports, and completed scans. Starting a scan requires a scanner account.</p>
+      <a className="button" href="/?login=1&next=scan">Sign in to scan</a>
+    </section>
+  );
+}
+
 function AppInner() {
   const [authState, setAuthState] = useState<"checking" | "signed-in" | "signed-out">("checking");
   const [loginMessage, setLoginMessage] = useState(() => getInitialSessionExpiry());
@@ -69,6 +79,7 @@ function AppInner() {
   const rawNavScanId = navParams.get("scan_id");
   const scanQuery = rawNavScanId && /^\d+$/.test(rawNavScanId) ? `?scan_id=${rawNavScanId}` : "";
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Focus main content after sign-in so screen readers announce the page.
   useEffect(() => {
@@ -92,7 +103,8 @@ function AppInner() {
     if (authState !== "checking") return;
     let active = true;
     void (async () => {
-      if (new URLSearchParams(window.location.search).has("admin")) {
+      if (new URLSearchParams(window.location.search).has("admin") ||
+          new URLSearchParams(window.location.search).has("login")) {
         logout();
         if (active) setAuthState("signed-out");
         return;
@@ -178,6 +190,9 @@ function AppInner() {
           toast("Welcome back", "success");
           setLoginMessage("");
           setAuthState("signed-in");
+          if (new URLSearchParams(window.location.search).get("next") === "scan") {
+            navigate("/scan", { replace: true });
+          }
         }}
       />
     );
@@ -204,8 +219,7 @@ function AppInner() {
           </NavLink>
           <NavLink to={`/assets${scanQuery}`}>Inventory</NavLink>
           <NavLink to="/scans">Scan history</NavLink>
-          {canWrite() && (
-            <NavLink to="/scan" className="topbar-scan-link">
+          <NavLink to="/scan" className="topbar-scan-link">
               <svg
                 className="icon-inline"
                 width="14"
@@ -221,9 +235,8 @@ function AppInner() {
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              New scan
+              {canWrite() ? "New scan" : "Scan sign-in"}
             </NavLink>
-          )}
           <NavLink to={`/reports${scanQuery}`}>Reports</NavLink>
           <NavLink to={`/cbom${scanQuery}`}>CBOM</NavLink>
         </nav>
@@ -399,7 +412,7 @@ function AppInner() {
                   path="/scan"
                   element={
                     <PageTransition routeKey="scan">
-                      <ScanPage />
+                      {canWrite() ? <ScanPage /> : <ScanSignInGate />}
                     </PageTransition>
                   }
                 />

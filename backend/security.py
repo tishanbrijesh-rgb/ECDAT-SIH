@@ -79,7 +79,7 @@ def issue_public_demo_token() -> dict[str, str | int]:
         raise HTTPException(503, "Authentication configuration is missing or invalid") from None
     if not settings.public_demo:
         raise HTTPException(404, "Public demo is unavailable")
-    return _issue_token("public-demo", "security_analyst", settings.token_secret)
+    return _issue_token("public-demo", "viewer", settings.token_secret)
 
 
 def _issue_token(username: str, role: str, secret: bytes) -> dict[str, str | int]:
@@ -120,7 +120,7 @@ def role_from_token(token: str) -> Principal:
             raise ValueError("claims")
         public_demo = claims["sub"] == "public-demo" and get_settings().public_demo
         account = users.get(claims["sub"])
-        valid_account = (public_demo and claims["role"] == "security_analyst") or (
+        valid_account = (public_demo and claims["role"] == "viewer") or (
             account is not None and account.role == claims["role"]
         )
         if claims["exp"] <= int(time.time()) or claims["role"] not in ROLES or not valid_account:
@@ -192,11 +192,9 @@ def current_role(
         session_id="demo-header",
     )
 
-def ensure_write_role(role: str, *, allow_public_demo_scan: bool = False) -> None:
+def ensure_write_role(role: str) -> None:
     if role not in {"admin", "security_analyst"}:
         raise HTTPException(403, "This action requires Admin or Security Analyst role")
-    if isinstance(role, Principal) and role.subject == "public-demo" and not allow_public_demo_scan:
-        raise HTTPException(403, "This action is unavailable in the public demo")
 
 def record_audit(
     action: str,

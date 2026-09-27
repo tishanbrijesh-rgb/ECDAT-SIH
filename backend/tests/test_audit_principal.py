@@ -45,7 +45,7 @@ def test_signed_session_resolves_to_a_complete_principal(monkeypatch) -> None:
     assert principal.session_id
 
 
-def test_public_demo_session_can_scan_but_cannot_edit_assets(monkeypatch) -> None:
+def test_public_demo_session_can_view_but_cannot_start_scan(monkeypatch) -> None:
     monkeypatch.setenv("ECDAT_PUBLIC_DEMO", "true")
     monkeypatch.setenv("ECDAT_ALLOWED_SCAN_ROOTS", ".")
     monkeypatch.setenv("ECDAT_ALLOW_UNRESTRICTED_SCAN_ROOTS", "false")
@@ -53,7 +53,7 @@ def test_public_demo_session_can_scan_but_cannot_edit_assets(monkeypatch) -> Non
     token = issue_public_demo_token()["access_token"]
     principal = role_from_token(str(token))
     assert principal.subject == "public-demo"
-    ensure_write_role(principal, allow_public_demo_scan=True)
+    assert principal.role == "viewer"
     with pytest.raises(HTTPException) as error:
         ensure_write_role(principal)
     assert error.value.status_code == 403
