@@ -107,6 +107,17 @@
   line-height: 1.55;
 }
 
+.login-choice-note {
+  margin: 10px 0 24px;
+}
+
+.login-section-title {
+  margin: 0 0 18px;
+  color: var(--ws-text);
+  font-size: 16px;
+  font-weight: 650;
+}
+
 .login-form {
   display: grid;
   gap: 18px;

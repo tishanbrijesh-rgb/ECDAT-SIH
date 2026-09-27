@@ -1,12 +1,12 @@
 // Login page — ECDAT design system.
 import { useEffect, useId, useState, type FormEvent } from "react";
-import { ApiError, login } from "../api/client";
+import { ApiError, enterPublicDemo, login } from "../api/client";
 
 export default function Login({
   onSuccess,
   message = "",
 }: {
-  onSuccess: () => void;
+  onSuccess: (mode?: "demo" | "account") => void;
   message?: string;
 }) {
   const [username, setUsername] = useState("");
@@ -33,7 +33,7 @@ export default function Login({
     setError("");
     try {
       await login(username, password);
-      onSuccess();
+      onSuccess("account");
     } catch (err) {
       setError(
         err instanceof ApiError && err.status === 401
@@ -42,6 +42,20 @@ export default function Login({
             ? "Too many sign-in attempts. Please try again later."
             : "Unable to sign in. Check your connection and try again.",
       );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const openDemo = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      if (!await enterPublicDemo()) {
+        setError("SIH Demo is unavailable. Please try again shortly.");
+        return;
+      }
+      onSuccess("demo");
     } finally {
       setBusy(false);
     }
@@ -69,9 +83,9 @@ export default function Login({
         </aside>
         <section className="login-panel--form" aria-labelledby="login-heading">
           <div className="login-card">
-            <h1 id="login-heading" className="login-card-title">Sign in</h1>
+            <h1 id="login-heading" className="login-card-title">Explore ECDAT</h1>
             <p className="login-card-desc">
-              Authenticated access to the cryptographic inventory and discovery-assurance console.
+              Open the SIH demo to explore results. Sign in below when you need to run a scan.
             </p>
 
             {error && (
@@ -80,6 +94,12 @@ export default function Login({
               </div>
             )}
 
+            <button type="button" className="button wide login-submit" onClick={openDemo} disabled={busy}>
+              {busy ? "Opening SIH Demo…" : "SIH Demo — no password"}
+            </button>
+            <p className="login-card-desc login-choice-note">View the dashboard, inventory, reports, and completed scans.</p>
+
+            <h2 className="login-section-title">Scanner sign-in</h2>
             <form onSubmit={submit} aria-busy={busy} className="login-form">
               <LoginField
                 label="Username"
@@ -111,7 +131,7 @@ export default function Login({
             </form>
 
             <div className="login-hint" role="note">
-              <strong>Administrator-provisioned access</strong>
+              <strong>Scanner or administrator access</strong>
               <span>Use your configured account. There are no default passwords.</span>
             </div>
           </div>

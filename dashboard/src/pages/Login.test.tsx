@@ -2,18 +2,21 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Login from "./Login";
-import { ApiError, login } from "../api/client";
+import { ApiError, enterPublicDemo, login } from "../api/client";
 
 vi.mock("../api/client", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../api/client")>()),
   login: vi.fn(),
+  enterPublicDemo: vi.fn(),
 }));
 
 const mockedLogin = vi.mocked(login);
+const mockedDemo = vi.mocked(enterPublicDemo);
 
 describe("Login", () => {
   beforeEach(() => {
     mockedLogin.mockReset();
+    mockedDemo.mockReset();
   });
 
   it("renders the recovered ECDAT brand asset", () => {
@@ -55,6 +58,18 @@ describe("Login", () => {
 
     expect(mockedLogin).toHaveBeenCalledWith("security-user", "correct horse battery staple");
     expect(onSuccess).toHaveBeenCalledOnce();
+  });
+
+  it("opens SIH Demo without asking for a password", async () => {
+    const onSuccess = vi.fn();
+    mockedDemo.mockResolvedValue(true);
+    render(<Login onSuccess={onSuccess} />);
+
+    await userEvent.click(screen.getByRole("button", { name: "SIH Demo — no password" }));
+
+    expect(mockedDemo).toHaveBeenCalledOnce();
+    expect(mockedLogin).not.toHaveBeenCalled();
+    expect(onSuccess).toHaveBeenCalledWith("demo");
   });
 
   it("exposes a session-expiry message and marks the fields invalid", () => {

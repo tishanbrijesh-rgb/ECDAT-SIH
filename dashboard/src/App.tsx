@@ -2,7 +2,6 @@
 import { lazy, Suspense, useState, useEffect, useRef, useCallback } from "react";
 import {
   logout,
-  enterPublicDemo,
   canWrite,
   getInitialSessionExpiry,
   hasSession,
@@ -110,8 +109,7 @@ function AppInner() {
         return;
       }
       const restored = hasSession() && await restoreSession();
-      const entered = restored || await enterPublicDemo();
-      if (active) setAuthState(entered ? "signed-in" : "signed-out");
+      if (active) setAuthState(restored ? "signed-in" : "signed-out");
     })();
     return () => {
       active = false;
@@ -186,11 +184,13 @@ function AppInner() {
     return (
       <Login
         message={loginMessage}
-        onSuccess={() => {
-          toast("Welcome back", "success");
+        onSuccess={(mode) => {
+          toast(mode === "demo" ? "SIH Demo opened" : "Welcome back", "success");
           setLoginMessage("");
           setAuthState("signed-in");
-          if (new URLSearchParams(window.location.search).get("next") === "scan") {
+          if (mode === "demo") {
+            navigate("/", { replace: true });
+          } else if (new URLSearchParams(window.location.search).get("next") === "scan") {
             navigate("/scan", { replace: true });
           }
         }}
@@ -337,8 +337,8 @@ function AppInner() {
                     </svg>
                   </div>
                   <div>
-                    <div className="topbar-dropdown-name">Operator</div>
-                    <div className="topbar-dropdown-role">Authenticated</div>
+                    <div className="topbar-dropdown-name">{canWrite() ? "Scanner" : "Evaluator"}</div>
+                    <div className="topbar-dropdown-role">{canWrite() ? "Signed in" : "SIH Demo"}</div>
                   </div>
                 </div>
                 <div className="topbar-dropdown-divider" />
@@ -473,7 +473,7 @@ function AppInner() {
       <ConfirmDialog
         open={confirmLogout}
         title="Sign out?"
-        message="Your session will be cleared. You will need to sign in again to access the console."
+        message="Your session will be cleared. You can reopen SIH Demo or sign in again."
         confirmLabel="Sign out"
         onConfirm={() => {
           logout();

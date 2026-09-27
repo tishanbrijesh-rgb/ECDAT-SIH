@@ -60,7 +60,7 @@ describe("Login accessibility", () => {
     const { container } = render(<Login onSuccess={vi.fn()} />);
     const h1s = container.querySelectorAll("h1");
     expect(h1s.length).toBe(1);
-    expect(h1s[0]).toHaveTextContent("Sign in");
+    expect(h1s[0]).toHaveTextContent("Explore ECDAT");
   });
 });
 
