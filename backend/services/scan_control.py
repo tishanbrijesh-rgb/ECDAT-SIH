@@ -540,7 +540,7 @@ def supervise(repo_path: str, control: Control) -> None:
             cancel_signal = _cancel_signal(control.scan_id)
             cancel_signal.unlink(missing_ok=True)
             diagnostic_dir = _runtime_dir()
-            diagnostic_dir.mkdir(parents=True, exist_ok=True)
+            os.makedirs(diagnostic_dir, exist_ok=True)
             stderr_path = diagnostic_dir / f"scan-worker-{control.scan_id}.stderr.log"
             stderr_path.write_bytes(b"")
             progress_mtime = 0

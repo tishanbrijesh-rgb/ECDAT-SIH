@@ -1,6 +1,7 @@
 """Bound local reads; these limits are not a filesystem security sandbox."""
 import os
 import stat
+from typing import Any
 
 try:
     import resource
@@ -49,7 +50,8 @@ def check_memory_budget() -> str | None:
     try:
         if resource is None:
             return None
-        usage = resource.getrusage(resource.RUSAGE_SELF)  # type: ignore[attr-defined]
+        resource_api: Any = resource  # Windows typeshed omits Unix-only members.
+        usage = resource_api.getrusage(resource_api.RUSAGE_SELF)
         rss_kb = usage.ru_maxrss
         rss_mb = rss_kb / 1024
         if rss_mb > budget:
