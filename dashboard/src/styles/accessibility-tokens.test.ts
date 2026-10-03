@@ -1,4 +1,6 @@
+// @ts-ignore -- Node types differ between the local test runner and the Docker build.
 import { readFileSync } from "node:fs";
+// @ts-ignore -- Node types differ between the local test runner and the Docker build.
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
