@@ -521,7 +521,9 @@ class TestLeaseCleanup:
             with patch("backend.services.scan_control.worker_command",
                        return_value=["python", "-c", "pass"]):
                 with patch("backend.services.scan_control.release") as mock_release:
-                    with patch("backend.services.scan_control._finish_if_active"):
+                    with patch("backend.services.scan_control._finish_if_active"), \
+                         patch("backend.services.scan_control._terminate_process_tree") as terminate_tree:
                         supervise("/fake/repo", control)
 
         assert mock_release.called
+        terminate_tree.assert_called_once_with(fake_process)

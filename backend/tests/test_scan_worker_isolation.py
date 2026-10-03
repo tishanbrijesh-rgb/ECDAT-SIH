@@ -232,10 +232,6 @@ def test_worker_diagnostic_returns_only_the_bounded_last_line(tmp_path: Path) ->
     assert scan_control._worker_diagnostic(diagnostic) == "ValueError: collector crashed"
 
 
-@pytest.mark.skipif(
-    os.environ.get("GITHUB_ACTIONS") == "true" and os.name != "nt",
-    reason="OS process-group termination interrupts the hosted runner",
-)
 def test_real_timeout_terminates_spawned_descendant(tmp_path: Path) -> None:
     """The OS-backed termination path kills a worker's child, not just its root."""
     child_pid_path = tmp_path / "child.pid"
