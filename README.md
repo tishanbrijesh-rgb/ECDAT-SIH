@@ -4,6 +4,17 @@ Smart India Hackathon 2026 · SIH26164
 
 ECDAT scans local repositories, detects cryptographic assets (algorithms, certificates, keys), and produces a risk-ranked inventory with PQC migration guidance.
 
+## Get the current project
+
+The default branch is `main`. Clone it to get the current ECDAT-SIH project:
+
+```bash
+git clone https://github.com/tishanbrijesh-rgb/ECDAT-SIH.git
+```
+
+If you already cloned the repository, update it with `git pull origin main` while on `main`.
+The hosted [SIH demo](https://ecdat-sih-demo.onrender.com/) lets evaluators explore the dashboard without a password; starting a scan requires a scanner login.
+
 ## Architecture
 
 ```

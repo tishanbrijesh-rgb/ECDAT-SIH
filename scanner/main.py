@@ -102,11 +102,11 @@ def _inventory(
                 raise ValueError('Repository exceeds configured file count limit')
             ext = os.path.splitext(filename)[1].lower()
             if ext in registry.supported_extensions or filename in registry.supported_filenames:
+                if os.path.islink(path):
+                    failed[path] = "linked_file"
+                    continue
                 supported.append(path)
                 try:
-                    if os.path.islink(path):
-                        failed[path] = "linked_file"
-                        continue
                     if os.path.getsize(path) > byte_limit:
                         failed[path] = "oversized"
                         continue

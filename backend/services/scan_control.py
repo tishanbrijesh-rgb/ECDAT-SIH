@@ -34,8 +34,13 @@ logger = get_logger("ecdat.scan_control")
 SUPERVISOR_GRACE_SECONDS = 45
 
 
+def _runtime_dir() -> Path:
+    """Keep worker coordination files on a writable container filesystem."""
+    return Path(tempfile.gettempdir()) / "ecdat-runtime"
+
+
 def _cancel_signal(scan_id: int) -> Path:
-    return Path(__file__).resolve().parents[2] / ".runtime" / f"scan-{scan_id}.cancel"
+    return _runtime_dir() / f"scan-{scan_id}.cancel"
 
 
 @dataclass
@@ -534,7 +539,7 @@ def supervise(repo_path: str, control: Control) -> None:
             supervisor_heartbeat.touch()
             cancel_signal = _cancel_signal(control.scan_id)
             cancel_signal.unlink(missing_ok=True)
-            diagnostic_dir = Path(__file__).resolve().parents[2] / ".runtime"
+            diagnostic_dir = _runtime_dir()
             diagnostic_dir.mkdir(parents=True, exist_ok=True)
             stderr_path = diagnostic_dir / f"scan-worker-{control.scan_id}.stderr.log"
             stderr_path.write_bytes(b"")
