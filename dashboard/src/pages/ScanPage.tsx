@@ -242,7 +242,9 @@ export default function ScanPage() {
     if (value.trim()) {
       const trimmed = value.trim();
       if (hostedDemo && trimmed !== DEMO_REPOSITORY) {
-        setPathError(`This hosted demo can scan only ${DEMO_REPOSITORY}. Files on your computer are not accessible to Render.`);
+        setPathError(
+          `This hosted demo can scan only ${DEMO_REPOSITORY}. Files on your computer are not accessible to Render.`,
+        );
       } else if (!/^[A-Za-z]:\\/.test(trimmed) && !/^\//.test(trimmed)) {
         setPathError("Enter an absolute Windows or Linux path, e.g. C:\\repos\\my-app");
       } else if (trimmed.length < 3) {
@@ -455,7 +457,11 @@ export default function ScanPage() {
       <header className="scan-launch-header">
         <div>
           <h1>Scan a repository</h1>
-          <p>{hostedDemo ? "Scan the bundled demo repository hosted with ECDAT." : "Enter a local repository path and start an evidence-backed scan."}</p>
+          <p>
+            {hostedDemo
+              ? "Scan the bundled demo repository hosted with ECDAT."
+              : "Enter a local repository path and start an evidence-backed scan."}
+          </p>
         </div>
         <div className="scan-safety-note" role="note">
           <strong>Read-only analysis</strong>
@@ -468,7 +474,11 @@ export default function ScanPage() {
           <div className="scan-launch-title">
             <div>
               <h2 id="scan-repo-heading">Repository path</h2>
-              <p>{hostedDemo ? "Only the bundled test repository is available on this hosted demo." : "Windows and Linux absolute paths are supported."}</p>
+              <p>
+                {hostedDemo
+                  ? "Only the bundled test repository is available on this hosted demo."
+                  : "Windows and Linux absolute paths are supported."}
+              </p>
             </div>
           </div>
           <label className="scan-input-label" htmlFor={repoInputId}>
@@ -500,7 +510,9 @@ export default function ScanPage() {
             </p>
           )}
           <p id="scan-path-hint" className="scan-input-hint">
-            {hostedDemo ? "Use /app/test-repo. A path such as C:\\Python314 is on your computer and cannot be scanned by this Render service." : "The path must be accessible to the ECDAT scanner service."}
+            {hostedDemo
+              ? "Use /app/test-repo. A path such as C:\\Python314 is on your computer and cannot be scanned by this Render service."
+              : "The path must be accessible to the ECDAT scanner service."}
           </p>
 
           {recentPaths.length > 0 && (

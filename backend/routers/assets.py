@@ -1,7 +1,7 @@
 """Assets router — list and retrieve crypto assets."""
 import csv
 import io
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -64,7 +64,7 @@ def export_assets(
     risk: Literal["CRITICAL", "HIGH", "MEDIUM", "LOW"] | None = Query(default=None),
     quantum: bool | None = Query(default=None),
     sort: Literal["priority", "confidence", "algorithm"] = Query(default="priority"),
-    ids: list[int] | None = Query(default=None),
+    ids: Annotated[list[int] | None, Query()] = None,
 ) -> StreamingResponse:
     if ids is not None and not ids:
         raise HTTPException(422, detail="Select at least one asset")

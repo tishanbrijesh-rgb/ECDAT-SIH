@@ -6,7 +6,6 @@ import contextlib
 import hashlib
 import io
 import json
-import os
 import re
 import subprocess
 import tempfile
@@ -170,7 +169,7 @@ def _validate_manifest(manifest):
         name = source.get('name')
         if (not isinstance(name, str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]*', name)
                 or name in {'.', '..'} or name.casefold() == 'mixed'
-                or os.path.isreserved(name)):
+                or PureWindowsPath(name).is_reserved()):
             raise ValueError(f'Invalid benchmark source name: {name!r}')
         if name.casefold() in names:
             raise ValueError(f'Duplicate benchmark source name: {name}')

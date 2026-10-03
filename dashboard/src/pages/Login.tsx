@@ -51,7 +51,7 @@ export default function Login({
     setBusy(true);
     setError("");
     try {
-      if (!await enterPublicDemo()) {
+      if (!(await enterPublicDemo())) {
         setError("SIH Demo is unavailable. Please try again shortly.");
         return;
       }
@@ -63,7 +63,9 @@ export default function Login({
 
   return (
     <>
-      <a className="skip-link" href="#main-content">Skip to main content</a>
+      <a className="skip-link" href="#main-content">
+        Skip to main content
+      </a>
       <main className="login-shell" id="main-content" tabIndex={-1}>
         <aside className="login-context" aria-label="About ECDAT">
           <div className="login-identity">
@@ -74,7 +76,9 @@ export default function Login({
             </div>
           </div>
           <div className="login-panel-body">
-            <p className="login-context-title">Enterprise Cryptographic Discovery &amp; Analysis Tool</p>
+            <p className="login-context-title">
+              Enterprise Cryptographic Discovery &amp; Analysis Tool
+            </p>
             <p>
               Correlate source, dependency, certificate, and rule evidence into an inventory your
               security team can defend.
@@ -83,7 +87,9 @@ export default function Login({
         </aside>
         <section className="login-panel--form" aria-labelledby="login-heading">
           <div className="login-card">
-            <h1 id="login-heading" className="login-card-title">Explore ECDAT</h1>
+            <h1 id="login-heading" className="login-card-title">
+              Explore ECDAT
+            </h1>
             <p className="login-card-desc">
               Open the SIH demo to explore results. Sign in below when you need to run a scan.
             </p>
@@ -94,10 +100,17 @@ export default function Login({
               </div>
             )}
 
-            <button type="button" className="button wide login-submit" onClick={openDemo} disabled={busy}>
+            <button
+              type="button"
+              className="button wide login-submit"
+              onClick={openDemo}
+              disabled={busy}
+            >
               {busy ? "Opening SIH Demo…" : "SIH Demo — no password"}
             </button>
-            <p className="login-card-desc login-choice-note">View the dashboard, inventory, reports, and completed scans.</p>
+            <p className="login-card-desc login-choice-note">
+              View the dashboard, inventory, reports, and completed scans.
+            </p>
 
             <h2 className="login-section-title">Scanner sign-in</h2>
             <form onSubmit={submit} aria-busy={busy} className="login-form">

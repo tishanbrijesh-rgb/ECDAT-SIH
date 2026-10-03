@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-ignore -- Node types differ between the local test runner and the Docker build.
 import { readFileSync } from "node:fs";
 // @ts-ignore -- Node types differ between the local test runner and the Docker build.

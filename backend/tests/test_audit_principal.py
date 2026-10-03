@@ -19,7 +19,14 @@ from backend.models.asset import CryptoAssetDB
 from backend.models.audit_log import AuditLogDB
 from backend.models.scan_job import ScanJobDB
 from backend.schemas.asset import AssetUpdate
-from backend.security import Principal, current_role, ensure_write_role, issue_demo_token, issue_public_demo_token, role_from_token
+from backend.security import (
+    Principal,
+    current_role,
+    ensure_write_role,
+    issue_demo_token,
+    issue_public_demo_token,
+    role_from_token,
+)
 from tests.integration_env import PASSWORD
 
 

@@ -8,7 +8,14 @@ import {
   restoreSession,
   SESSION_EXPIRED,
 } from "./api/client";
-import { NavLink, Route, Routes, useSearchParams, useLocation, useNavigate } from "react-router-dom";
+import {
+  NavLink,
+  Route,
+  Routes,
+  useSearchParams,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { MotionConfig, AnimatePresence, motion } from "framer-motion";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastProvider, useToast } from "./components/Toast";
@@ -58,8 +65,13 @@ function ScanSignInGate() {
   return (
     <section className="state" aria-labelledby="scan-sign-in-heading">
       <h1 id="scan-sign-in-heading">Sign in to run a scan</h1>
-      <p>Evaluators can explore the dashboard, inventory, reports, and completed scans. Starting a scan requires a scanner account.</p>
-      <a className="button" href="/?login=1&next=scan">Sign in to scan</a>
+      <p>
+        Evaluators can explore the dashboard, inventory, reports, and completed scans. Starting a
+        scan requires a scanner account.
+      </p>
+      <a className="button" href="/?login=1&next=scan">
+        Sign in to scan
+      </a>
     </section>
   );
 }
@@ -102,13 +114,15 @@ function AppInner() {
     if (authState !== "checking") return;
     let active = true;
     void (async () => {
-      if (new URLSearchParams(window.location.search).has("admin") ||
-          new URLSearchParams(window.location.search).has("login")) {
+      if (
+        new URLSearchParams(window.location.search).has("admin") ||
+        new URLSearchParams(window.location.search).has("login")
+      ) {
         logout();
         if (active) setAuthState("signed-out");
         return;
       }
-      const restored = hasSession() && await restoreSession();
+      const restored = hasSession() && (await restoreSession());
       if (active) setAuthState(restored ? "signed-in" : "signed-out");
     })();
     return () => {
@@ -220,23 +234,23 @@ function AppInner() {
           <NavLink to={`/assets${scanQuery}`}>Inventory</NavLink>
           <NavLink to="/scans">Scan history</NavLink>
           <NavLink to="/scan" className="topbar-scan-link">
-              <svg
-                className="icon-inline"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              {canWrite() ? "New scan" : "Scan sign-in"}
-            </NavLink>
+            <svg
+              className="icon-inline"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            {canWrite() ? "New scan" : "Scan sign-in"}
+          </NavLink>
           <NavLink to={`/reports${scanQuery}`}>Reports</NavLink>
           <NavLink to={`/cbom${scanQuery}`}>CBOM</NavLink>
         </nav>
@@ -337,8 +351,12 @@ function AppInner() {
                     </svg>
                   </div>
                   <div>
-                    <div className="topbar-dropdown-name">{canWrite() ? "Scanner" : "Evaluator"}</div>
-                    <div className="topbar-dropdown-role">{canWrite() ? "Signed in" : "SIH Demo"}</div>
+                    <div className="topbar-dropdown-name">
+                      {canWrite() ? "Scanner" : "Evaluator"}
+                    </div>
+                    <div className="topbar-dropdown-role">
+                      {canWrite() ? "Signed in" : "SIH Demo"}
+                    </div>
                   </div>
                 </div>
                 <div className="topbar-dropdown-divider" />
