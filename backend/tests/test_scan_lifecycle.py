@@ -226,10 +226,11 @@ class TestLifecycleWorkerFailure:
 
             with patch("backend.services.scan_control.worker_command",
                        return_value=["python", "-c", "pass"]):
-                with patch("backend.services.scan_control._finish_if_active") as mock_finish:
+                with patch("backend.services.scan_control._finish_if_active") as mock_finish, \
+                     patch("backend.services.scan_control._terminate_process_tree") as terminate_tree:
                     supervise("/fake/repo", control)
 
-        assert fake_process.kill.called
+        terminate_tree.assert_called_once_with(fake_process)
         assert mock_finish.call_args[0][1] == "timed_out"
 
     def test_launch_failure_sets_failed(self):
