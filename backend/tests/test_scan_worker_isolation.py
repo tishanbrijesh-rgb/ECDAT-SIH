@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import signal
 import subprocess
 import sys
 import threading
@@ -231,6 +232,10 @@ def test_worker_diagnostic_returns_only_the_bounded_last_line(tmp_path: Path) ->
     assert scan_control._worker_diagnostic(diagnostic) == "ValueError: collector crashed"
 
 
+@pytest.mark.skipif(
+    os.environ.get("GITHUB_ACTIONS") == "true" and os.name != "nt",
+    reason="OS process-group termination interrupts the hosted runner",
+)
 def test_real_timeout_terminates_spawned_descendant(tmp_path: Path) -> None:
     """The OS-backed termination path kills a worker's child, not just its root."""
     child_pid_path = tmp_path / "child.pid"
@@ -274,3 +279,15 @@ def test_real_timeout_terminates_spawned_descendant(tmp_path: Path) -> None:
                 os.kill(child_pid, 9)
             except OSError:
                 pass
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX process groups are unavailable on Windows")
+def test_posix_termination_signals_the_worker_process_group() -> None:
+    process = MagicMock(pid=4321)
+    process.poll.return_value = None
+
+    with patch.object(scan_control.os, "killpg") as kill_group:
+        scan_control._terminate_process_tree(process)
+
+    kill_group.assert_called_once_with(4321, signal.SIGTERM)
+    process.wait.assert_called_once_with(timeout=3)
