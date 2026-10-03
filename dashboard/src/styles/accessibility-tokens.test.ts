@@ -1,6 +1,4 @@
-// @ts-expect-error -- Vitest provides Node built-ins; the browser bundle intentionally omits Node types.
 import { readFileSync } from "node:fs";
-// @ts-expect-error -- Vitest provides Node built-ins; the browser bundle intentionally omits Node types.
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 

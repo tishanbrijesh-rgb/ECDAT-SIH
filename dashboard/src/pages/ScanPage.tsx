@@ -13,6 +13,8 @@ import {
 const ACTIVE_SCAN_STATUSES = new Set(["started", "queued", "pending", "initialising", "running"]);
 const TERMINAL_SCAN_STATUSES = new Set(["completed", "failed", "cancelled", "timed_out"]);
 const ACTIVE_SCAN_KEY = "ecdat.activeScanId";
+const RENDER_DEMO_HOST = "ecdat-sih-demo.onrender.com";
+const DEMO_REPOSITORY = "/app/test-repo";
 
 export const isActiveScanStatus = (status: string) => ACTIVE_SCAN_STATUSES.has(status);
 export const shouldPollScanStatus = (status: string) => isActiveScanStatus(status);
@@ -65,7 +67,8 @@ const serverTime = (value: string) =>
   Date.parse(/[zZ]|[+-]\d\d:\d\d$/.test(value) ? value : `${value}Z`);
 
 export default function ScanPage() {
-  const [repoPath, setRepoPath] = useState("");
+  const hostedDemo = window.location.hostname === RENDER_DEMO_HOST;
+  const [repoPath, setRepoPath] = useState(hostedDemo ? DEMO_REPOSITORY : "");
   const [pathError, setPathError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [createError, setCreateError] = useState("");
@@ -238,7 +241,9 @@ export default function ScanPage() {
     setPathError("");
     if (value.trim()) {
       const trimmed = value.trim();
-      if (!/^[A-Za-z]:\\/.test(trimmed) && !/^\//.test(trimmed)) {
+      if (hostedDemo && trimmed !== DEMO_REPOSITORY) {
+        setPathError(`This hosted demo can scan only ${DEMO_REPOSITORY}. Files on your computer are not accessible to Render.`);
+      } else if (!/^[A-Za-z]:\\/.test(trimmed) && !/^\//.test(trimmed)) {
         setPathError("Enter an absolute Windows or Linux path, e.g. C:\\repos\\my-app");
       } else if (trimmed.length < 3) {
         setPathError("Path is too short.");
@@ -450,7 +455,7 @@ export default function ScanPage() {
       <header className="scan-launch-header">
         <div>
           <h1>Scan a repository</h1>
-          <p>Enter a local repository path and start an evidence-backed scan.</p>
+          <p>{hostedDemo ? "Scan the bundled demo repository hosted with ECDAT." : "Enter a local repository path and start an evidence-backed scan."}</p>
         </div>
         <div className="scan-safety-note" role="note">
           <strong>Read-only analysis</strong>
@@ -463,7 +468,7 @@ export default function ScanPage() {
           <div className="scan-launch-title">
             <div>
               <h2 id="scan-repo-heading">Repository path</h2>
-              <p>Windows and Linux absolute paths are supported.</p>
+              <p>{hostedDemo ? "Only the bundled test repository is available on this hosted demo." : "Windows and Linux absolute paths are supported."}</p>
             </div>
           </div>
           <label className="scan-input-label" htmlFor={repoInputId}>
@@ -476,7 +481,7 @@ export default function ScanPage() {
               className="scan-input"
               value={repoPath}
               onChange={(e) => handlePathChange(e.target.value)}
-              placeholder="C:\\repos\\my-application"
+              placeholder={hostedDemo ? DEMO_REPOSITORY : "C:\\repos\\my-application"}
               aria-invalid={Boolean(pathError)}
               aria-describedby={pathError ? "scan-path-error" : "scan-path-hint"}
               autoFocus
@@ -495,7 +500,7 @@ export default function ScanPage() {
             </p>
           )}
           <p id="scan-path-hint" className="scan-input-hint">
-            The path must be accessible to the ECDAT scanner service.
+            {hostedDemo ? "Use /app/test-repo. A path such as C:\\Python314 is on your computer and cannot be scanned by this Render service." : "The path must be accessible to the ECDAT scanner service."}
           </p>
 
           {recentPaths.length > 0 && (
